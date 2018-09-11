@@ -32,19 +32,26 @@ void hcsr04_setup() {
   Serial.print("Starting HS-SR04 - Trigger/EchoPin: ");Serial.print(pin_hcsr04_trigger);Serial.print("/");Serial.println(pin_hcsr04_echo);
   // The Trigger pin will tell the sensor to range find
   pinMode(pin_hcsr04_trigger, OUTPUT);
-  digitalWrite(pin_hcsr04_trigger, LOW);
+  //digitalWrite(pin_hcsr04_trigger, LOW);
+  pinMode(pin_hcsr04_echo, INPUT);
+  //digitalWrite(pin_hcsr04_echo, LOW);
 }
 
 void hcsr04_loop() {
-
+  digitalWrite(pin_hcsr04_trigger, LOW);
+  delayMicroseconds(2);
+  
   // Hold the trigger pin high for at least 10 us
   digitalWrite(pin_hcsr04_trigger, HIGH);
   delayMicroseconds(10);
   digitalWrite(pin_hcsr04_trigger, LOW);
 
-unsigned long distance;//unsigned, since we don't get negative distances.
+  unsigned long distance = 0;//unsigned, since we don't get negative distances.
 
-distance = round(pulseIn(pin_hcsr04_echo, HIGH, MAX_DIST) /58);//Distance in CM's, use /148 for inches.
+  distance = pulseIn(pin_hcsr04_echo, HIGH, MAX_DIST); //Distance in CM's, use /148 for inches.
+  //Serial.print(distance);Serial.println(" ms");
+  distance = (distance / 2) / 29.1;
+
   if (distance == 0){//Reached timeout
     Serial.println("Out of range");
   }

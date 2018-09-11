@@ -14,6 +14,11 @@
 #include "Arduino.h"
 #include "PCF8574.h"  
 
+typedef struct {
+  uint8_t i2cAddress;
+  uint8_t port;
+} pcf8574Port;
+
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[40] = "192.178.10.1";
 char mqtt_port[6] = "1883";
@@ -69,8 +74,8 @@ void setup() {
   Wire.begin(pin_sda, pin_scl);
   i2cdetect();
 
-  //hcsr04_setup();
-  //oled_setup();
+  hcsr04_setup();
+  oled_setup();
   PCF8574_setup();
 }
 
@@ -87,10 +92,11 @@ void loop() {
   
   if (millis() - previousMillis > hc_sr04_interval*1000) {
     previousMillis = millis();   // aktuelle Zeit abspeichern
-    //hcsr04_loop();
+    hcsr04_loop();
   }
 
   PCF8574_loop();
+  oled_loop();
 }
 
 

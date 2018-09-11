@@ -43,7 +43,7 @@ void ReadConfigParam() {
   //end read
 }
 
-void CallWiFiManager () {
+void CallWiFiManager() {
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
@@ -123,8 +123,8 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   if(strstr(topic,mqtt_root)) {
     //Serial.println(topic+strlen(MQTT_ROOT));
     /* ------------ Status PLAY / PAUSE / STOP ------------- */
-    if (strcmp(topic+strlen(mqtt_root),"Ventil1/on-for-timer")==0)                { PCF8574_onfortimer(msg,1); }
-    if (strcmp(topic+strlen(mqtt_root),"Ventil2/on-for-timer")==0)                { PCF8574_onfortimer(msg,2); }
+    if (strcmp(topic+strlen(mqtt_root),"Ventil1/on-for-timer")==0)                { PCF8574_onfortimer(msg,65); }
+    if (strcmp(topic+strlen(mqtt_root),"Ventil2/on-for-timer")==0)                { PCF8574_onfortimer(msg,66); }
     
     if (strstr(topic+strlen(mqtt_root),"on-for-timer")) { 
       Serial.println("on-for-timer gefunden");
@@ -136,5 +136,4 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 }
-
 
