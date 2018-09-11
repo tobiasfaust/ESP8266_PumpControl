@@ -63,7 +63,9 @@ void setup() {
 
   server.onNotFound(handleNotFound);
   server.on("/", handleRoot);
+  server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/StoreParam", HTTP_POST, handleStoreParams);
+  server.on("/StoreSwitchConfig", HTTP_POST, handleStoreSwitchConfig);
   server.on("/reboot", HTTP_GET, handleReboot);
 
   // start a server

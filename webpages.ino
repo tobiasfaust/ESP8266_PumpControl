@@ -6,6 +6,10 @@ void handleRoot() {
   server.send(200, "text/html", getMainPage());   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
+void handleCSS() {
+  server.send(200, "text/css", getCSS());
+}
+
 void handleReboot() {
   server.sendHeader("Location","/");
   server.send(303); 
@@ -54,3 +58,11 @@ void handleStoreParams() {
   server.sendHeader("Location","/");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }
+
+
+void handleStoreSwitchConfig() {
+
+  server.sendHeader("Location","/");        // Add a header to respond with a new location for the browser to go to the home page again
+  server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
+}
+

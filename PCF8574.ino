@@ -35,6 +35,7 @@ typedef struct {
   unsigned long startmillis;
   unsigned int lengthmillis;
   unsigned int port;
+  char subtopic[20]; //ohne on-for-timer
 } pcf8574Device;
 
 pcf8574Device* pcf8574dev;
@@ -57,11 +58,14 @@ void PCF8574_setup()
  
   // Set pinMode to OUTPUT
   for (unsigned int i=0; i < pcf8574devCount; i++) {
+    
     pcf8574->pinMode(i, OUTPUT);
     pcf8574dev[i].port = 65+i;
     pcf8574dev[i].enabled = true;
     pcf8574dev[i].startmillis = 0;
     pcf8574dev[i].pcf8574 = pcf8574;
+    sprintf(pcf8574dev[i].subtopic, "Ventil%d", i+1);
+    //pcf8574dev[i].subtopic = buffer;
   }
   pcf8574->begin();
 
