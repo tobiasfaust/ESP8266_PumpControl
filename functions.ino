@@ -110,6 +110,9 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   char msg[length+1];
   memset(msg,'-', length);
   msg[length]='\0';
+
+  char buffer[length+1];
+  memset(buffer, 0, length);
   
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -117,22 +120,23 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     msg[i]=(char)payload[i];  
   }
-  Serial.print("Message: ");
-  Serial.println(msg);
+  Serial.print("Message: ");Serial.println(msg);
+
+  int duration = atoi(msg);
+  //Serial.print("Duration: ");Serial.println(duration);
 
   if(strstr(topic,mqtt_root)) {
     //Serial.println(topic+strlen(MQTT_ROOT));
     /* ------------ Status PLAY / PAUSE / STOP ------------- */
-    if (strcmp(topic+strlen(mqtt_root),"Ventil1/on-for-timer")==0)                { PCF8574_onfortimer(msg,65); }
-    if (strcmp(topic+strlen(mqtt_root),"Ventil2/on-for-timer")==0)                { PCF8574_onfortimer(msg,66); }
+    if (strcmp(topic+strlen(mqtt_root),"test/on-for-timer")==0)                { PCF8574_onfortimer(&duration, 65); }
     
-    if (strstr(topic+strlen(mqtt_root),"on-for-timer")) { 
-      Serial.println("on-for-timer gefunden");
-      char port[1];
-      strncpy(port, topic+strlen(mqtt_root)+6, 1); // mqtt_root/ventil1/on-for-timer
-      //TODO: Länge finden um auch zb. Port 11 abbiden zu können
-      Serial.print("on-for-timer: Pin gefunden: ");Serial.print(port);
-      //PCF8574_onfortimer(msg,port);
+    for(int i=0; i < pcf8574devCount; i++) {
+      sprintf(buffer, "%s/on-for-timer", pcf8574dev[i].subtopic);
+      //Serial.print("Check ");Serial.println(buffer);
+      if (strcmp(topic+strlen(mqtt_root), buffer)==0 && pcf8574dev[i].enabled) { 
+        //Serial.print("on-for-timer: Pin gefunden: ");Serial.println(pcf8574dev[i].port);
+        PCF8574_onfortimer(&duration, pcf8574dev[i].port);
+      }
     }
   }
 }

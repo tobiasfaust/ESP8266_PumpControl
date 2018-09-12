@@ -61,7 +61,45 @@ void handleStoreParams() {
 
 
 void handleStoreSwitchConfig() {
+  char buffer[20] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  char enabled[1] = {0};
+  
+  for(int i=0; i < pcf8574devCount; i++) {
+    sprintf(buffer, "mqtttopic_%d", i);
+    strcpy(pcf8574dev[i].subtopic, server.arg(buffer).c_str());
+    sprintf(buffer, "pcfport_%d", i);
+    pcf8574dev[i].port = atoi(server.arg(buffer).c_str());
+    sprintf(buffer, "active_%d", i);
+    strcpy(enabled, server.arg(buffer).c_str());
+    if (strcmp(enabled,"1")==0) { pcf8574dev[i].enabled = true;} else { pcf8574dev[i].enabled = false;}
+  }
+  
+  //save the custom parameters to FS
+  if (true) {
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["count"] = pcf8574devCount;
+    for(int i=0; i < pcf8574devCount; i++) {
+      sprintf(buffer, "mqtttopic_%d", i);
+      json[buffer] = pcf8574dev[i].subtopic;
+      sprintf(buffer, "pcfport_%d", i);
+      json[buffer] = pcf8574dev[i].port;
+      sprintf(buffer, "active_%d", i);
+      json[buffer] = (pcf8574dev[i].enabled?"1":"0");
+    }
+    
+    File configFile = SPIFFS.open("/config2.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open config file for writing");
+    }
 
+    json.printTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+    
+  }
   server.sendHeader("Location","/");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }

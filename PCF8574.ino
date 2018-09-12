@@ -65,12 +65,10 @@ void PCF8574_setup()
     pcf8574dev[i].startmillis = 0;
     pcf8574dev[i].pcf8574 = pcf8574;
     sprintf(pcf8574dev[i].subtopic, "Ventil%d", i+1);
-    //pcf8574dev[i].subtopic = buffer;
   }
   pcf8574->begin();
 
   for(int i=0;i < pcf8574devCount; i++) {
-    //pcf8574_test.digitalWrite(i, HIGH);
     pcf8574->digitalWrite(i, HIGH);
   }
 
@@ -83,20 +81,22 @@ void PCF8574_setup()
 
 // wird aus dem MQTT Callback aufgerufen
 
-void PCF8574_onfortimer(char* msg, int port) {
-  Serial.print("on-for-timer: Pin");Serial.println(port);
-  for (unsigned int i=0; i<8; i++) {
-    if (atoi(msg) && atoi(msg)>0 && pcf8574dev[i].port == port) {
+void PCF8574_onfortimer(int* duration, int port) {
+  Serial.print("on-for-timer: Pin ");Serial.print(port);Serial.print(" , duration: ");Serial.println(*duration);
+  
+  for (unsigned int i=0; i < pcf8574devCount; i++) {
+    Serial.print(i);Serial.print(") Suche Port ");Serial.print(pcf8574dev[i].port);Serial.print("==");Serial.println(port);
+    if (duration > 0 && pcf8574dev[i].port == port) {
       Serial.print("aktiviere Pin ");Serial.println(i);
       pcf8574dev[i].pcf8574->digitalWrite(pcf8574dev[i].port , LOW); 
       pcf8574dev[i].startmillis = millis();
-      pcf8574dev[i].lengthmillis = atoi(msg)*1000;
+      pcf8574dev[i].lengthmillis = *duration * 1000;
     }
   }
 }
 
 void PCF8574_loop(){
-  for (unsigned int i=0; i<8; i++) {
+  for (unsigned int i=0; i < pcf8574devCount; i++) {
       if (pcf8574dev[i].enabled && pcf8574dev[i].startmillis != 0 && (millis() - pcf8574dev[i].startmillis > pcf8574dev[i].lengthmillis)) {
       Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
       pcf8574dev[i].pcf8574->digitalWrite(pcf8574dev[i].port, HIGH);
