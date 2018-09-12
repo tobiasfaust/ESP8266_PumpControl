@@ -22,8 +22,9 @@ void ReadConfigParam() {
           Serial.println("\nparsed json");
 
           strcpy(mqtt_server, json["mqtt_server"]);
-          strcpy(mqtt_port, json["mqtt_port"]);
           strcpy(mqtt_root, json["mqtt_root"]);
+          mqtt_port = json["mqtt_port"];
+          
           //hc_sr04_interval = json["hc_sr04_interval"];
           //pin_hcsr04_trigger = json["pin_hcsr04_trigger"];
           //pin_hcsr04_echo = json["pin_hcsr04_echo"];

@@ -21,7 +21,7 @@ typedef struct {
 
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[40] = "192.178.10.1";
-char mqtt_port[6] = "1883";
+int  mqtt_port  = 1883;
 char mqtt_root[40] = "PumpControl/";
 uint8_t hc_sr04_interval = 10;
 uint8_t pin_hcsr04_trigger = 12;

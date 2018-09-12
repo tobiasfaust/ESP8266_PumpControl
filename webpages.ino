@@ -18,7 +18,7 @@ void handleReboot() {
 
 void handleStoreParams() {
   strcpy(mqtt_server, server.arg("mqttserver").c_str());
-  strcpy(mqtt_port, server.arg("mqttport").c_str());
+  mqtt_port = atoi(server.arg("mqttport").c_str());
   strcpy(mqtt_root, server.arg("mqttroot").c_str());
   hc_sr04_interval = atoi(server.arg("hcsr04interval").c_str());
   pin_hcsr04_trigger = atoi(server.arg("pinhcsr04trigger").c_str());
