@@ -38,7 +38,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 
-std::string html_str = "";
+String html_str = "";
 uint8_t i2c_adresses[8] = {0};
 
 unsigned long previousMillis = 0;
@@ -63,9 +63,16 @@ void setup() {
 
   server.onNotFound(handleNotFound);
   server.on("/", handleRoot);
+  server.on("/PinConfig", handlePinConfig);
+  server.on("/SensorConfig", handleSensorConfig);
+  server.on("/VentilConfig", handleVentilConfig);
+  server.on("/AutoConfig", handleAutoConfig);
+  
   server.on("/style.css", HTTP_GET, handleCSS);
-  server.on("/StoreParam", HTTP_POST, handleStoreParams);
-  server.on("/StoreSwitchConfig", HTTP_POST, handleStoreSwitchConfig);
+  server.on("/StorePinConfig", HTTP_POST, handleStorePinConfig);
+  server.on("/StoreSensorConfig", HTTP_POST, handleStoreSensorConfig);
+  server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig);
+  server.on("/StoreAutoConfig", HTTP_POST, handleStoreAutoConfig);
   server.on("/reboot", HTTP_GET, handleReboot);
 
   // start a server

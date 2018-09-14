@@ -4,10 +4,10 @@ void ReadConfigParam() {
 
   if (SPIFFS.begin()) {
     Serial.println("mounted file system");
-    if (SPIFFS.exists("/config.json")) {
+    if (SPIFFS.exists("/PinConfig.json")) {
       //file exists, reading and loading
       Serial.println("reading config file");
-      File configFile = SPIFFS.open("/config.json", "r");
+      File configFile = SPIFFS.open("/PinConfig.json", "r");
       if (configFile) {
         Serial.println("opened config file");
         size_t size = configFile.size();

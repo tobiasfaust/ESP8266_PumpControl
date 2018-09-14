@@ -46,7 +46,7 @@ void PCF8574_setup()
 {  
   Serial.println("Starting PCF8574 ...");
   pcf8574 = new PCF8574(0x38, pin_sda, pin_scl);
-  pcf8574devCount = 8;
+  pcf8574devCount = 16;
   pcf8574dev = new pcf8574Device[pcf8574devCount];
   
   

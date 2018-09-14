@@ -3,7 +3,23 @@ void handleNotFound(){
 }
 
 void handleRoot() {
-  server.send(200, "text/html", getMainPage());   // Send HTTP status 200 (Ok) and send some text to the browser/client
+  server.send(200, "text/html", getPage_Status());   // Send HTTP status 200 (Ok) and send some text to the browser/client
+}
+
+void handlePinConfig() {
+  server.send(200, "text/html", getPage_PinConfig());   // Send HTTP status 200 (Ok) and send some text to the browser/client
+}
+
+void handleSensorConfig() {
+  server.send(200, "text/html", getPage_SensorConfig());   // Send HTTP status 200 (Ok) and send some text to the browser/client
+}
+
+void handleVentilConfig() {
+  server.send(200, "text/html", getPage_VentilConfig());   // Send HTTP status 200 (Ok) and send some text to the browser/client
+}
+
+void handleAutoConfig() {
+  server.send(200, "text/html", getPage_AutoConfig());   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
 void handleCSS() {
@@ -16,7 +32,7 @@ void handleReboot() {
   ESP.restart();  
 }
 
-void handleStoreParams() {
+void handleStorePinConfig() {
   strcpy(mqtt_server, server.arg("mqttserver").c_str());
   mqtt_port = atoi(server.arg("mqttport").c_str());
   strcpy(mqtt_root, server.arg("mqttroot").c_str());
@@ -44,9 +60,9 @@ void handleStoreParams() {
     json["i2caddress_pfc8574"] = i2caddress_pfc8574;
     json["i2caddress_oled"] = i2caddress_oled;
     
-    File configFile = SPIFFS.open("/config.json", "w");
+    File configFile = SPIFFS.open("/PinConfig.json", "w");
     if (!configFile) {
-      Serial.println("failed to open config file for writing");
+      Serial.println("failed to open PinConfig.json file for writing");
     }
 
     json.printTo(Serial);
@@ -55,12 +71,19 @@ void handleStoreParams() {
     //end save
   }
   
-  server.sendHeader("Location","/");        // Add a header to respond with a new location for the browser to go to the home page again
+  server.sendHeader("Location","/PinConfig");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }
 
+void handleStoreSensorConfig() {
+  char buffer[20] = {0};
+  memset(buffer, 0, sizeof(buffer));
 
-void handleStoreSwitchConfig() {
+  server.sendHeader("Location","/SensorConfig");        // Add a header to respond with a new location for the browser to go to the home page again
+  server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
+}
+
+void handleStoreVentilConfig() {
   char buffer[20] = {0};
   memset(buffer, 0, sizeof(buffer));
   char enabled[1] = {0};
@@ -90,9 +113,9 @@ void handleStoreSwitchConfig() {
       json[buffer] = (pcf8574dev[i].enabled?"1":"0");
     }
     
-    File configFile = SPIFFS.open("/config2.json", "w");
+    File configFile = SPIFFS.open("/VentilConfig.json", "w");
     if (!configFile) {
-      Serial.println("failed to open config file for writing");
+      Serial.println("failed to open VentilConfig.json file for writing");
     }
 
     json.printTo(Serial);
@@ -100,7 +123,16 @@ void handleStoreSwitchConfig() {
     configFile.close();
     
   }
-  server.sendHeader("Location","/");        // Add a header to respond with a new location for the browser to go to the home page again
+  server.sendHeader("Location","/VentilConfig");        // Add a header to respond with a new location for the browser to go to the home page again
+  server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
+}
+
+void handleStoreAutoConfig() {
+  char buffer[20] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  char enabled[1] = {0};
+
+  server.sendHeader("Location","/AutoConfig");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }
 
