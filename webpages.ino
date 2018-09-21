@@ -36,7 +36,6 @@ void handleStorePinConfig() {
   strcpy(mqtt_server, server.arg("mqttserver").c_str());
   mqtt_port = atoi(server.arg("mqttport").c_str());
   strcpy(mqtt_root, server.arg("mqttroot").c_str());
-  hc_sr04_interval = atoi(server.arg("hcsr04interval").c_str());
   pin_hcsr04_trigger = atoi(server.arg("pinhcsr04trigger").c_str());
   pin_hcsr04_echo = atoi(server.arg("pinhcsr04echo").c_str());
   pin_sda = atoi(server.arg("pinsda").c_str());
@@ -52,7 +51,6 @@ void handleStorePinConfig() {
     json["mqtt_server"] = mqtt_server;
     json["mqtt_port"] = mqtt_port;
     json["mqtt_root"] = mqtt_root;
-    json["hc_sr04_interval"] = hc_sr04_interval;
     json["pin_hcsr04_trigger"] = pin_hcsr04_trigger;
     json["pin_hcsr04_echo"] = pin_hcsr04_echo;
     json["pin_sda"] = pin_sda;
@@ -79,6 +77,29 @@ void handleStoreSensorConfig() {
   char buffer[20] = {0};
   memset(buffer, 0, sizeof(buffer));
 
+  hc_sr04_interval = atoi(server.arg("hcsr04interval").c_str());
+  hc_sr04_distmin = atoi(server.arg("hcsr04distmin").c_str());
+  hc_sr04_distmax = atoi(server.arg("hcsr04distmax").c_str());
+  
+  if (true) {
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["hc_sr04_interval"] = hc_sr04_interval;
+    json["hc_sr04_distmin"] = hc_sr04_distmin;
+    json["hc_sr04_distmax"] = hc_sr04_distmax;
+    
+    File configFile = SPIFFS.open("/SensorConfig.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open SensorConfig.json file for writing");
+    }
+
+    json.printTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+    //end save
+  }
+    
   server.sendHeader("Location","/SensorConfig");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }
@@ -132,6 +153,45 @@ void handleStoreAutoConfig() {
   memset(buffer, 0, sizeof(buffer));
   char enabled[1] = {0};
 
+  hc_sr04_treshold_min  = atoi(server.arg("treshold_min").c_str());
+  hc_sr04_treshold_max  = atoi(server.arg("treshold_max").c_str());
+  waterswitch_port      = atoi(server.arg("waterswitch_port").c_str());
+  syncswitch_port       = atoi(server.arg("syncswitch_port").c_str());
+  ventil3wege_port      = atoi(server.arg("ventil3wege_port").c_str());
+  max_parallel          = atoi(server.arg("max_parallel").c_str());
+  
+  strcpy(enabled, server.arg("enable_waterswitch").c_str());
+  if (strcmp(enabled,"1")==0) { enable_waterswitch = true;} else { enable_waterswitch = false;}
+  strcpy(enabled, server.arg("enable_syncswitch").c_str());
+  if (strcmp(enabled,"1")==0) { enable_syncswitch = true;} else { enable_syncswitch = false;}
+  strcpy(enabled, server.arg("enable_3wege").c_str());
+  if (strcmp(enabled,"1")==0) { enable_3wege = true;} else { enable_3wege = false;}
+  
+  if (true) {
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["hc_sr04_treshold_min"] = hc_sr04_treshold_min;
+    json["hc_sr04_treshold_max"] = hc_sr04_treshold_max;
+    json["waterswitch_port"] = waterswitch_port;
+    json["syncswitch_port"] = syncswitch_port;
+    json["enable_3wege"] = enable_3wege;
+    json["max_parallel"] = max_parallel;
+    json["enable_waterswitch"] = (enable_waterswitch?"1":"0");
+    json["enable_syncswitch"] = (enable_syncswitch?"1":"0");
+    json["enable_3wege"] = (enable_3wege?"1":"0");
+    
+    File configFile = SPIFFS.open("/AutoConfig.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open AutoConfig.json file for writing");
+    }
+
+    json.printTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+    //end save
+  }
+  
   server.sendHeader("Location","/AutoConfig");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }

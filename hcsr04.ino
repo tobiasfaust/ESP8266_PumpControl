@@ -46,8 +46,9 @@ void hcsr04_loop() {
   delayMicroseconds(10);
   digitalWrite(pin_hcsr04_trigger, LOW);
 
-  unsigned long distance = 0;//unsigned, since we don't get negative distances.
-
+  int distance = 0;//unsigned, since we don't get negative distances.
+  hcsr04_level = 0;
+  
   distance = pulseIn(pin_hcsr04_echo, HIGH, MAX_DIST); //Distance in CM's, use /148 for inches.
   //Serial.print(distance);Serial.println(" ms");
   distance = (distance / 2) / 29.1;
@@ -58,6 +59,15 @@ void hcsr04_loop() {
   else {
     Serial.print(distance);
     Serial.println(" cm");
+    
+    MQTT_publish(MQTT_distance, &distance);
+    
+    //(((104-[WaterLevel#Distance])*100)/100)
+    if (hc_sr04_distmax - hc_sr04_distmin > 0) {
+      hcsr04_level = (((hc_sr04_distmax - distance)*100)/(hc_sr04_distmax - hc_sr04_distmin));
+      MQTT_publish(MQTT_level, &hcsr04_level);
+    }
+    
   }
 }
 

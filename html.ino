@@ -10,13 +10,20 @@ String getCSS() {
   html_str += " td, th {\n";
   html_str += "     font-size: 14px;\n";
   html_str += " }\n";
-  html_str += ".button { \n";
-  html_str += "     padding:10px 10px 10px 10px; \n";
-  html_str += "     width:20%;\n";
-  html_str += "     background-color: #4CAF50;\n";
-  html_str += "     font-size: 120%;\n";
-  html_str += "     text-align: center;\n";
+  html_str += " .button { \n";
+  html_str += "     padding: 4px 16px; \n";
+  html_str += "     margin: 4px;\n";
+  html_str += "     background-color: #07D;\n";
+  html_str += "     color: #FFF;\n";
+  html_str += "     text-decoration: none;\n";
+  html_str += "     border-radius: 4px;\n";
+  html_str += "     border: none;\n";
   html_str += " }\n";
+  html_str += ".button:hover {background: #369;}\n";
+  html_str += " input, select, textarea {margin: 4px; padding: 4px 8px; border-radius: 4px; background-color: #eee; border-style: solid; border-width: 1px; border-color: gray;}\n";
+  html_str += " input:hover {background-color: #ccc; }\n";
+  html_str += " select:hover {background-color: #ccc; }\n";
+  html_str += " textarea:hover {background-color: #ccc; }\n";
   html_str += " .editorDemoTable {\n";
   html_str += "     border-spacing: 0;\n";
   html_str += "     background-color: #FFF8C9;\n";
@@ -60,7 +67,7 @@ String getPageHeader(int pageactive) {
   html_str += "<body>\n";
   html_str += "<table>\n";
   html_str += "  <tr>\n";
-  html_str += "   <td colspan='11'>\n";
+  html_str += "   <td colspan='13'>\n";
   html_str += "     <h2>Konfiguration</h2>\n";
   html_str += "   </td>\n";
   html_str += " </tr>\n";
@@ -78,8 +85,10 @@ String getPageHeader(int pageactive) {
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==4)?"navi_active":"");
   html_str += buffer;
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
-  sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/AutoConfig'>Automation</a></td>\n", (pageactive==5)?"navi_active":"");
+  sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/AutoConfig'>Automatik</a></td>\n", (pageactive==5)?"navi_active":"");
   html_str += buffer;
+  html_str += "   <td class='navi' style='width: 50px'></td>\n";
+  html_str += "   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>\n";
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
   html_str += " </tr>\n";
   html_str += "</table>\n";
@@ -167,12 +176,6 @@ String getPage_PinConfig() {
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
-  html_str += "<td>Messintervall HC-SR04</td>\n";
-  sprintf(buffer, "<td><input min='0' max='3600' name='hcsr04interval' type='number' value='%d'/></td>\n", hc_sr04_interval);
-  html_str += buffer;
-  html_str += "</tr>\n";
-
-  html_str += "<tr>\n";
   html_str += "<td>Pin HC-SR04 Trigger</td>\n";
   sprintf(buffer, "<td><input min='0' max='15' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
   html_str += buffer;
@@ -231,17 +234,22 @@ String getPage_SensorConfig() {
   html_str += "</tr>\n";
   html_str += "</thead>\n";
   html_str += "<tbody>\n";
+
   html_str += "<tr>\n";
-  html_str += "<td>Abstand zum Sensor wenn F&uuml;llstand = 0% (in cm)</td>\n";
-  html_str += "<td><input max='65000' min='0' name='xx' type='number' value='0' /></td>\n";
+  html_str += "<td>Messintervall HC-SR04</td>\n";
+  sprintf(buffer, "<td><input min='0' max='254' name='hcsr04interval' type='number' value='%d'/></td>\n", hc_sr04_interval);
+  html_str += buffer;
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Abstand Sensor min (in cm)</td>\n";
+  sprintf(buffer, "<td><input min='0' max='254' name='hcsr04distmin' type='number' value='%d'/></td>\n", hc_sr04_distmin);
+  html_str += buffer;
   html_str += "</tr>\n";
   html_str += "<tr>\n";
-  html_str += "<td>Abstand zum Sensor wenn F&uuml;llstand = 100% (in cm)</td>\n";
-  html_str += "<td><input max='65000' min='0' name='xx' type='number' value='0' /></td>\n";
-  html_str += "</tr>\n";
-  html_str += "<tr>\n";
-  html_str += "<td>&nbsp;</td>\n";
-  html_str += "<td>&nbsp;</td>\n";
+  html_str += "<td>Abstand Sensor max (in cm)</td>\n";
+  sprintf(buffer, "<td><input min='0' max='254' name='hcsr04distmax' type='number' value='%d'/></td>\n", hc_sr04_distmax);
+  html_str += buffer;
   html_str += "</tr>\n";
   html_str += "</tbody>\n";
   html_str += "</table>\n";
@@ -291,7 +299,7 @@ String getPage_VentilConfig() {
 
 
 String getPage_AutoConfig() {
-  char buffer[100] = {0};
+  char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   html_str = getPageHeader(5);
   html_str += "<form id='F2' action='StoreAutoConfig' method='POST'>\n";
@@ -305,25 +313,65 @@ String getPage_AutoConfig() {
   html_str += "</thead>\n";
   html_str += "<tbody>\n";
   html_str += "<tr>\n";
-  html_str += "<td style='text-align: center; width: 46px;'><input name='active_0' type='checkbox' value='1' /></td>\n";
+  sprintf(buffer, "<td style='text-align: center; width: 46px;'><input name='enable_waterswitch' type='checkbox' value='1' /></td>\n", (enable_waterswitch?"checked":""));
+  html_str += buffer;
   html_str += "<td>Ventil, welches bei leerem F&uuml;llstand angeschaltet werden soll (Wechsel zwischen Regen- und Trinkwasser)</td>\n";
-  html_str += "<td>&nbsp;</td>\n";
+  html_str += "<td><select name='waterswitch_port' size='1'>";
+  for(int i=0; i < pcf8574devCount; i++) {
+    if(pcf8574dev[i].enabled) {
+      sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (waterswitch_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
+      html_str += buffer;
+    }
+  }
+  html_str += "</select></td>\n";
   html_str += "</tr>\n";
   html_str += "<tr>\n";
   html_str += "<td style='text-align: center;'>&nbsp;</td>\n";
-  html_str += "<td >unterer Schwellwert in % zum Umschalten</td>\n";
-  html_str += "<td><input max='128' min='0' name='xx' type='number' value='0' /></td>\n";
+  html_str += "<td >Sensor Treshold Min</td>\n";
+  sprintf(buffer, "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", hc_sr04_treshold_min);
+  html_str += buffer;
   html_str += "</tr>\n";
   html_str += "<tr>\n";
   html_str += "<td style='text-align: center;'>&nbsp;</td>\n";
-  html_str += "<td>oberer Schwellwert in % zum Umschalten</td>\n";
-  html_str += "<td><input max='128' min='0' name='xx' type='number' value='0' /></td>\n";
+  html_str += "<td>Sensor Treshold Max</td>\n";
+  sprintf(buffer, "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", hc_sr04_treshold_max);
+  html_str += buffer;
   html_str += "</tr>\n";
   html_str += "<tr>\n";
-  html_str += "<td style='text-align: center;'><input name='active_0' type='checkbox' value='1' /></td>\n";
-  html_str += "<td>Ventil welches bei Frischwassernutzung immer syncron l&auml;uft</td>\n";
-  html_str += "<td>&nbsp;</td>\n";
+  sprintf(buffer, "<td style='text-align: center;'><input name='enable_syncswitch' type='checkbox' value='1' /></td>\n", (enable_syncswitch?"checked":""));
+  html_str += buffer;
+  html_str += "<td>Ventil Trinkwasser Bypass</td>\n";
+  html_str += "<td><select name='syncswitch_port' size='1'>";
+  for(int i=0; i < pcf8574devCount; i++) {
+    if(pcf8574dev[i].enabled) {
+      sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (syncswitch_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
+      html_str += buffer;
+    }
+  }
+  html_str += "</select></td>\n";
   html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  sprintf(buffer, "<td style='text-align: center;'><input name='enable_3wege' type='checkbox' value='1' /></td>\n", (enable_3wege?"checked":""));
+  html_str += buffer;
+  html_str += "<td>3WegeVentil Trinkwasser Bypass</td>\n";
+  html_str += "<td><select name='ventil3wege_port' size='1'>";
+  for(int i=0; i < pcf8574devCount; i++) {
+    if(pcf8574dev[i].enabled) {
+      sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (ventil3wege_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
+      html_str += buffer;
+    }
+  }
+  html_str += "</select></td>\n";
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td style='text-align: center;'>&nbsp;</td>\n";
+  html_str += "<td>Max. parallel</td>\n";
+  sprintf(buffer, "<td><input min='0' max='16' name='max_parallel' type='number' value='%d'/></td>\n", max_parallel);
+  html_str += buffer;
+  html_str += "</tr>\n";
+  
   html_str += "</tbody>\n";
   html_str += "</table>\n";
   html_str += "<br /><input class='button' type='submit' value='Speichern' /></form>\n";

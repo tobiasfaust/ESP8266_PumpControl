@@ -5,7 +5,13 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 void oled_setup() {
   // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3c); // initialize with the I2C addr 0x3D (for the 128x64)  
+  Serial.print("Starting OLED 1306: (");
+  Serial.print(i2caddress_oled);
+  Serial.print(", ");Serial.print(pin_sda);
+  Serial.print(", ");Serial.print(pin_scl);
+  Serial.println(")");
+  
+  display.begin(SSD1306_SWITCHCAPVCC, i2caddress_oled); // initialize with the I2C addr 0x3D (for the 128x64)  
   display.display();
   delay(2000);
   display.clearDisplay();
@@ -31,7 +37,8 @@ void oled_loop() {
  // set text cursor position / Textstartposition einstellen
  display.setCursor(1,0);
  // show text / Text anzeigen
- display.println("xx %");
+ display.print(hcsr04_level);
+ display.println("%");
  display.display();
 }
 

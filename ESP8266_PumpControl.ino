@@ -14,35 +14,13 @@
 #include "Arduino.h"
 #include "PCF8574.h"  
 
-typedef struct {
-  uint8_t i2cAddress;
-  uint8_t port;
-} pcf8574Port;
-
-//define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[40] = "192.178.10.1";
-int  mqtt_port  = 1883;
-char mqtt_root[40] = "PumpControl/";
-uint8_t hc_sr04_interval = 10;
-uint8_t pin_hcsr04_trigger = 12;
-uint8_t pin_hcsr04_echo = 13;
-uint8_t pin_sda = 4;
-uint8_t pin_scl = 0;
-uint8_t i2caddress_pfc8574 = 0x38;
-uint8_t i2caddress_oled = 0x3C;
+#include "PumpControl.h"
 
 MDNSResponder mdns;
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-
-String html_str = "";
-uint8_t i2c_adresses[8] = {0};
-
-unsigned long previousMillis = 0;
-unsigned long mqttreconnect_lasttry = 0;
   
 void setup() {
   // put your setup code here, to run once:

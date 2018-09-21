@@ -25,18 +25,6 @@
 
 // https://github.com/xreef/PCF8574_library 
 
-typedef struct {
-    uint8_t address;
-} pcf8547Host;
-
-typedef struct {
-  PCF8574* pcf8574;
-  boolean enabled;
-  unsigned long startmillis;
-  unsigned int lengthmillis;
-  unsigned int port;
-  char subtopic[20]; //ohne on-for-timer
-} pcf8574Device;
 
 pcf8574Device* pcf8574dev;
 uint8_t pcf8574devCount = 0;
@@ -45,7 +33,7 @@ PCF8574* pcf8574;
 void PCF8574_setup()
 {  
   Serial.println("Starting PCF8574 ...");
-  pcf8574 = new PCF8574(0x38, pin_sda, pin_scl);
+  pcf8574 = new PCF8574(i2caddress_pfc8574, pin_sda, pin_scl);
   pcf8574devCount = 16;
   pcf8574dev = new pcf8574Device[pcf8574devCount];
   
@@ -85,12 +73,17 @@ void PCF8574_onfortimer(int* duration, int port) {
   Serial.print("on-for-timer: Pin ");Serial.print(port);Serial.print(" , duration: ");Serial.println(*duration);
   
   for (unsigned int i=0; i < pcf8574devCount; i++) {
-    Serial.print(i);Serial.print(") Suche Port ");Serial.print(pcf8574dev[i].port);Serial.print("==");Serial.println(port);
+    //Serial.print(i);Serial.print(") Suche Port ");Serial.print(pcf8574dev[i].port);Serial.print("==");Serial.println(port);
     if (duration > 0 && pcf8574dev[i].port == port) {
       Serial.print("aktiviere Pin ");Serial.println(i);
       pcf8574dev[i].pcf8574->digitalWrite(pcf8574dev[i].port , LOW); 
       pcf8574dev[i].startmillis = millis();
       pcf8574dev[i].lengthmillis = *duration * 1000;
+
+      char subtopic[50];
+      memset(&subtopic[0], 0, sizeof(subtopic));
+      snprintf (subtopic, sizeof(subtopic), "%s/state", pcf8574dev[i].subtopic);
+      MQTT_publish(subtopic, true);
     }
   }
 }
@@ -101,6 +94,11 @@ void PCF8574_loop(){
       Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
       pcf8574dev[i].pcf8574->digitalWrite(pcf8574dev[i].port, HIGH);
       pcf8574dev[i].startmillis = 0;
+
+      char subtopic[50];
+      memset(&subtopic[0], 0, sizeof(subtopic));
+      snprintf (subtopic, sizeof(subtopic), "%s/state", pcf8574dev[i].subtopic);
+      MQTT_publish(subtopic, false);
     }
   }
 }
