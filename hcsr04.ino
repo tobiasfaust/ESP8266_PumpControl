@@ -57,8 +57,7 @@ void hcsr04_loop() {
     Serial.println("Out of range");
   }
   else {
-    Serial.print(distance);
-    Serial.println(" cm");
+    //Serial.print(distance);Serial.println(" cm");
     
     MQTT_publish(MQTT_distance, &distance);
     

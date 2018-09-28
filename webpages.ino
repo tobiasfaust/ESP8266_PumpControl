@@ -40,8 +40,7 @@ void handleStorePinConfig() {
   pin_hcsr04_echo = atoi(server.arg("pinhcsr04echo").c_str());
   pin_sda = atoi(server.arg("pinsda").c_str());
   pin_scl = atoi(server.arg("pinscl").c_str());
-  i2caddress_pfc8574 = strtoul(server.arg("i2cpfc8574").c_str(), NULL, 16); // hex convert to dec
-  i2caddress_oled = strtoul(server.arg("i2coled").c_str(), NULL, 16);
+  i2caddress_oled = strtoul(server.arg("i2coled").c_str(), NULL, 16); // hex convert to dec
   
   //save the custom parameters to FS
   if (true) {
@@ -55,7 +54,6 @@ void handleStorePinConfig() {
     json["pin_hcsr04_echo"] = pin_hcsr04_echo;
     json["pin_sda"] = pin_sda;
     json["pin_scl"] = pin_scl;
-    json["i2caddress_pfc8574"] = i2caddress_pfc8574;
     json["i2caddress_oled"] = i2caddress_oled;
     
     File configFile = SPIFFS.open("/PinConfig.json", "w");
@@ -155,13 +153,10 @@ void handleStoreAutoConfig() {
 
   hc_sr04_treshold_min  = atoi(server.arg("treshold_min").c_str());
   hc_sr04_treshold_max  = atoi(server.arg("treshold_max").c_str());
-  waterswitch_port      = atoi(server.arg("waterswitch_port").c_str());
   syncswitch_port       = atoi(server.arg("syncswitch_port").c_str());
   ventil3wege_port      = atoi(server.arg("ventil3wege_port").c_str());
   max_parallel          = atoi(server.arg("max_parallel").c_str());
   
-  strcpy(enabled, server.arg("enable_waterswitch").c_str());
-  if (strcmp(enabled,"1")==0) { enable_waterswitch = true;} else { enable_waterswitch = false;}
   strcpy(enabled, server.arg("enable_syncswitch").c_str());
   if (strcmp(enabled,"1")==0) { enable_syncswitch = true;} else { enable_syncswitch = false;}
   strcpy(enabled, server.arg("enable_3wege").c_str());
@@ -173,11 +168,8 @@ void handleStoreAutoConfig() {
     JsonObject& json = jsonBuffer.createObject();
     json["hc_sr04_treshold_min"] = hc_sr04_treshold_min;
     json["hc_sr04_treshold_max"] = hc_sr04_treshold_max;
-    json["waterswitch_port"] = waterswitch_port;
     json["syncswitch_port"] = syncswitch_port;
-    json["enable_3wege"] = enable_3wege;
     json["max_parallel"] = max_parallel;
-    json["enable_waterswitch"] = (enable_waterswitch?"1":"0");
     json["enable_syncswitch"] = (enable_syncswitch?"1":"0");
     json["enable_3wege"] = (enable_3wege?"1":"0");
     

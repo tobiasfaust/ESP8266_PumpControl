@@ -32,7 +32,6 @@ void ReadConfigParam() {
           pin_hcsr04_echo = json["pin_hcsr04_echo"];
           pin_sda = json["pin_sda"];
           pin_scl = json["pin_scl"];
-          i2caddress_pfc8574 = json["i2caddress_pfc8574"];
           i2caddress_oled = json["i2caddress_oled"];
           
         } else {
@@ -84,7 +83,8 @@ void ReadConfigParam() {
       // do something
       loadDefaultConfig = false; //set back
     }
-    
+
+
   } else {
     Serial.println("failed to mount FS");
   }
@@ -198,14 +198,14 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   if(strstr(topic,mqtt_root)) {
     //Serial.println(topic+strlen(MQTT_ROOT));
     /* ------------ Status PLAY / PAUSE / STOP ------------- */
-    if (strcmp(topic+strlen(mqtt_root),"/test/on-for-timer")==0)                { PCF8574_onfortimer(&duration, 65); }
+    if (strcmp(topic+strlen(mqtt_root),"/test/on-for-timer")==0)                { PCF8574_onfortimer(&duration, &pcf8574dev[0]); }
     
     for(int i=0; i < pcf8574devCount; i++) {
       sprintf(buffer, "/%s/on-for-timer", pcf8574dev[i].subtopic);
       //Serial.print("Check ");Serial.println(buffer);
       if (strcmp(topic+strlen(mqtt_root), buffer)==0 && pcf8574dev[i].enabled) { 
         //Serial.print("on-for-timer: Pin gefunden: ");Serial.println(pcf8574dev[i].port);
-        PCF8574_onfortimer(&duration, pcf8574dev[i].port);
+        PCF8574_onfortimer(&duration, &pcf8574dev[i]);
       }
     }
   }

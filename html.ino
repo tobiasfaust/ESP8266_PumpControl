@@ -200,12 +200,6 @@ String getPage_PinConfig() {
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
-  html_str += "<td>i2c Adresse PFC8574</td>\n";
-  sprintf(buffer, "<td><input maxlength='2' name='i2cpfc8574' type='text' value='%02x'/></td>\n", i2caddress_pfc8574);
-  html_str += buffer;
-  html_str += "</tr>\n";
-
-  html_str += "<tr>\n";
   html_str += "<td>i2c Adresse OLED 1306</td>\n";
   sprintf(buffer, "<td><input maxlength='2' name='i2coled' type='text' value='%02x'/></td>\n", i2caddress_oled);
   html_str += buffer;
@@ -312,19 +306,6 @@ String getPage_AutoConfig() {
   html_str += "</tr>\n";
   html_str += "</thead>\n";
   html_str += "<tbody>\n";
-  html_str += "<tr>\n";
-  sprintf(buffer, "<td style='text-align: center; width: 46px;'><input name='enable_waterswitch' type='checkbox' value='1' /></td>\n", (enable_waterswitch?"checked":""));
-  html_str += buffer;
-  html_str += "<td>Ventil, welches bei leerem F&uuml;llstand angeschaltet werden soll (Wechsel zwischen Regen- und Trinkwasser)</td>\n";
-  html_str += "<td><select name='waterswitch_port' size='1'>";
-  for(int i=0; i < pcf8574devCount; i++) {
-    if(pcf8574dev[i].enabled) {
-      sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (waterswitch_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
-      html_str += buffer;
-    }
-  }
-  html_str += "</select></td>\n";
-  html_str += "</tr>\n";
   html_str += "<tr>\n";
   html_str += "<td style='text-align: center;'>&nbsp;</td>\n";
   html_str += "<td >Sensor Treshold Min</td>\n";
