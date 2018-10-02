@@ -2,4 +2,4 @@
 ## Bewässerungssteuerung für ein Hauswasserwerk sowie automatisierter Umschaltung bei leerer Zisterne auf Trinkwasser
 
 
-Entwicklung ist noch in Arbeit, Alphastatus noch nicht erreicht
+Beschreibung siehe Wiki: https://github.com/tobiasfaust/ESP8266_PumpControl/wiki
