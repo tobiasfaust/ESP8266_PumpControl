@@ -33,6 +33,13 @@ void ReadConfigParam() {
           pin_sda = json["pin_sda"];
           pin_scl = json["pin_scl"];
           i2caddress_oled = json["i2caddress_oled"];
+
+          // sperren für die VentilConfig
+          //handleMyGPIOPin(pin_sda, false);
+          //handleMyGPIOPin(pin_scl, false);
+          //handleMyGPIOPin(pin_hcsr04_trigger, false);
+          //handleMyGPIOPin(pin_hcsr04_echo, false);
+          
           
         } else {
           Serial.println("failed to load json config, load default config");
@@ -40,7 +47,7 @@ void ReadConfigParam() {
         }
       }
     } else {
-      Serial.println("json config File not exists, load default config");
+      Serial.println("PinConfig.json config File not exists, load default config");
       loadDefaultConfig = true;
     }
 
@@ -75,15 +82,54 @@ void ReadConfigParam() {
         }
       }
     } else {
-      Serial.println("json config File not exists, load default config");
+      Serial.println("SensorConfig.json config File not exists, load default config");
       loadDefaultConfig = true;
     }
 
-    if (!loadDefaultConfig) {
+    if (loadDefaultConfig) {
       // do something
       loadDefaultConfig = false; //set back
     }
 
+    // ############### Automatik CONFIG ##################
+    if (SPIFFS.exists("/AutoConfig.json")) {
+      //file exists, reading and loading
+      Serial.println("reading Automatik config file");
+      File configFile = SPIFFS.open("/AutoConfig.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
+
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buf.get());
+        json.printTo(Serial);
+        if (json.success()) {
+          Serial.println("\nparsed json");
+          hc_sr04_treshold_min = json["hc_sr04_treshold_min"];
+          hc_sr04_treshold_max = json["hc_sr04_treshold_max"];
+          syncswitch_port = json["syncswitch_port"];
+          ventil3wege_port = json["ventil3wege_port"];
+          max_parallel = json["max_parallel"];
+
+          if (strcmp(json["enable_syncswitch"],"1")==0) {enable_syncswitch = true;} else {enable_syncswitch = false;}
+          if (strcmp(json["enable_3wege"],"1")==0) {enable_3wege = true;} else {enable_3wege = false;}
+        } else {
+          Serial.println("failed to load json config, load default config");
+          loadDefaultConfig = true;
+        }
+      }
+    } else {
+      Serial.println("AutoConfig.json config File not exists, load default config");
+      loadDefaultConfig = true;
+    }
+
+    if (loadDefaultConfig) {
+      // do something
+      loadDefaultConfig = false; //set back
+    }
 
   } else {
     Serial.println("failed to mount FS");
@@ -133,16 +179,18 @@ void CallWiFiManager() {
 
 void MQTT_reconnect() {
   char topic[50];
+  memset(&topic[0], 0, sizeof(topic));
   // Loop until we're reconnected
   //while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    Serial.println("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client")) {
+    //snprintf (topic, sizeof(topic), "%s-%s", mqtt_root, WiFi.macAddress().c_str());
+    snprintf (topic, sizeof(topic), "ESP8266Client_%s", WiFi.macAddress().c_str());
+    if (client.connect(topic)) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       //client.publish("outTopic", "hello world");
       // ... and resubscribe
-      memset(&topic[0], 0, sizeof(topic));
       snprintf (topic, sizeof(topic), "%s/#", mqtt_root);
       Serial.println(topic);
       client.subscribe(topic);
@@ -173,7 +221,7 @@ void MQTT_publish(const char* subtopic, char* value ) {
   memset(&topic[0], 0, sizeof(topic));
   snprintf (topic, sizeof(topic), "%s/%s", mqtt_root, subtopic);
   client.publish(topic, value);
-  Serial.print("Publish "); Serial.print(topic); Serial.print(" : "); Serial.println(value);
+  Serial.print("Publish "); Serial.print(topic); Serial.print(": "); Serial.println(value);
 }
 
 void MQTT_callback(char* topic, byte* payload, unsigned int length) {
@@ -211,3 +259,10 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
+/*
+void handleMyGPIOPin(uint8_t pin, boolean state) {
+  for(int i=0; i < 11; i++) {
+    if (mygpiopin[i].pinnumber == pin) { mygpiopin[i].active = state; }
+  }
+}
+*/

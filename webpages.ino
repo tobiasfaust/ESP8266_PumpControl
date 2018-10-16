@@ -26,6 +26,10 @@ void handleCSS() {
   server.send(200, "text/css", getCSS());
 }
 
+void handleJS() {
+  server.send(200, "text/js", getJS());
+}
+
 void handleReboot() {
   server.sendHeader("Location","/");
   server.send(303); 
@@ -105,7 +109,7 @@ void handleStoreSensorConfig() {
 void handleStoreVentilConfig() {
   char buffer[20] = {0};
   memset(buffer, 0, sizeof(buffer));
-  char enabled[1] = {0};
+  uint8_t enabled = 0;
   
   for(int i=0; i < pcf8574devCount; i++) {
     sprintf(buffer, "mqtttopic_%d", i);
@@ -113,8 +117,8 @@ void handleStoreVentilConfig() {
     sprintf(buffer, "pcfport_%d", i);
     pcf8574dev[i].port = atoi(server.arg(buffer).c_str());
     sprintf(buffer, "active_%d", i);
-    strcpy(enabled, server.arg(buffer).c_str());
-    if (strcmp(enabled,"1")==0) { pcf8574dev[i].enabled = true;} else { pcf8574dev[i].enabled = false;}
+    enabled = atoi(server.arg(buffer).c_str());
+    if (enabled == 1) { pcf8574dev[i].enabled = true;} else { pcf8574dev[i].enabled = false;}
   }
   
   //save the custom parameters to FS
@@ -129,7 +133,7 @@ void handleStoreVentilConfig() {
       sprintf(buffer, "pcfport_%d", i);
       json[buffer] = pcf8574dev[i].port;
       sprintf(buffer, "active_%d", i);
-      json[buffer] = (pcf8574dev[i].enabled?"1":"0");
+      json[buffer] = (pcf8574dev[i].enabled?1:0);
     }
     
     File configFile = SPIFFS.open("/VentilConfig.json", "w");
@@ -140,6 +144,9 @@ void handleStoreVentilConfig() {
     json.printTo(Serial);
     json.printTo(configFile);
     configFile.close();
+
+    // ReRead and initialize Objects
+    PCF8574_setup();
     
   }
   server.sendHeader("Location","/VentilConfig");        // Add a header to respond with a new location for the browser to go to the home page again
@@ -149,7 +156,7 @@ void handleStoreVentilConfig() {
 void handleStoreAutoConfig() {
   char buffer[20] = {0};
   memset(buffer, 0, sizeof(buffer));
-  char enabled[1] = {0};
+  uint8_t enabled = 0;
 
   hc_sr04_treshold_min  = atoi(server.arg("treshold_min").c_str());
   hc_sr04_treshold_max  = atoi(server.arg("treshold_max").c_str());
@@ -157,10 +164,10 @@ void handleStoreAutoConfig() {
   ventil3wege_port      = atoi(server.arg("ventil3wege_port").c_str());
   max_parallel          = atoi(server.arg("max_parallel").c_str());
   
-  strcpy(enabled, server.arg("enable_syncswitch").c_str());
-  if (strcmp(enabled,"1")==0) { enable_syncswitch = true;} else { enable_syncswitch = false;}
-  strcpy(enabled, server.arg("enable_3wege").c_str());
-  if (strcmp(enabled,"1")==0) { enable_3wege = true;} else { enable_3wege = false;}
+  enabled = atoi(server.arg("enable_syncswitch").c_str());
+  if (enabled == 1) { enable_syncswitch = true;} else { enable_syncswitch = false;}
+  enabled = atoi(server.arg("enable_3wege").c_str());
+  if (enabled == 1) { enable_3wege = true;} else { enable_3wege = false;}
   
   if (true) {
     Serial.println("saving config");
@@ -169,9 +176,10 @@ void handleStoreAutoConfig() {
     json["hc_sr04_treshold_min"] = hc_sr04_treshold_min;
     json["hc_sr04_treshold_max"] = hc_sr04_treshold_max;
     json["syncswitch_port"] = syncswitch_port;
+    json["ventil3wege_port"] = ventil3wege_port;
     json["max_parallel"] = max_parallel;
-    json["enable_syncswitch"] = (enable_syncswitch?"1":"0");
-    json["enable_3wege"] = (enable_3wege?"1":"0");
+    json["enable_syncswitch"] = (enable_syncswitch?1:0);
+    json["enable_3wege"] = (enable_3wege?1:0);
     
     File configFile = SPIFFS.open("/AutoConfig.json", "w");
     if (!configFile) {
@@ -182,6 +190,9 @@ void handleStoreAutoConfig() {
     json.printTo(configFile);
     configFile.close();
     //end save
+
+    // ReRead and initialize Objects
+    PCF8574_setup();
   }
   
   server.sendHeader("Location","/AutoConfig");        // Add a header to respond with a new location for the browser to go to the home page again

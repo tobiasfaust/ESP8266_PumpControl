@@ -29,14 +29,18 @@ void setup() {
 
   //clean FS, for testing
   //SPIFFS.format();
-    
+  //SPIFFS.remove("/PinConfig.json");
+  //SPIFFS.remove("/SensorConfig.json");
+  //SPIFFS.remove("/VentilConfig.json");
+  //SPIFFS.remove("/AutoConfig.json");
+  
   CallWiFiManager();
   ReadConfigParam();
 
   client.setServer(mqtt_server, 1883);
   client.setCallback(MQTT_callback);
   
-  if (!MDNS.begin("esp8266"))   {  Serial.println("Error setting up MDNS responder!");  }
+  if (!MDNS.begin("esp82660"))   {  Serial.println("Error setting up MDNS responder!");  }
   else                          {  Serial.println("mDNS responder started");  }
 
   server.onNotFound(handleNotFound);
@@ -47,6 +51,8 @@ void setup() {
   server.on("/AutoConfig", handleAutoConfig);
   
   server.on("/style.css", HTTP_GET, handleCSS);
+  server.on("/javascript.js", HTTP_GET, handleJS);
+  
   server.on("/StorePinConfig", HTTP_POST, handleStorePinConfig);
   server.on("/StoreSensorConfig", HTTP_POST, handleStoreSensorConfig);
   server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig);
@@ -80,10 +86,10 @@ void loop() {
   if (millis() - previousMillis > hc_sr04_interval*1000) {
     previousMillis = millis();   // aktuelle Zeit abspeichern
     hcsr04_loop();
+    oled_loop();
   }
 
   PCF8574_loop();
-  oled_loop();
 }
 
 

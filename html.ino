@@ -1,3 +1,45 @@
+String getJS() {
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  
+  // http://jsfiddle.net/mwPb5/
+  // http://jsfiddle.net/mwPb5/1043/
+  // http://jsfiddle.net/mwPb5/1049/
+  
+  html_str = "";
+  // bereits belegte Ports, können nicht ausgewählt werden (zb.vi2c-ports)
+  // const gpio_disabled = Array(0,4);
+  sprintf(buffer, "const gpio_disabled = [%d,%d,%d,%d];\n", pin_sda, pin_scl, pin_hcsr04_trigger, pin_hcsr04_echo);
+  html_str += buffer;
+
+  html_str += "\n";
+  html_str += "//############ DO NOT CHANGE BELOW ###################\n";
+  html_str += "var select, i,j ,y , option;\n";
+  html_str += "const gpio = Array(16,5,4,0,2,14,12,13,15,1,3);\n";
+  html_str += "const gpioname = Array('D0','D1','D2/SDA', 'D3/SCL', 'D4','D5','D6', 'D7','D8','RX','TX');\n";
+  html_str += "\n";
+  html_str += "\n";
+  html_str += "for ( j = 0; j <= selection.length; j += 1 ) {\n";
+  html_str += "  select = document.getElementById( 'SelectVentilPort_'+j);\n";
+  html_str += "  for ( i = 0; i < gpio.length; i += 1 ) {\n";
+  html_str += "      option = document.createElement( 'option' );\n";
+  html_str += "      option.value = gpio[i]+200; \n";
+  html_str += "      option.text  = gpioname[i];\n";
+  html_str += "      if(selection[j] == (gpio[i]+200)) { option.selected = true;}\n";
+  html_str += "      if(gpio_disabled.indexOf(gpio[i])>=0) {option.disabled = true;}\n";
+  html_str += "      select.add( option ); \n";
+  html_str += "  }\n";
+  html_str += "  for ( i = 1; i <= 128; i += 1 ) {\n";
+  html_str += "      option = document.createElement( 'option' );\n";
+  html_str += "      option.value = option.text = i;\n";
+  html_str += "      if(selection[j]==i) { option.selected = true;}\n";
+  html_str += "      select.add( option );\n";
+  html_str += "  }\n";
+  html_str += "}\n";
+  
+  return html_str.c_str();
+}
+  
 String getCSS() {
   html_str  = "  body {\n";
   html_str += "   font-size:140%;\n";
@@ -63,6 +105,8 @@ String getPageHeader(int pageactive) {
   html_str  = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'/>\n";
   html_str += "<meta charset='utf-8'>\n";
   html_str += "<link rel='stylesheet' type='text/css' href='/style.css'>\n";
+  html_str += "<script type='text/javascript' href='/javascript.js'></script>\n";
+  html_str += "<script type='text/javascript' href='https://raw.githubusercontent.com/tobiasfaust/ESP8266_PumpControl/master/javascript.js'></script>\n";
   html_str += "<title>Bewässerungssteuerung</title></head>\n";
   html_str += "<body>\n";
   html_str += "<table>\n";
@@ -177,25 +221,25 @@ String getPage_PinConfig() {
 
   html_str += "<tr>\n";
   html_str += "<td>Pin HC-SR04 Trigger</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_0' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin HC-SR04 Echo</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' name='pinhcsr04echo' type='number' value='%d'/></td>\n", pin_hcsr04_echo);
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_1' name='pinhcsr04echo' type='number' value='%d'/></td>\n", pin_hcsr04_echo);
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin i2c SDA</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' name='pinsda' type='number' value='%d'/></td>\n", pin_sda);
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_2' name='pinsda' type='number' value='%d'/></td>\n", pin_sda);
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin i2c SCL</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' name='pinscl' type='number' value='%d'/></td>\n", pin_scl);
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_3' name='pinscl' type='number' value='%d'/></td>\n", pin_scl);
   html_str += buffer;
   html_str += "</tr>\n";
 
@@ -279,7 +323,7 @@ String getPage_VentilConfig() {
     html_str += buffer;
     sprintf(buffer, "<td><input maxlength='25' name='mqtttopic_%d' type='text' value='%s'/></td>", i, pcf8574dev[i].subtopic);
     html_str += buffer;
-    sprintf(buffer, "<td><input name='pcfport_%d' type='number' min='0' max='128' value='%d'/></td>", i, pcf8574dev[i].port);
+    sprintf(buffer, "<td><input id='AllePorts_%d' name='pcfport_%d' type='number' min='0' max='220' value='%d'/></td>", i, i, pcf8574dev[i].port);
     html_str += buffer;
     html_str += "</tr>\n";
   }
@@ -319,10 +363,11 @@ String getPage_AutoConfig() {
   html_str += buffer;
   html_str += "</tr>\n";
   html_str += "<tr>\n";
-  sprintf(buffer, "<td style='text-align: center;'><input name='enable_syncswitch' type='checkbox' value='1' /></td>\n", (enable_syncswitch?"checked":""));
+  
+  sprintf(buffer, "<td style='text-align: center;'><input name='enable_syncswitch' type='checkbox' value='1' %s /></td>\n", (enable_syncswitch?"checked":""));
   html_str += buffer;
   html_str += "<td>Ventil Trinkwasser Bypass</td>\n";
-  html_str += "<td><select name='syncswitch_port' size='1'>";
+  /*html_str += "<td><select name='syncswitch_port' size='1'>";
   for(int i=0; i < pcf8574devCount; i++) {
     if(pcf8574dev[i].enabled) {
       sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (syncswitch_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
@@ -330,13 +375,16 @@ String getPage_AutoConfig() {
     }
   }
   html_str += "</select></td>\n";
+  */
+  sprintf(buffer, "<td><input min='0' max='254' name='syncswitch_port' type='number' value='%d'/></td>\n", syncswitch_port);
+  html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
-  sprintf(buffer, "<td style='text-align: center;'><input name='enable_3wege' type='checkbox' value='1' /></td>\n", (enable_3wege?"checked":""));
+  sprintf(buffer, "<td style='text-align: center;'><input name='enable_3wege' type='checkbox' value='1' %s /></td>\n", (enable_3wege?"checked":""));
   html_str += buffer;
   html_str += "<td>3WegeVentil Trinkwasser Bypass</td>\n";
-  html_str += "<td><select name='ventil3wege_port' size='1'>";
+  /*html_str += "<td><select name='ventil3wege_port' size='1'>";
   for(int i=0; i < pcf8574devCount; i++) {
     if(pcf8574dev[i].enabled) {
       sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (ventil3wege_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
@@ -344,6 +392,9 @@ String getPage_AutoConfig() {
     }
   }
   html_str += "</select></td>\n";
+  */
+  sprintf(buffer, "<td><input min='0' max='254' name='ventil3wege_port' type='number' value='%d'/></td>\n", ventil3wege_port);
+  html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
