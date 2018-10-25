@@ -52,6 +52,7 @@ void setup() {
   
   server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/javascript.js", HTTP_GET, handleJS);
+  server.on("/parameter.js", HTTP_GET, handleJSParam);
   
   server.on("/StorePinConfig", HTTP_POST, handleStorePinConfig);
   server.on("/StoreSensorConfig", HTTP_POST, handleStoreSensorConfig);

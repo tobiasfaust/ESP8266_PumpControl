@@ -1,3 +1,6 @@
+#include "web_css.h"
+#include "web_js.h"
+
 void handleNotFound(){
   server.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
@@ -23,11 +26,15 @@ void handleAutoConfig() {
 }
 
 void handleCSS() {
-  server.send(200, "text/css", getCSS());
+  server.send(200, "text/css", STYLE_CSS);
 }
 
 void handleJS() {
-  server.send(200, "text/js", getJS());
+  server.send(200, "text/js", JAVASCRIPT);
+}
+
+void handleJSParam() {
+  server.send(200, "text/js", getJSParam());
 }
 
 void handleReboot() {

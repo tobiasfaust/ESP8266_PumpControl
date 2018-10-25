@@ -1,10 +1,9 @@
-String getJS() {
+String getJSParam() {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   
   // http://jsfiddle.net/mwPb5/
-  // http://jsfiddle.net/mwPb5/1043/
-  // http://jsfiddle.net/mwPb5/1049/
+  // http://jsfiddle.net/mwPb5/1058/
   
   html_str = "";
   // bereits belegte Ports, können nicht ausgewählt werden (zb.vi2c-ports)
@@ -12,92 +11,31 @@ String getJS() {
   sprintf(buffer, "const gpio_disabled = [%d,%d,%d,%d];\n", pin_sda, pin_scl, pin_hcsr04_trigger, pin_hcsr04_echo);
   html_str += buffer;
 
-  html_str += "\n";
-  html_str += "//############ DO NOT CHANGE BELOW ###################\n";
-  html_str += "var select, i,j ,y , option;\n";
-  html_str += "const gpio = Array(16,5,4,0,2,14,12,13,15,1,3);\n";
-  html_str += "const gpioname = Array('D0','D1','D2/SDA', 'D3/SCL', 'D4','D5','D6', 'D7','D8','RX','TX');\n";
-  html_str += "\n";
-  html_str += "\n";
-  html_str += "for ( j = 0; j <= selection.length; j += 1 ) {\n";
-  html_str += "  select = document.getElementById( 'SelectVentilPort_'+j);\n";
-  html_str += "  for ( i = 0; i < gpio.length; i += 1 ) {\n";
-  html_str += "      option = document.createElement( 'option' );\n";
-  html_str += "      option.value = gpio[i]+200; \n";
-  html_str += "      option.text  = gpioname[i];\n";
-  html_str += "      if(selection[j] == (gpio[i]+200)) { option.selected = true;}\n";
-  html_str += "      if(gpio_disabled.indexOf(gpio[i])>=0) {option.disabled = true;}\n";
-  html_str += "      select.add( option ); \n";
-  html_str += "  }\n";
-  html_str += "  for ( i = 1; i <= 128; i += 1 ) {\n";
-  html_str += "      option = document.createElement( 'option' );\n";
-  html_str += "      option.value = option.text = i;\n";
-  html_str += "      if(selection[j]==i) { option.selected = true;}\n";
-  html_str += "      select.add( option );\n";
-  html_str += "  }\n";
-  html_str += "}\n";
+  // anhand gefundener pcf Devices die verfügbaren Ports (jeweils Port0)
+  //const pcf_found = [65];
+  html_str += "const pcf_found = [";
+  uint8_t count=0;
+  for (uint8_t i=0; i<8; i++) {
+    if (i2c_adresses[i] > 0 && i2c_adresses[i] >= 56 && i2c_adresses[i] <= 63) {
+      sprintf(buffer, "%s%d", (count>0?",":"") ,((i2c_adresses[i]-55)*8)+57);
+      html_str += buffer;
+      count++;    
+    }
+  }
+  html_str += "];\n";
+
+  //konfigurierte Ports / Namen
+  //const configuredPorts = [ {port:65, name:"Ventil1"}, {port:67, name:"Ventil2"}]
+  html_str += "const configuredPorts = [";
+  for(int i=0; i < pcf8574devCount; i++) {
+    sprintf(buffer, "{port:%d, name:'%s'}%s", pcf8574dev[i].port ,pcf8574dev[i].subtopic, (i<pcf8574devCount-1?",":""));
+    html_str += buffer;
+  }
+  html_str += "];\n";
   
   return html_str.c_str();
 }
   
-String getCSS() {
-  html_str  = "  body {\n";
-  html_str += "   font-size:140%;\n";
-  html_str += "   font-family: Verdana,Arial,Helvetica,sans-serif;\n";
-  html_str += " } \n";
-  html_str += " h2 {\n";
-  html_str += "   color: #2e6c80;\n";
-  html_str += "   text-align: center;\n";
-  html_str += " } \n";
-  html_str += " td, th {\n";
-  html_str += "     font-size: 14px;\n";
-  html_str += " }\n";
-  html_str += " .button { \n";
-  html_str += "     padding: 4px 16px; \n";
-  html_str += "     margin: 4px;\n";
-  html_str += "     background-color: #07D;\n";
-  html_str += "     color: #FFF;\n";
-  html_str += "     text-decoration: none;\n";
-  html_str += "     border-radius: 4px;\n";
-  html_str += "     border: none;\n";
-  html_str += " }\n";
-  html_str += ".button:hover {background: #369;}\n";
-  html_str += " input, select, textarea {margin: 4px; padding: 4px 8px; border-radius: 4px; background-color: #eee; border-style: solid; border-width: 1px; border-color: gray;}\n";
-  html_str += " input:hover {background-color: #ccc; }\n";
-  html_str += " select:hover {background-color: #ccc; }\n";
-  html_str += " textarea:hover {background-color: #ccc; }\n";
-  html_str += " .editorDemoTable {\n";
-  html_str += "     border-spacing: 0;\n";
-  html_str += "     background-color: #FFF8C9;\n";
-  html_str += "     margin-left: auto; margin-right: auto;\n";
-  html_str += " } \n";
-  html_str += " .editorDemoTable thead {\n";
-  html_str += "     color: #000000;\n";
-  html_str += "     background-color: #2E6C80;\n";
-  html_str += " }\n";
-  html_str += " .editorDemoTable thead td {\n";
-  html_str += "     font-weight: bold;\n";
-  html_str += "     font-size: 13px;\n";
-  html_str += " }\n";
-  html_str += " .editorDemoTable td {\n";
-  html_str += "     border: 1px solid #777;\n";
-  html_str += "     margin: 0 !important;\n";
-  html_str += "     padding: 2px 3px;\n";
-  html_str += " }\n";
-  html_str += " .navi {\n";
-  html_str += "   border-bottom: 3px solid #777;\n";
-  html_str += "   padding: 5px;\n";
-  html_str += "   text-align: center;\n";
-  html_str += " }\n";
-  html_str += " .navi_active {\n";
-  html_str += "   background-color: #CCCCCC;\n";
-  html_str += "   border: 3px solid #777;;\n";
-  html_str += "   border-bottom: none;\n";
-  html_str += " }\n";
-  
-  return html_str.c_str();  
-}
-
 String getPageHeader(int pageactive) {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
@@ -105,8 +43,8 @@ String getPageHeader(int pageactive) {
   html_str  = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'/>\n";
   html_str += "<meta charset='utf-8'>\n";
   html_str += "<link rel='stylesheet' type='text/css' href='/style.css'>\n";
-  html_str += "<script type='text/javascript' href='/javascript.js'></script>\n";
-  html_str += "<script type='text/javascript' href='https://raw.githubusercontent.com/tobiasfaust/ESP8266_PumpControl/master/javascript.js'></script>\n";
+  html_str += "<script language='javascript' type='text/javascript' src='/parameter.js'></script>\n";
+  html_str += "<script language='javascript' type='text/javascript' src='/javascript.js'></script>\n";
   html_str += "<title>Bewässerungssteuerung</title></head>\n";
   html_str += "<body>\n";
   html_str += "<table>\n";
@@ -120,7 +58,7 @@ String getPageHeader(int pageactive) {
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==1)?"navi_active":"");
   html_str += buffer;
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
-  sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/PinConfig'>Pin Config</a></td>\n", (pageactive==2)?"navi_active":"");
+  sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/PinConfig'>Basis Config</a></td>\n", (pageactive==2)?"navi_active":"");
   html_str += buffer;
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==3)?"navi_active":"");
@@ -135,51 +73,108 @@ String getPageHeader(int pageactive) {
   html_str += "   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>\n";
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
   html_str += " </tr>\n";
-  html_str += "</table>\n";
+  html_str += "  <tr>\n";
+  html_str += "   <td colspan='13'>\n";
   html_str += "<p />\n";
 
   return html_str.c_str();  
 }
 
 void setPage_Footer() {
+  html_str += "   <td>\n";
+  html_str += "  <tr>\n";
+  html_str += "</table>\n";
   html_str += "</body>\n";
   html_str += "</html>\n";
 }
+
 String getPage_Status() {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
+  bool count = false;
 
   html_str = getPageHeader(1);
-  html_str += "<table style='width: 100%;'>\n";
-  html_str += "<tbody>\n";
+  html_str += "<table class='editorDemoTable'>\n";
+  html_str += "<thead>\n";
   html_str += "<tr>\n";
-  html_str += "<td style='width: 12%; text-align: right;'>IP-Adresse:</td>\n";
-  sprintf(buffer, "<td style='width: 12%; text-align: left;'>%s</td>\n", WiFi.localIP().toString().c_str());
+  html_str += "<td style='width: 250px;'>Name</td>\n";
+  html_str += "<td style='width: 200px;'>Wert</td>\n";
+  html_str += "</tr>\n";
+  html_str += "</thead>\n";
+  html_str += "<tbody>\n";
+  
+  html_str += "<tr>\n";
+  html_str += "<td>IP-Adresse:</td>\n";
+  sprintf(buffer, "<td>%s</td>\n", WiFi.localIP().toString().c_str());
   html_str += buffer;
-  html_str += "<td style='width: 12%; text-align: right;'>WiFi Name:</td>\n";
-  sprintf(buffer, "<td style='width: 12%; text-align: left;'>%s</td>\n", WiFi.SSID().c_str());
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>WiFi Name:</td>\n";
+  sprintf(buffer, "<td>%s</td>\n", WiFi.SSID().c_str());
   html_str += buffer;
-  html_str += "<td style='width: 12%; text-align: right;'>i2c Bus:</td>\n";
-  html_str += "<td style='width: 12%; text-align: left;'>";
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>i2c Bus:</td>\n";
+  html_str += "<td>";
+  count=false;
   for (uint8_t i=0; i<8; i++) {
     if (i2c_adresses[i] > 0) {
       sprintf(buffer, " %02x", i2c_adresses[i]);
       html_str += buffer;
       html_str += ", ";
-    }
+      count = true;
+    } 
+  }
+  if (!count) {
+    html_str += "keine i2c Devices gefunden";
   }
   html_str += "</td>\n";
   html_str += "</tr>\n";
+  
   html_str += "<tr>\n";
-  html_str += "<td style='width: 12%; text-align: right;'>MAC:</td>\n";
-  sprintf(buffer, "<td style='width: 12%; text-align: left;'>%s</td>\n", WiFi.macAddress().c_str());
+  html_str += "<td>MAC:</td>\n";
+  sprintf(buffer, "<td>%s</td>\n", WiFi.macAddress().c_str());
   html_str += buffer;
-  html_str += "<td style='width: 12%; text-align: right;'>WiFi RSSI:</td>\n";
-  sprintf(buffer, "<td style='width: 12%; text-align: left;'>%d</td>\n", WiFi.RSSI());
-  html_str += buffer;
-  html_str += "<td style='width: 12%; text-align: right;'>&nbsp;</td>\n";
-  html_str += "<td style='width: 12%; text-align: left;'>&nbsp;</td>\n";
   html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>WiFi RSSI:</td>\n";
+  sprintf(buffer, "<td>%d</td>\n", WiFi.RSSI());
+  html_str += buffer;
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>aktuell geöffnete Ventile</td>\n";
+  html_str += "<td>\n";
+  count=false;
+  for(int i=0; i < pcf8574devCount; i++) {
+    if (pcf8574dev[i].active) {
+      sprintf(buffer, "%s noch %d/%d sek<br>\n", pcf8574dev[i].subtopic, (pcf8574dev[i].startmillis+pcf8574dev[i].lengthmillis-millis())/1000, pcf8574dev[i].lengthmillis / 1000);
+      html_str += buffer; 
+      count=true; 
+    }
+  }
+  if (!count) { html_str += "alle Ventile geschlossen\n"; }
+  html_str += "</td></tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Füllstand:</td>\n";
+  sprintf(buffer, "<td>%d %%</td>\n", hcsr04_level);
+  html_str += buffer;
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Firmware Update</td>\n";
+  html_str += "<td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n";
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Device Reboot</td>\n";
+  html_str += "<td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n";
+  html_str += "</tr>\n";
+
   html_str += "</tbody>\n";
   html_str += "</table>\n";
 
@@ -203,43 +198,46 @@ String getPage_PinConfig() {
   html_str += "</tr>\n";
   html_str += "</thead>\n";
   html_str += "<tbody>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Device Name</td>\n";
+  sprintf(buffer, "<td><input maxlength='40' name='mqttroot' type='text' value='%s'/></td>\n", mqtt_root);
+  html_str += buffer;
+  html_str += "</tr>\n";
+  
   html_str += "<tr>\n";
   html_str += "<td>MQTT Server IP</td>\n";
   sprintf(buffer, "<td><input maxlength='15' name='mqttserver' type='text' value='%s'/></td>\n", mqtt_server);
   html_str += buffer;
   html_str += "</tr>\n";
+  
   html_str += "<tr>\n";
   html_str += "<td>MQTT Server Port</td>\n";
   sprintf(buffer, "<td><input maxlength='5' name='mqttport' type='text' value='%d'/></td>\n", mqtt_port);
   html_str += buffer;
   html_str += "</tr>\n";
-  html_str += "<tr>\n";
-  html_str += "<td>MQTT Root</td>\n";
-  sprintf(buffer, "<td><input maxlength='40' name='mqttroot' type='text' value='%s'/></td>\n", mqtt_root);
-  html_str += buffer;
-  html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin HC-SR04 Trigger</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_0' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_0' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin HC-SR04 Echo</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_1' name='pinhcsr04echo' type='number' value='%d'/></td>\n", pin_hcsr04_echo);
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_1' name='pinhcsr04echo' type='number' value='%d'/></td>\n", pin_hcsr04_echo);
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin i2c SDA</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_2' name='pinsda' type='number' value='%d'/></td>\n", pin_sda);
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_2' name='pinsda' type='number' value='%d'/></td>\n", pin_sda);
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Pin i2c SCL</td>\n";
-  sprintf(buffer, "<td><input min='0' max='15' id='GpioPorts_3' name='pinscl' type='number' value='%d'/></td>\n", pin_scl);
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_3' name='pinscl' type='number' value='%d'/></td>\n", pin_scl);
   html_str += buffer;
   html_str += "</tr>\n";
 
@@ -310,7 +308,7 @@ String getPage_VentilConfig() {
   html_str += "<td style='width: 25px;'>Nr</td>\n";
   html_str += "<td style='width: 25px;'>Active</td>\n";
   html_str += "<td style='width: 250px;'>MQTT SubTopic</td>\n";
-  html_str += "<td style='width: 50 px;'>PCF8574 Port</td>\n";
+  html_str += "<td style='width: 50 px;'>Port</td>\n";
   html_str += "</tr>\n";
   html_str += "</thead>\n";
   html_str += "<tbody>\n\n";
@@ -321,7 +319,7 @@ String getPage_VentilConfig() {
     html_str += buffer;
     sprintf(buffer, "<td><input name='active_%d' type='checkbox' value='1' %s/></td>", i, (pcf8574dev[i].enabled?"checked":""));
     html_str += buffer;
-    sprintf(buffer, "<td><input maxlength='25' name='mqtttopic_%d' type='text' value='%s'/></td>", i, pcf8574dev[i].subtopic);
+    sprintf(buffer, "<td><input maxlength='20' name='mqtttopic_%d' type='text' value='%s'/></td>", i, pcf8574dev[i].subtopic);
     html_str += buffer;
     sprintf(buffer, "<td><input id='AllePorts_%d' name='pcfport_%d' type='number' min='0' max='220' value='%d'/></td>", i, i, pcf8574dev[i].port);
     html_str += buffer;
@@ -367,16 +365,7 @@ String getPage_AutoConfig() {
   sprintf(buffer, "<td style='text-align: center;'><input name='enable_syncswitch' type='checkbox' value='1' %s /></td>\n", (enable_syncswitch?"checked":""));
   html_str += buffer;
   html_str += "<td>Ventil Trinkwasser Bypass</td>\n";
-  /*html_str += "<td><select name='syncswitch_port' size='1'>";
-  for(int i=0; i < pcf8574devCount; i++) {
-    if(pcf8574dev[i].enabled) {
-      sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (syncswitch_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
-      html_str += buffer;
-    }
-  }
-  html_str += "</select></td>\n";
-  */
-  sprintf(buffer, "<td><input min='0' max='254' name='syncswitch_port' type='number' value='%d'/></td>\n", syncswitch_port);
+  sprintf(buffer, "<td><input min='0' max='254' id='ConfiguredPorts_0' name='syncswitch_port' type='number' value='%d'/></td>\n", syncswitch_port);
   html_str += buffer;
   html_str += "</tr>\n";
 
@@ -384,16 +373,7 @@ String getPage_AutoConfig() {
   sprintf(buffer, "<td style='text-align: center;'><input name='enable_3wege' type='checkbox' value='1' %s /></td>\n", (enable_3wege?"checked":""));
   html_str += buffer;
   html_str += "<td>3WegeVentil Trinkwasser Bypass</td>\n";
-  /*html_str += "<td><select name='ventil3wege_port' size='1'>";
-  for(int i=0; i < pcf8574devCount; i++) {
-    if(pcf8574dev[i].enabled) {
-      sprintf(buffer, "<option value='%d' %s>%s</option>\n", pcf8574dev[i].port, (ventil3wege_port==pcf8574dev[i].port?"selected":""), pcf8574dev[i].subtopic);
-      html_str += buffer;
-    }
-  }
-  html_str += "</select></td>\n";
-  */
-  sprintf(buffer, "<td><input min='0' max='254' name='ventil3wege_port' type='number' value='%d'/></td>\n", ventil3wege_port);
+  sprintf(buffer, "<td><input min='0' max='254' id='ConfiguredPorts_1' name='ventil3wege_port' type='number' value='%d'/></td>\n", ventil3wege_port);
   html_str += buffer;
   html_str += "</tr>\n";
 
