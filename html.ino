@@ -146,6 +146,18 @@ String getPage_Status() {
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
+  html_str += "<td>Uptime:</td>\n";
+  sprintf(buffer, "<td>%d</td>\n", WiFi.RSSI());
+  html_str += buffer;
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Free Memory:</td>\n";
+  sprintf(buffer, "<td>%d</td>\n", ESP.getFreeHeap());
+  html_str += buffer;
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
   html_str += "<td>aktuell geöffnete Ventile</td>\n";
   html_str += "<td>\n";
   count=false;

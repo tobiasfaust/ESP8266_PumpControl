@@ -1,3 +1,9 @@
+/*extern "C" {
+#include "user_interface.h"
+}
+uint32_t freeram = system_get_free_heap_size();
+*/
+
 typedef struct {
   boolean active;
   uint8_t pinnumber;
@@ -63,3 +69,4 @@ unsigned long mqttreconnect_lasttry = 0;
 // MQTT Subtopics
 const char* MQTT_distance       = "distance";
 const char* MQTT_level          = "level";
+
