@@ -1,8 +1,6 @@
-/*extern "C" {
-#include "user_interface.h"
-}
-uint32_t freeram = system_get_free_heap_size();
-*/
+// https://arduinojson.org/v5/doc/decoding/
+
+#pragma once
 
 typedef struct {
   boolean active;
@@ -22,14 +20,66 @@ typedef struct {
 
 typedef struct {
   PCF8574* pcf8574;
-  boolean enabled;
-  boolean active;
+  boolean enabled; //grundsätzlich aktiviert in WebUI
+  boolean active; // Ventil ist gerade aktiv/geöffnet
+  char type[1]; // b: bistabiles Ventil, port2 wird benötigt; n: normal, nur Port1; v: virtual, nur mqttTopic
   unsigned long startmillis;
   unsigned int lengthmillis;
   unsigned int pcfport; // 0-8
+  unsigned int pcfport2; // 0-8, für bistabile Ventile
   unsigned int port; //0 - 220
+  unsigned int port2; //0 - 220 , für bistabile Ventile
+  unsigned int portms; // millisekunden bei Type "b" für Port1: 10-999
+  unsigned int port2ms; // millisekunden bei Type "b" für Port2: 10-999
   char subtopic[20]; //ohne on-for-timer
 } pcf8574Device;
+
+void CallWiFiManager();
+void ReadConfigParam();
+void MQTT_reconnect();
+void MQTT_publish(const char* subtopic, bool b);
+void MQTT_publish(const char* subtopic, int* number );
+void MQTT_publish(const char* subtopic, char* value );
+void MQTT_callback(char* topic, byte* payload, unsigned int length);
+
+void PCF8574_setup();
+void PCF8574_loop();
+void PCF8574_onfortimer(int* duration, pcf8574Device* mydev);
+void handleSwitch (pcf8574Device* mydev, bool state);
+void handleSwitch (pcf8574Device* mydev, bool state, int* duration);
+void GetPCF8574Port (pcf8574Port* t, uint8_t port);
+
+void i2cdetect(uint8_t first, uint8_t last);
+void i2cdetect();
+
+void hcsr04_setup();
+void oled_setup();
+
+void hcsr04_loop();
+void oled_loop();
+
+void handleNotFound();
+void handleRoot();
+void handlePinConfig();
+void handleSensorConfig();
+void handleVentilConfig();
+void handleAutoConfig();
+void handleCSS();
+void handleJS();
+void handleJSParam();
+void handleReboot();
+void handleStorePinConfig();
+void handleStoreSensorConfig();
+void handleStoreVentilConfig();
+void handleStoreAutoConfig();
+
+void handleStoreVentilConfig2();
+
+void oled_setup();
+void oled_loop();
+void display_header();
+void display_title(String& title, String& subtitle);
+void display_wifibars();
 
 //PIN Config
 char mqtt_server[40] = "192.178.10.1";

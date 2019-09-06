@@ -56,7 +56,7 @@ void setup() {
   
   server.on("/StorePinConfig", HTTP_POST, handleStorePinConfig);
   server.on("/StoreSensorConfig", HTTP_POST, handleStoreSensorConfig);
-  server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig);
+  server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig2);
   server.on("/StoreAutoConfig", HTTP_POST, handleStoreAutoConfig);
   server.on("/reboot", HTTP_GET, handleReboot);
 

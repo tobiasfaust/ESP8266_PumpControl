@@ -30,11 +30,11 @@ void handleCSS() {
 }
 
 void handleJS() {
-  server.send(200, "text/js", JAVASCRIPT);
+  server.send(200, "text/javascript", JAVASCRIPT);
 }
 
 void handleJSParam() {
-  server.send(200, "text/js", getJSParam());
+  server.send(200, "text/javascript", getJSParam());
 }
 
 void handleReboot() {
@@ -204,5 +204,45 @@ void handleStoreAutoConfig() {
   
   server.sendHeader("Location","/AutoConfig");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
+}
+
+
+//#############################################
+void handleStoreVentilConfig2() {
+  //https://arduinojson.org/v5/api/jsonobject/begin_end/
+  char buffer[20] = {0};
+  unsigned int i;
+  memset(buffer, 0, sizeof(buffer));
+  
+  //char json[] = "{\"first\":\"hello\",\"second\":\"world\"}";
+  //strcpy(pcf8574dev[i].subtopic, server.arg(buffer).c_str());
+  String json = server.arg("json");
+  
+  Serial.print("json empfangen: ");
+  Serial.println(json);
+  
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& root = jsonBuffer.parseObject(json);
+  root.printTo(Serial);
+    
+  if (root.success()) {
+    File configFile = SPIFFS.open("/VentilConfig.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open VentilConfig.json file for writing");
+    }
+  
+    root.printTo(Serial);
+    root.printTo(configFile);
+    configFile.close();
+  
+    // ReRead and initialize Objects
+    PCF8574_setup();
+    MQTT_reconnect(); // ggf neue virtuelle Ports müssen subscribed werden
+    
+  } else {
+      Serial.println("something went wrong to parse json string");
+  }
+  server.sendHeader("Location","/VentilConfig");        // Add a header to respond with a new location for the browser to go to the home page again
+  server.send(303);     
 }
 

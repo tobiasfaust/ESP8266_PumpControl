@@ -73,9 +73,9 @@ void ReadConfigParam() {
         json.printTo(Serial);
         if (json.success()) {
           Serial.println("\nparsed json");
-          hc_sr04_interval = json["hc_sr04_interval"];
-          hc_sr04_distmin = json["hc_sr04_distmin"];
-          hc_sr04_distmax = json["hc_sr04_distmax"];
+          hc_sr04_interval = max(atoi(json["hc_sr04_interval"]), 10);
+          hc_sr04_distmin = atoi(json["hc_sr04_distmin"]);
+          hc_sr04_distmax = atoi(json["hc_sr04_distmax"]);
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
@@ -187,13 +187,22 @@ void MQTT_reconnect() {
     //snprintf (topic, sizeof(topic), "%s-%s", mqtt_root, WiFi.macAddress().c_str());
     snprintf (topic, sizeof(topic), "ESP8266Client_%s", WiFi.macAddress().c_str());
     if (client.connect(topic)) {
-      Serial.println("connected");
+      Serial.println("connected, subscribe to:");
       // Once connected, publish an announcement...
       //client.publish("outTopic", "hello world");
       // ... and resubscribe
       snprintf (topic, sizeof(topic), "%s/#", mqtt_root);
       Serial.println(topic);
       client.subscribe(topic);
+
+      for(int i=0; i < pcf8574devCount; i++) {
+        if (strcmp(pcf8574dev[i].type, "v")==0) {
+         // auf alle virtuellen Ports subscriben
+          sprintf(topic, "/%s/#", pcf8574dev[i].subtopic);
+          Serial.println(topic);
+          client.subscribe(topic);
+        }
+      }
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -223,6 +232,7 @@ void MQTT_publish(const char* subtopic, char* value ) {
   client.publish(topic, value);
   Serial.print("Publish "); Serial.print(topic); Serial.print(": "); Serial.println(value);
 }
+
 
 void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   char msg[length+1];
@@ -255,14 +265,23 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
         //Serial.print("on-for-timer: Pin gefunden: ");Serial.println(pcf8574dev[i].port);
         PCF8574_onfortimer(&duration, &pcf8574dev[i]);
       }
+
+      sprintf(buffer, "/%s/set", pcf8574dev[i].subtopic);
+      if (strcmp(topic+strlen(mqtt_root), buffer)==0 && strcmp(msg, "off")==0 && pcf8574dev[i].enabled) {
+        handleSwitch(&pcf8574dev[i], false);
+      }
+    }
+  } else {
+    // TODO: virtuelle Ports
+    Serial.print("Virtual Port recognized: "); Serial.println(topic);
+    for(int i=0; i < pcf8574devCount; i++) {
+      if (strcmp(pcf8574dev[i].type, "v")==0) {
+        sprintf(buffer, "/%s/on-for-timer", pcf8574dev[i].subtopic);
+        if (strcmp(topic, buffer)==0) {
+          PCF8574_onfortimer(&duration, &pcf8574dev[i]);
+        }
+      }
     }
   }
 }
 
-/*
-void handleMyGPIOPin(uint8_t pin, boolean state) {
-  for(int i=0; i < 11; i++) {
-    if (mygpiopin[i].pinnumber == pin) { mygpiopin[i].active = state; }
-  }
-}
-*/

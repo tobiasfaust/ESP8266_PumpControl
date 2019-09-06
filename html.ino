@@ -81,9 +81,8 @@ String getPageHeader(int pageactive) {
 }
 
 void setPage_Footer() {
-  html_str += "   <td>\n";
-  html_str += "  <tr>\n";
-  html_str += "</table>\n";
+  html_str += "  </td></tr>";
+  html_str += "</table>";
   html_str += "</body>\n";
   html_str += "</html>\n";
 }
@@ -189,7 +188,7 @@ String getPage_Status() {
 
   html_str += "</tbody>\n";
   html_str += "</table>\n";
-
+  
   setPage_Footer();
   return html_str.c_str();  
 }
@@ -262,7 +261,7 @@ String getPage_PinConfig() {
   html_str += "</tbody>\n";
   html_str += "</table>\n";
   html_str += "<p><br /><input class='button' type='submit' value='Speichern' /></form>\n";
-
+  
   setPage_Footer();
   return html_str.c_str();  
 }
@@ -309,38 +308,100 @@ String getPage_SensorConfig() {
 
 
 String getPage_VentilConfig() {
-  char buffer[100] = {0};
+  char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   html_str = getPageHeader(4);
 
-  html_str += "<form id='F2' action='StoreVentilConfig' method='POST'>\n";
-  html_str += "<table class='editorDemoTable'>\n";
+  html_str += "<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n";
+  html_str += "<form id='submitForm'>\n";
+  html_str += "<table id='maintable' class='editorDemoTable'>\n";
   html_str += "<thead>\n";
   html_str += "<tr>\n";
   html_str += "<td style='width: 25px;'>Nr</td>\n";
   html_str += "<td style='width: 25px;'>Active</td>\n";
   html_str += "<td style='width: 250px;'>MQTT SubTopic</td>\n";
-  html_str += "<td style='width: 50 px;'>Port</td>\n";
+  html_str += "<td style='width: 210 px;'>Port</td>\n";
+  html_str += "<td style='width: 80px;'>Type</td>\n";
+  html_str += "<td style='width: 25px;'>Delete</td>\n";
+
   html_str += "</tr>\n";
   html_str += "</thead>\n";
   html_str += "<tbody>\n\n";
   
-  html_str += "<tr>\n";
   for(int i=0; i < pcf8574devCount; i++) {
-    sprintf(buffer, "<tr><td>%d</td>", i);
+    html_str += "<tr>\n";
+    sprintf(buffer, "  <td>%d</td>\n", i+1);
     html_str += buffer;
-    sprintf(buffer, "<td><input name='active_%d' type='checkbox' value='1' %s/></td>", i, (pcf8574dev[i].enabled?"checked":""));
+    html_str += "  <td>\n";
+    html_str += "    <div class='onoffswitch'>";
+    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>\n", i, i, (pcf8574dev[i].enabled?"checked":""));
     html_str += buffer;
-    sprintf(buffer, "<td><input maxlength='20' name='mqtttopic_%d' type='text' value='%s'/></td>", i, pcf8574dev[i].subtopic);
+    sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
     html_str += buffer;
-    sprintf(buffer, "<td><input id='AllePorts_%d' name='pcfport_%d' type='number' min='0' max='220' value='%d'/></td>", i, i, pcf8574dev[i].port);
+    html_str += "        <span class='onoffswitch-inner'></span>\n";
+    html_str += "        <span class='onoffswitch-switch'></span>\n";
+    html_str += "      </label>\n";
+    html_str += "    </div>\n";
+    html_str += "  </td>\n";
+    
+    sprintf(buffer, "  <td><input maxlength='20' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, pcf8574dev[i].subtopic);
     html_str += buffer;
+    sprintf(buffer, "  <td id='tdport_%d'>\n", i);
+    html_str += buffer;
+    
+    if (strcmp(pcf8574dev[i].type, "b")==0) {
+      sprintf(buffer, "    <div id='PortA_%d'>\n", i);
+      html_str += buffer;
+      html_str += "    <div class='inline'>\n";
+      sprintf(buffer, "      <input id='AllePorts_%d_0' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, pcf8574dev[i].port);
+      html_str += buffer;
+      html_str += "      <label>for</label>\n";
+      sprintf(buffer, "      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, pcf8574dev[i].portms);
+      html_str += buffer;
+      html_str += "      <label>ms</label>\n";
+      html_str += "    </div>\n";
+      
+      sprintf(buffer, "    <div id='PortB_%d'>\n", i);
+      html_str += buffer;
+      html_str += "      <div class='inline'>\n";
+      sprintf(buffer, "      <input id='AllePorts_%d_1' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, pcf8574dev[i].port2);
+      html_str += buffer;
+      html_str += "      <label>for</label>\n";
+      sprintf(buffer, "      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, pcf8574dev[i].port2ms);
+      html_str += buffer;
+      html_str += "      <label>ms</label>\n";
+      html_str += "    </div>\n";
+    } else if (strcmp(pcf8574dev[i].type, "n")==0) {
+      sprintf(buffer, "    <div id='Port_%d'>\n", i);
+      html_str += buffer;
+      sprintf(buffer, "      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, pcf8574dev[i].port);
+      html_str += buffer;
+      html_str += "    </div>\n";
+    } else if (strcmp(pcf8574dev[i].type, "n")==0) {
+      //do nothing
+    }
+    html_str += "  </td>\n";
+    html_str += "  <td>\n";
+    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, ((strcmp(pcf8574dev[i].type, "n")==0)?"checked":""),i);
+    html_str += buffer;
+    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, ((strcmp(pcf8574dev[i].type, "b")==0)?"checked":""),i);
+    html_str += buffer;
+    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_2' name='type_%d' value='v' %s onclick='chg_type(this.id)' /><label for='type_%d_2'>virtual</label></div>\n",i, i, ((strcmp(pcf8574dev[i].type, "v")==0)?"checked":""),i);
+    html_str += buffer;
+    
+    html_str += "  </td>\n";
+    html_str += "  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n";
     html_str += "</tr>\n";
   }
   html_str += "</tbody>\n";
   html_str += "</table>\n";
-  html_str += "<br /><input class='button' type='submit' value='Speichern' /></form>\n";
-
+  html_str += "</form>\n\n<br />\n";
+  html_str += "<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit()'>\n";
+  html_str += "  <input type='text' id='json' name='json' />\n";
+  html_str += "  <input type='submit' value='Speichern' />\n";
+  html_str += "</form>\n\n";
+  html_str += "<div id='ErrorText' class='errortext'></div>\n";
+    
   setPage_Footer();
   return html_str.c_str();  
 }

@@ -24,7 +24,7 @@
 
 
 // https://github.com/xreef/PCF8574_library 
-
+#include "PumpControl.h"
 
 pcf8574Device* pcf8574dev;
 uint8_t pcf8574devCount = 0;
@@ -33,10 +33,12 @@ pcf8574HW* pcf8574 = new pcf8574HW[pcf8574HWCount];
 //gpiopin* mygpiopin = new gpiopin[11];
 
 void PCF8574_setup() {
+  // erwarteter json
+  // {"count":16,"mqtttopic_0":"Ventil1","pcfport_0":202,"active_0":1,"mqtttopic_1":"Ventil2","pcfport_1":214,"active_1":1,"mqtttopic_2":"Ventil3","pcfport_2":215,"active_2":1,"mqtttopic_3":"Ventil4","pcfport_3":216,"active_3":0,"mqtttopic_4":"Ventil5","pcfport_4":216,"active_4":0,"mqtttopic_5":"Frischwasserventil","pcfport_5":216,"active_5":0,"mqtttopic_6":"Ventil7","pcfport_6":216,"active_6":0,"mqtttopic_7":"Ventil8","pcfport_7":216,"active_7":0,"mqtttopic_8":"Ventil9","pcfport_8":216,"active_8":0,"mqtttopic_9":"Ventil10","pcfport_9":216,"active_9":0,"mqtttopic_10":"Ventil11","pcfport_10":216,"active_10":0,"mqtttopic_11":"Ventil12","pcfport_11":216,"active_11":0,"mqtttopic_12":"Ventil13","pcfport_12":216,"active_12":0,"mqtttopic_13":"Trinkwasser","pcfport_13":216,"active_13":0,"mqtttopic_14":"3WegeVentil","pcfport_14":205,"active_14":1,"mqtttopic_15":"Ventil16","pcfport_15":216,"active_15":0}
+  // {"count":1,"mqtttopic_0":"Ventil1","pcfport_0":202,"active_0":1}
   boolean loadDefaultConfig = false;  
-  char buffer[20] = {0};
+  char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
-  //int pcf8574_addr[pcf8574HWCount] = {0};
   
   Serial.println("Starting PCF8574 ...");
   
@@ -57,52 +59,111 @@ void PCF8574_setup() {
         json.printTo(Serial);
         if (json.success()) {
           Serial.println("\nparsed json");
-          pcf8574devCount = json["count"];
+
+          pcf8574devCount = json["count"] | 0;
           uint8_t my_port = 0;
           pcf8574Port my_pcf8574Port;
           boolean i2caddress_found = false;
           uint8_t count = 0;
 
+          // some plausibliy checks
+          if(pcf8574devCount==0) {
+            Serial.println("something went wrong with json config, load default config");
+            pcf8574devCount = 0;
+            loadDefaultConfig = true;
+          }
+
           pcf8574dev = new pcf8574Device[pcf8574devCount];
           
           for (unsigned int i=0; i < pcf8574devCount; i++) {
             i2caddress_found = false;
-            sprintf(buffer, "pcfport_%d", i);
-            my_port = json[buffer];
-            GetPCF8574Port(&my_pcf8574Port, my_port);
-            pcf8574dev[i].port = my_port;
-            pcf8574dev[i].pcfport = my_pcf8574Port.port;
-            Serial.print("konvertiere Port "); Serial.print(my_port);Serial.print(" zu I2C Adresse ");Serial.println(my_pcf8574Port.i2cAddress);
             
-            if (pcf8574dev[i].port < 200 ) {
+            sprintf(buffer, "type_%d", i);
+            if (json.containsKey(buffer)) {strlcpy(pcf8574dev[i].type, json[buffer]|"v", 2);}
+            else {
+              sprintf(buffer, "Die Typedefinition der Ventildefinition '%d' wurde nicht gefunden, lade DefaultConfig", i);
+              Serial.println(buffer);
+              //loadDefaultConfig = true;
+              //break;  
+            }
+            
+            sprintf(buffer, "active_%d", i);
+            if (json[buffer] && json[buffer] == 1) {pcf8574dev[i].enabled = true;} else {pcf8574dev[i].enabled = false;}
+            
+            sprintf(buffer, "mqtttopic_%d", i);
+            if (json.containsKey(buffer)) {strlcpy(pcf8574dev[i].subtopic, json[buffer]|"notFound", 20);}
+
+            pcf8574dev[i].startmillis = 0;
+            
+            sprintf(buffer, "pcfport_%d_0", i);
+            if (json.containsKey(buffer) && json[buffer].as<int>() > 0) {
+              my_port = json[buffer].as<int>();
+              GetPCF8574Port(&my_pcf8574Port, my_port);
+              pcf8574dev[i].port = my_port;
+              pcf8574dev[i].pcfport = my_pcf8574Port.port;
+            }
+            
+            sprintf(buffer, "pcfport_%d_1", i);
+            if (json.containsKey(buffer) && json[buffer].as<int>() > 0) {
+              my_port = json[buffer].as<int>();
+              GetPCF8574Port(&my_pcf8574Port, my_port);
+              pcf8574dev[i].port2 = my_port;
+              pcf8574dev[i].pcfport2 = my_pcf8574Port.port;
+            }
+
+            sprintf(buffer, "imp_%d_0", i); //impulsbreite für Port 1
+            if (json.containsKey(buffer) && json[buffer].as<int>() > 0 && json[buffer].as<int>() < 1000) {
+              pcf8574dev[i].portms = json[buffer].as<int>();
+            }
+            sprintf(buffer, "imp_%d_1", i); //impulsbreite für Port 2
+            if (json.containsKey(buffer) && json[buffer].as<int>() > 0 && json[buffer].as<int>() < 1000) {
+              pcf8574dev[i].port2ms = json[buffer].as<int>();
+            }
+
+            Serial.print("konvertiere Port "); Serial.print(pcf8574dev[i].port);Serial.print(" zu I2C Adresse ");Serial.println(my_pcf8574Port.i2cAddress);
+            
+            if (pcf8574dev[i].port && pcf8574dev[i].port < 200 && pcf8574dev[i].port > 0) {
               // nur für PCF Ports, alle Ports > 200 sind interne GPIOs
               for (unsigned int j=0; j < pcf8574HWCount; j++) {
+                //falls ein vorheriger Port bereits das i2c Device angefordert hat, nutze es!
                 if(pcf8574[j].i2cAddress && pcf8574[j].i2cAddress == my_pcf8574Port.i2cAddress) {
                   i2caddress_found = true;
                   pcf8574dev[i].pcf8574 = pcf8574[j].pcf8574;
                 }
               }
               if(!i2caddress_found) {
-                pcf8574[count].i2cAddress = my_pcf8574Port.i2cAddress;
-                pcf8574[count].pcf8574 = new PCF8574(pcf8574[count].i2cAddress, pin_sda, pin_scl);
-                pcf8574[count].pcf8574->begin();
-                pcf8574dev[i].pcf8574 = pcf8574[count].pcf8574;
-                Serial.print("PCF8574 gefunden und initialisiert auf Adresse: "); Serial.println(my_pcf8574Port.i2cAddress);
-                count++;
+                //der angegebene Port benutzt ein i2c Device welches vorher noch nicht initialisiert wurde
+                //check ob Device auch durch i2cdetect gefunden wurde
+                for (uint8_t j=0; j<8; j++) {
+                  if (i2c_adresses[i] > 0 && i2c_adresses[i] == my_pcf8574Port.i2cAddress) { i2caddress_found = true; }
+                }
+                if (i2caddress_found) {
+                  pcf8574[count].i2cAddress = my_pcf8574Port.i2cAddress;
+                  pcf8574[count].pcf8574 = new PCF8574(pcf8574[count].i2cAddress, pin_sda, pin_scl);
+                  pcf8574[count].pcf8574->begin();
+                  pcf8574dev[i].pcf8574 = pcf8574[count].pcf8574;
+                  Serial.print("PCF8574 gefunden und initialisiert auf Adresse: "); Serial.println(my_pcf8574Port.i2cAddress);
+                  count++;
+                } else {
+                  sprintf(buffer, "Die in der Ventildefinition angegebene i2cAdresse (Port: %d , i2c: %02x) wurde nicht gefunden.", my_pcf8574Port.port, my_pcf8574Port.i2cAddress);
+                  Serial.print(buffer);
+                }
               }
               pcf8574dev[i].pcf8574->pinMode(pcf8574dev[i].pcfport, OUTPUT);
               pcf8574dev[i].pcf8574->digitalWrite(pcf8574dev[i].pcfport, HIGH);
-            } else {
+            } else if (pcf8574dev[i].port && pcf8574dev[i].port > 200 && pcf8574dev[i].port < 999) {
               // interne GPIO´s
-              pinMode(pcf8574dev[i].pcfport, OUTPUT);
-              digitalWrite(pcf8574dev[i].pcfport, LOW);
+              if(pcf8574dev[i].pcfport && pcf8574dev[i].pcfport > 0) {
+                pinMode(pcf8574dev[i].pcfport, OUTPUT);
+                digitalWrite(pcf8574dev[i].pcfport, LOW);
+              }
+
+              //beachte Port2 nur für interne Ports
+              if(pcf8574dev[i].pcfport2 && pcf8574dev[i].pcfport2 > 0) {
+                pinMode(pcf8574dev[i].pcfport2, OUTPUT);
+                digitalWrite(pcf8574dev[i].pcfport2, LOW);
+              }
             }
-            
-            sprintf(buffer, "active_%d", i);
-            if (json[buffer] == 1) {pcf8574dev[i].enabled = true;} else {pcf8574dev[i].enabled = false;}
-            pcf8574dev[i].startmillis = 0;
-            sprintf(buffer, "mqtttopic_%d", i);
-            strncpy(pcf8574dev[i].subtopic, json[buffer], 20);
           }
           
         } else {
@@ -117,11 +178,11 @@ void PCF8574_setup() {
 
     if (loadDefaultConfig) {
       // do something
-      Serial.println("load DefaultConfig of PCF8574");
-      pcf8574devCount = 16;
+      Serial.println("load DefaultConfig");
+      pcf8574devCount = 2;
       pcf8574dev = new pcf8574Device[pcf8574devCount];
       for (unsigned int i=0; i < pcf8574devCount; i++) { 
-        pcf8574dev[i].port = 65+i;
+        pcf8574dev[i].port = 212+i;
         pcf8574dev[i].enabled = false;
         pcf8574dev[i].startmillis = 0;
         sprintf(pcf8574dev[i].subtopic, "Ventil%d", i+1);
@@ -138,65 +199,19 @@ void PCF8574_setup() {
        ventil3wegeDevice = i;
     }
   }
-
-  /*
-  // GPIO-Pin Declaration
-  mygpiopin[0].pinnumber = 16;
-  strncpy(mygpiopin[0].gpioname, "D0", 10);
-  mygpiopin[1].pinnumber = 5;
-  strncpy(mygpiopin[1].gpioname, "D1", 10);
-  mygpiopin[2].pinnumber = 4;
-  strncpy(mygpiopin[2].gpioname, "D2/SDA", 10);
-  mygpiopin[3].pinnumber = 0;
-  strncpy(mygpiopin[3].gpioname, "D3/SCL", 10);
-  mygpiopin[4].pinnumber = 2;
-  strncpy(mygpiopin[4].gpioname, "D4", 10);
-  mygpiopin[5].pinnumber = 14;
-  strncpy(mygpiopin[5].gpioname, "D5", 10);
-  mygpiopin[6].pinnumber = 12;
-  strncpy(mygpiopin[6].gpioname, "D6", 10);
-  mygpiopin[7].pinnumber = 13;
-  strncpy(mygpiopin[7].gpioname, "D7", 10);
-  mygpiopin[8].pinnumber = 15;
-  strncpy(mygpiopin[8].gpioname, "D8", 10);
-  mygpiopin[9].pinnumber = 1;
-  strncpy(mygpiopin[9].gpioname, "TX", 10); 
-  mygpiopin[10].pinnumber = 3;
-  strncpy(mygpiopin[10].gpioname, "RX", 10);
-  
-  mygpiopin[0].active = true;
-  mygpiopin[1].active = true;
-  mygpiopin[2].active = true;
-  mygpiopin[3].active = true;
-  mygpiopin[4].active = true;
-  mygpiopin[5].active = true;
-  mygpiopin[6].active = true;
-  mygpiopin[7].active = true;
-  mygpiopin[8].active = true;
-  mygpiopin[9].active = true;
-  mygpiopin[10].active = true;
-  */
-  // Test
-  /*Serial.println("make a first test with PCF Device");
-  if (pcf8574dev[0].pcf8574) {
-    pcf8574dev[0].pcf8574->digitalWrite(3, LOW);
-    delay(2000);
-    pcf8574dev[0].pcf8574->digitalWrite(3, HIGH);
-  } else {
-    Serial.println("Sorry, no PCF Device was enabled in WebUI");
-  }
-  Serial.println("first test done ..");  
-  */
 }
-
 // wird aus dem MQTT Callback aufgerufen
 
 void PCF8574_onfortimer(int* duration, pcf8574Device* mydev) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
-  if (max_parallel == 0 || max_parallel <= parallelThreads) {
-    // nur schalten wenn deaktiviert oder MaxParrallelThreads noch nicht erreicht 
-    handleSwitch(mydev, true, duration);
+  if (max_parallel == 0 || parallelThreads < max_parallel ) {
+    // nur schalten wenn kein virtueller Port und Port ist aktiviert und MaxParrallelThreads noch nicht erreicht 
+    if(strcmp(mydev->type, "v")!=0) {
+      handleSwitch(mydev, true, duration);
+    } else {
+      // TODO virtual Ports, abhängige Ports müssen eingeschaltet werden
+    }
     
     if(enable_syncswitch && pcf8574dev[ventil3wegeDevice].active) {
       int syncduration = *duration  - 3; //beende 3sek vorher um Druck in der Leitung abzubauen
@@ -234,13 +249,31 @@ void handleSwitch (pcf8574Device* mydev, bool state, int* duration) { //true = A
   char subtopic[50];
   memset(&subtopic[0], 0, sizeof(subtopic));
   
-  sprintf(buffer, "on-for-timer: Port %d, RequestedState: %s", mydev->port, (state?"AN":"Aus") );
+  sprintf(buffer, "on-for-timer: Dauer %d, Port %d, RequestedState: %s", *duration, mydev->port, (state?"AN":"Aus") );
   Serial.println(buffer);
   
-  if (mydev->port < 200) {
+  if (mydev->port < 200 && mydev->pcf8574) {
     mydev->pcf8574->digitalWrite(mydev->pcfport, !state); //schaltet auf LOW
   } else {
-    digitalWrite(mydev->pcfport, state);
+    if (strcmp(mydev->type, "b")==0) {
+      if (state) {
+        // AN schalten
+        digitalWrite(mydev->pcfport,  HIGH);
+        digitalWrite(mydev->pcfport2, LOW);
+        delay(mydev->portms);
+        digitalWrite(mydev->pcfport,  LOW);
+        digitalWrite(mydev->pcfport2, LOW);
+      } else {
+        // AUS schalten
+        digitalWrite(mydev->pcfport,  LOW);
+        digitalWrite(mydev->pcfport2, HIGH);
+        delay(mydev->port2ms);
+        digitalWrite(mydev->pcfport,  LOW);
+        digitalWrite(mydev->pcfport2, LOW);
+      }
+    } else if (strcmp(mydev->type, "n")==0){
+      digitalWrite(mydev->pcfport, state);
+    }
   }
   
   if (state) {
