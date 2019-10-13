@@ -1,10 +1,10 @@
 const char STYLE_CSS[] PROGMEM = R"=====(
-  /* https://www.peterkropff.de/site/css/kontext_selektoren.htm */
+ /* https://www.peterkropff.de/site/css/kontext_selektoren.htm */
  
  body {
-   font-size:140%;
+   font-size: 140%;
    font-family: Verdana,Arial,Helvetica,sans-serif;
- } 
+ }
  
  input[type="number"] {
   width: 3em;
@@ -15,8 +15,12 @@ const char STYLE_CSS[] PROGMEM = R"=====(
    clear: both;
  }
  
- input[type="submit"] { 
-     padding: 4px 16px; 
+ .hide {
+   display: none;
+ }
+ 
+ input[type="submit"] {
+     padding: 4px 16px;
      margin: 4px;
      background-color: #07D;
      color: #FFF;
@@ -24,25 +28,25 @@ const char STYLE_CSS[] PROGMEM = R"=====(
      border-radius: 4px;
      border: none;
  }
- input[type="submit"]:hover {background: #369;}
+ input[type="submit"]:hover { background: #369; }
  
  input, select, textarea {
-     margin: 4px; 
-     padding: 4px 8px; 
-     border-radius: 4px; 
-     background-color: #eee; 
-     border-style: solid; 
-     border-width: 1px; 
+     margin: 4px;
+     padding: 4px 8px;
+     border-radius: 4px;
+     background-color: #eee;
+     border-style: solid;
+     border-width: 1px;
      border-color: gray;
  }
- input:hover, select:hover, textarea:hover {background-color: #ccc; }
+ input:hover, select:hover, textarea:hover { background-color: #ccc; }
  
  .editorDemoTable {
      border-spacing: 0;
      background-color: #FFF8C9;
-     margin-left: auto; 
+     margin-left: auto;
      margin-right: auto;
- } 
+ }
  .editorDemoTable thead {
      color: #000000;
      background-color: #2E6C80;

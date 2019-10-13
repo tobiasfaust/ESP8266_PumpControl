@@ -30,9 +30,9 @@ function SetConfiguredPorts() {
     _select.name = objects[j].name;
     for ( i = 0; i < configuredPorts.length; i += 1 ) {
         _option = document.createElement( 'option' );
-        _option.value = configuredPorts[i]['port']; 
-        _option.text  = configuredPorts[i]['name'];
-        if(objects[j].value == configuredPorts[i]['port']) { _option.selected = true;}
+        _option.value = configuredPorts[i].port; 
+        _option.text  = configuredPorts[i].name;
+        if(objects[j].value == configuredPorts[i].port) { _option.selected = true;}
         _select.add( _option ); 
     }
     _parent.removeChild( objects[j] );
@@ -58,10 +58,10 @@ function createPortSelectionList(id, name, value) {
   for ( i = 0; i < gpio.length; i += 1 ) {
     // alle GPIO Pins in die Liste
     _option = document.createElement( 'option' );
-    _option.value = gpio[i]['port']+200; 
-    if(gpio_disabled.indexOf(gpio[i]['port'])>=0) {_option.disabled = true;}
-    if(value == (gpio[i]['port']+200)) { _option.selected = true;}
-    _option.text  = gpio[i]['name'];
+    _option.value = gpio[i].port+200; 
+    if(gpio_disabled.indexOf(gpio[i].port+200)>=0) {_option.disabled = true;}
+    if(value == (gpio[i].port+200)) { _option.selected = true;}
+    _option.text  = gpio[i].name;
     _select.add( _option ); 
   }
   if (id.match(/^Alle.*/)) {
@@ -168,7 +168,8 @@ function chg_type(id) {
     showBiVal(_td, num, false);
     showNormal(_td, num, false);
   }
-  validate_identifiers();
+  table = _td.parentNode.parentNode;
+  validate_identifiers(table.id);
 }
 
 function delrow(btn) {
@@ -176,12 +177,12 @@ function delrow(btn) {
   if (btn.parentNode.parentNode.rowIndex != 1) {
     // erste Zeile ist das Template, darf nicht entfernt werden
     table.removeChild(btn.parentNode.parentNode);
-    validate_identifiers();
+    validate_identifiers(table.id);
   }
 }
 
-function addrow() { 
-  _table = document.getElementById('maintable');
+function addrow(tableID) { 
+  _table = document.getElementById(tableID);
   _table.rows[1].style.display = '';
   new_row = _table.rows[1].cloneNode(true);
   num = _table.rows.length;
@@ -193,11 +194,11 @@ function addrow() {
     if (objects[j].htmlFor) {objects[j].htmlFor = objects[j].htmlFor.replace(/(\d+)/, num);}
   }
   _table.appendChild(new_row);
-  validate_identifiers(); // eigentlich obsolete
+  validate_identifiers(tableID); // eigentlich obsolete
 }
 
-function validate_identifiers() {
-  table = document.getElementById('maintable');
+function validate_identifiers(tableID) {
+  table = document.getElementById(tableID);
   for( i=1; i< table.rows.length; i++) { 
     row = table.rows[i];
     row.cells[0].innerHTML = i; 
@@ -215,13 +216,45 @@ function ShowError(t){
   document.getElementById('ErrorText').innerHTML = t;
 }
 
-function onSubmit(){
+function checkRelationConfig(SubmitForm) {
+  json = document.getElementById(SubmitForm).querySelectorAll("input[name='json']");
+  result = JSON.parse(json[0].value);
+  
+  return true;
+}
+
+function checkVentilConfig(SubmitForm) {
+  json = document.getElementById(SubmitForm).querySelectorAll("input[name='json']");
+  result = JSON.parse(json[0].value);
+  var topic = [], ports = [];
+  for(var k in result) {
+    // Quality Checks
+    if(k.match(/^mqtttopic/)) { 
+      if(topic.indexOf(result[k]) == -1) {
+        topic.push(result[k]);
+      } else {
+        ShowError('Das MQTT Subtopic <b>' +result[k]+ '</b> wurde doppelt vergeben.');
+        return false;
+      }
+    } else if(k.match(/^pcfport/)) { 
+      if(ports.indexOf(result[k]) == -1) {
+        ports.push(result[k]); 
+      } else {
+        ShowError('Der Port <b>' +result[k]+ '</b> wurde doppelt vergeben.');
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
+function onSubmit(DataForm, SubmitForm){
   // erstelle json String
   var formData = {};
-  var topic = [], ports = [];
   ShowError('');
   
-  var elems = document.getElementById('submitForm').elements; 
+  var elems = document.getElementById(DataForm).elements; 
   for(var i = 0; i < elems.length; i++){ 
     if(elems[i].name && elems[i].value) {
       if (elems[i].style.display == 'none') {continue;}
@@ -230,32 +263,33 @@ function onSubmit(){
       
       if (elems[i].type == "checkbox") {
         formData[elems[i].name] = (elems[i].checked==true?1:0);
-      } else if (elems[i].id.match(/^Alle.*/) || elems[i].type == "number") {
+      } else if (elems[i].id.match(/^Alle.*/) || elems[i].id.match(/^GpioPin.*/) || elems[i].type == "number") {
         formData[elems[i].name] = parseInt(elems[i].value);
       } else if (elems[i].type == "radio") {
         if (elems[i].checked==true) {formData[elems[i].name] = elems[i].value;}
       } else {
         formData[elems[i].name] = elems[i].value;
       }
-      
-      if(elems[i].name.match(/^mqtttopic/)) {
-        if(topic.indexOf(elems[i].value) == -1) {
-          topic.push(elems[i].value);
-        } else {
-          ShowError('Das MQTT Subtopic <b>' +elems[i].value+ '</b> wurde doppelt vergeben.');
-          return false;
-        }
-      } else if(elems[i].id.match(/^Alle/)) { 
-        if(ports.indexOf(elems[i].value) == -1) {
-          ports.push(elems[i].value); 
-        } else {
-          ShowError('Der Port <b>' +elems[i].options[elems[i].selectedIndex].text+ '</b> wurde doppelt vergeben.');
-          return false;
-        }
-      }
     }
   } 
-  formData["count"] = document.getElementById('maintable').rows.length -1;
-  document.getElementById("json").value = JSON.stringify(formData);
+  formData["count"] = document.getElementById(DataForm).getElementsByClassName('editorDemoTable')[0].rows.length -1;
+  json = document.getElementById(SubmitForm).querySelectorAll("input[name='json']");
+  json[0].value = JSON.stringify(formData);
+  
+  return true;
+}
+
+/*******************************
+blendet Zeilen der Tabelle aus
+  a: Array of shown IDs 
+  b: Array of hidden IDs 
+*******************************/
+function radioselection(a,b) {
+  for(var i = 0; i < a.length; i++){
+    document.getElementById(a[i]).style.display = 'table-row';
+  }
+  for(var i = 0; i < b.length; i++){
+    document.getElementById(b[i]).style.display = 'none';
+  }
 }
 )=====";

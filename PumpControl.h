@@ -3,12 +3,6 @@
 #pragma once
 
 typedef struct {
-  boolean active;
-  uint8_t pinnumber;
-  char gpioname[10];
-} gpiopin;
-
-typedef struct {
   PCF8574* pcf8574;
   uint8_t i2cAddress;
 } pcf8574HW;
@@ -33,6 +27,12 @@ typedef struct {
   unsigned int port2ms; // millisekunden bei Type "b" für Port2: 10-999
   char subtopic[20]; //ohne on-for-timer
 } pcf8574Device;
+  
+typedef struct {
+  boolean enabled;
+  pcf8574Device* portA; // pointer
+  pcf8574Device* portB;  
+} valveRelation;
 
 void CallWiFiManager();
 void ReadConfigParam();
@@ -49,14 +49,15 @@ void handleSwitch (pcf8574Device* mydev, bool state);
 void handleSwitch (pcf8574Device* mydev, bool state, int* duration);
 void GetPCF8574Port (pcf8574Port* t, uint8_t port);
 
-void i2cdetect(uint8_t first, uint8_t last);
-void i2cdetect();
+void loadValveRelations();
 
 void hcsr04_setup();
+void analog_setup();
 void oled_setup();
 
 void hcsr04_loop();
-void oled_loop();
+void analog_loop();
+void auto_3wegeVentil();
 
 void handleNotFound();
 void handleRoot();
@@ -64,16 +65,16 @@ void handlePinConfig();
 void handleSensorConfig();
 void handleVentilConfig();
 void handleAutoConfig();
+void handleRelations();
 void handleCSS();
 void handleJS();
 void handleJSParam();
 void handleReboot();
 void handleStorePinConfig();
 void handleStoreSensorConfig();
-void handleStoreVentilConfig();
-void handleStoreAutoConfig();
-
 void handleStoreVentilConfig2();
+void handleStoreAutoConfig();
+void handleStoreRelations();
 
 void oled_setup();
 void oled_loop();
@@ -92,13 +93,15 @@ uint8_t pin_scl = 0;
 uint8_t i2caddress_oled = 60; //0x3C;
 
 //SensorConfig
-uint8_t hc_sr04_interval = 10;
-uint8_t hc_sr04_distmin = 5;
-uint8_t hc_sr04_distmax = 105;
+enum SensorType {NONE, HCSR04, ANALOG};
+SensorType measureType = NONE;
+uint8_t measurecycle = 10; //in sek
+uint8_t measureDistMin = 5; //HCSR04 in mm, A0 in RAW
+uint8_t measureDistMax = 105; //HCSR04 in mm, A0 in RAW
 
 //Automatik Config
-uint8_t hc_sr04_treshold_min = 26;
-uint8_t hc_sr04_treshold_max = 30;
+uint8_t treshold_min = 26;
+uint8_t treshold_max = 30;
 boolean enable_syncswitch = false; // Ventil welches bei Trinkwasser syncron geschaltet wird
 uint8_t syncswitch_port = 0; // Portnumer des Ventils
 boolean enable_3wege = false; // wechsel Regen- /Trinkwasser
@@ -110,13 +113,13 @@ uint8_t syncswitchDevice;
 uint8_t ventil3wegeDevice;
 
 String html_str = "";
-uint8_t i2c_adresses[8] = {0};
-int hcsr04_level = 0; // level of HC-SR04
+int sensor_level = 0; // level of HC-SR04/Analog: 0-100%
+int sensor_RawValue = 0;
 
 unsigned long previousMillis = 0;
 unsigned long mqttreconnect_lasttry = 0;
 
 // MQTT Subtopics
-const char* MQTT_distance       = "distance";
+const char* MQTT_sensorRawValue       = "raw";
 const char* MQTT_level          = "level";
 

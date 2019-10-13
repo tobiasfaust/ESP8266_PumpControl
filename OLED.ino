@@ -30,7 +30,7 @@ void oled_loop() {
     // draw the percentage as String
     ssd->setTextAlignment(TEXT_ALIGN_CENTER);
     ssd->setFont(ArialMT_Plain_24);
-    ssd->drawString(64, 35, String(hcsr04_level) + "%"); 
+    ssd->drawString(64, 35, String(sensor_level) + "%"); 
   
     /*long rssi = WiFi.RSSI();
     int bars = getBarsSignal(rssi);

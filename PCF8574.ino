@@ -27,10 +27,11 @@
 #include "PumpControl.h"
 
 pcf8574Device* pcf8574dev;
+valveRelation* valveRel;
 uint8_t pcf8574devCount = 0;
+uint8_t valveRelCount = 0;
 const uint8_t pcf8574HWCount = 4;
 pcf8574HW* pcf8574 = new pcf8574HW[pcf8574HWCount];
-//gpiopin* mygpiopin = new gpiopin[11];
 
 void PCF8574_setup() {
   // erwarteter json
@@ -134,9 +135,7 @@ void PCF8574_setup() {
               if(!i2caddress_found) {
                 //der angegebene Port benutzt ein i2c Device welches vorher noch nicht initialisiert wurde
                 //check ob Device auch durch i2cdetect gefunden wurde
-                for (uint8_t j=0; j<8; j++) {
-                  if (i2c_adresses[i] > 0 && i2c_adresses[i] == my_pcf8574Port.i2cAddress) { i2caddress_found = true; }
-                }
+                if (I2Cdetect->i2cIsPresent(my_pcf8574Port.i2cAddress)) { i2caddress_found = true; }
                 if (i2caddress_found) {
                   pcf8574[count].i2cAddress = my_pcf8574Port.i2cAddress;
                   pcf8574[count].pcf8574 = new PCF8574(pcf8574[count].i2cAddress, pin_sda, pin_scl);
@@ -165,6 +164,9 @@ void PCF8574_setup() {
               }
             }
           }
+
+          // lade relationen
+          loadValveRelations();
           
         } else {
           Serial.println("failed to load json config, load default config");
@@ -202,6 +204,68 @@ void PCF8574_setup() {
 }
 // wird aus dem MQTT Callback aufgerufen
 
+void loadValveRelations() {
+    char buffer[100] = {0};
+    memset(buffer, 0, sizeof(buffer));
+    boolean loadDefaultConfig = false;  
+    
+    if (SPIFFS.exists("/Ralations.json")) {
+      //file exists, reading and loading
+      Serial.println("reading Relation config file");
+      File configFile = SPIFFS.open("/Relations.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
+
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buf.get());
+        json.printTo(Serial);
+        if (json.success()) {
+          Serial.println("\nparsed json");
+
+          valveRelCount = json["count"] | 0;
+          valveRel = new valveRelation[valveRelCount];
+          for (unsigned int i=0; i < valveRelCount; i++) {
+            sprintf(buffer, "active_%d", i);
+            if (json[buffer] && json[buffer] == 1) {valveRel[i].enabled = true;} else {valveRel[i].enabled = false;}
+            
+            for(int j=0; j < pcf8574devCount; j++) {
+              sprintf(buffer, "portA_%d_1", i);
+              if (json.containsKey(buffer) && strcmp(pcf8574dev[j].subtopic, json[buffer])==0) {
+                valveRel[i].portA = &pcf8574dev[j];
+              }
+              sprintf(buffer, "portB_%d_1", i);
+              if (json.containsKey(buffer) && strcmp(pcf8574dev[j].subtopic, json[buffer])==0) {
+                valveRel[i].portB = &pcf8574dev[j];
+              }
+            }
+          }
+        } else {
+          Serial.println("failed to load json config, load default config");
+          loadDefaultConfig = true;
+        }
+      }
+    } else {
+      Serial.println("RelationConfig.json config File not exists, load default config");
+      loadDefaultConfig = true;
+    }
+        
+    if (loadDefaultConfig) {
+      // do something
+      Serial.println("load DefaultConfig");
+      valveRelCount = 1;
+      valveRel = new valveRelation[valveRelCount];
+      valveRel[0].enabled = false;
+      valveRel[0].portA = &pcf8574dev[0];
+      valveRel[0].portB = &pcf8574dev[0];
+
+      loadDefaultConfig = false; //set back
+    }  
+}
+
 void PCF8574_onfortimer(int* duration, pcf8574Device* mydev) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
@@ -209,9 +273,7 @@ void PCF8574_onfortimer(int* duration, pcf8574Device* mydev) {
     // nur schalten wenn kein virtueller Port und Port ist aktiviert und MaxParrallelThreads noch nicht erreicht 
     if(strcmp(mydev->type, "v")!=0) {
       handleSwitch(mydev, true, duration);
-    } else {
-      // TODO virtual Ports, abhängige Ports müssen eingeschaltet werden
-    }
+    } 
     
     if(enable_syncswitch && pcf8574dev[ventil3wegeDevice].active) {
       int syncduration = *duration  - 3; //beende 3sek vorher um Druck in der Leitung abzubauen
@@ -225,6 +287,13 @@ void PCF8574_onfortimer(int* duration, pcf8574Device* mydev) {
     // TODO: Queue merken
     sprintf(buffer, "on-for-timer: Port %d abgebrochen da MaxParallel Threads erreicht: %d/%d", mydev->port, parallelThreads, max_parallel );
     Serial.println(buffer);
+  }
+
+  // abhängige Ports müssen abgearbeitet werden
+  for (unsigned int i=0; i < valveRelCount; i++) {
+    if (strcmp(valveRel[i].portA->subtopic, mydev->subtopic)==0) {
+      PCF8574_onfortimer(duration, valveRel[i].portB);
+    }
   }
 }
 

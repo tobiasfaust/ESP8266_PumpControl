@@ -25,22 +25,15 @@ void ReadConfigParam() {
         if (json.success()) {
           Serial.println("\nparsed json");
 
-          strcpy(mqtt_server, json["mqtt_server"]);
-          strcpy(mqtt_root, json["mqtt_root"]);
-          mqtt_port = json["mqtt_port"];
-          pin_hcsr04_trigger = json["pin_hcsr04_trigger"];
-          pin_hcsr04_echo = json["pin_hcsr04_echo"];
-          pin_sda = json["pin_sda"];
-          pin_scl = json["pin_scl"];
-          i2caddress_oled = json["i2caddress_oled"];
+          if (json.containsKey("mqtt_server"))         { strcpy(mqtt_server, json["mqtt_server"]);}
+          if (json.containsKey("mqtt_root"))           { strcpy(mqtt_root, json["mqtt_root"]);}
+          if (json.containsKey("mqtt_port"))           { mqtt_port = json["mqtt_port"];}
+          if (json.containsKey("pin_hcsr04_trigger"))  { pin_hcsr04_trigger = json["pin_hcsr04_trigger"];}
+          if (json.containsKey("pin_hcsr04_echo"))     { pin_hcsr04_echo = json["pin_hcsr04_echo"];}
+          if (json.containsKey("pin_sda"))             { pin_sda = json["pin_sda"];}
+          if (json.containsKey("pin_scl"))             { pin_scl = json["pin_scl"];}
+          if (json.containsKey("i2caddress_oled"))     { i2caddress_oled = json["i2caddress_oled"];}
 
-          // sperren für die VentilConfig
-          //handleMyGPIOPin(pin_sda, false);
-          //handleMyGPIOPin(pin_scl, false);
-          //handleMyGPIOPin(pin_hcsr04_trigger, false);
-          //handleMyGPIOPin(pin_hcsr04_echo, false);
-          
-          
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
@@ -73,9 +66,15 @@ void ReadConfigParam() {
         json.printTo(Serial);
         if (json.success()) {
           Serial.println("\nparsed json");
-          hc_sr04_interval = max(atoi(json["hc_sr04_interval"]), 10);
-          hc_sr04_distmin = atoi(json["hc_sr04_distmin"]);
-          hc_sr04_distmax = atoi(json["hc_sr04_distmax"]);
+          if (json.containsKey("measurecycle"))   { measurecycle = max(atoi(json["measurecycle"]), 10);}
+          if (json.containsKey("measureDistMin")) { measureDistMin = atoi(json["measureDistMin"]);}
+          if (json.containsKey("measureDistMax")) { measureDistMax = atoi(json["measureDistMax"]);}
+          if (json.containsKey("measureType"))    { 
+            if(strcmp(json["measureType"],"analog")==0)      {measureType=ANALOG;}
+            else if(strcmp(json["measureType"],"hcsr04")==0) {measureType=HCSR04;}              
+            else if(strcmp(json["measureType"],"none")==0)   {measureType=NONE;}  
+          }
+          
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
@@ -108,14 +107,14 @@ void ReadConfigParam() {
         json.printTo(Serial);
         if (json.success()) {
           Serial.println("\nparsed json");
-          hc_sr04_treshold_min = json["hc_sr04_treshold_min"];
-          hc_sr04_treshold_max = json["hc_sr04_treshold_max"];
-          syncswitch_port = json["syncswitch_port"];
-          ventil3wege_port = json["ventil3wege_port"];
-          max_parallel = json["max_parallel"];
+          if (json.containsKey("treshold_min"))      { treshold_min = json["treshold_min"];}
+          if (json.containsKey("treshold_max"))      { treshold_max = json["treshold_max"];}
+          if (json.containsKey("syncswitch_port"))   { syncswitch_port = json["syncswitch_port"];}
+          if (json.containsKey("ventil3wege_port"))  { ventil3wege_port = json["ventil3wege_port"];}
+          if (json.containsKey("max_parallel"))      { max_parallel = json["max_parallel"];}
 
           if (strcmp(json["enable_syncswitch"],"1")==0) {enable_syncswitch = true;} else {enable_syncswitch = false;}
-          if (strcmp(json["enable_3wege"],"1")==0) {enable_3wege = true;} else {enable_3wege = false;}
+          if (strcmp(json["enable_3wege"],"1")==0)      {enable_3wege = true;}      else {enable_3wege = false;}
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
