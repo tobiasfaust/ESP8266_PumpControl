@@ -15,7 +15,6 @@
 #include "PCF8574.h"  
 #include "uptime.h"
 #include "i2cdetect.h"
-#include "valve.h"
 
 #include "PumpControl.h"
 
@@ -72,7 +71,8 @@ void setup() {
   server.begin();
   Serial.println("Server started");
   
-  Wire.begin(pin_sda, pin_scl);
+  //Wire.begin(pin_sda, pin_scl);
+  I2Cdetect = new i2cdetect(pin_sda, pin_scl);
   //I2Cdetect->scan(); //Scan again if needed??
 
   if (measureType==HCSR04) {hcsr04_setup();}
