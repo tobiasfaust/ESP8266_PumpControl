@@ -14,7 +14,7 @@ void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
   myHWdev = valveHWClass->RegisterPort(Port);
   ValveType = NORMAL;
   port1 = Port;
-  subtopic = SubTopic;  
+  subtopic = SubTopic;
 }
 
 void valve::init(valveHardware* vHW, uint8_t Port1, uint8_t Port2, uint16_t P1ms, uint16_t P2ms, String SubTopic) {
@@ -46,17 +46,33 @@ void valve::HandleSwitch (bool state) {
 }
 
 void valve::HandleSwitch (bool state, int duration) {
-  startmillis = millis();
-  lengthmillis = duration * 1000;
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Starte Change Status Ventil Port %d : %s -> %s vom Type %d", port1, vState(active), vState(state), ValveType);
+  Serial.println(buffer);
+  
   if (ValveType == NORMAL) {
     valveHWClass->SetPort(myHWdev, port1, state);
   } else if (ValveType == BISTABIL) {
     valveHWClass->SetPort(myHWdev, port1, port2, state, (state?port1ms:port2ms));
   }
+
+  active = state;
+  
+  if (state) {
+    startmillis = millis();
+    lengthmillis = duration * 1000;
+  } else {
+    startmillis = lengthmillis = 0;
+  }
 }
-    
+
+int valve::ActiveLeft() {
+  return _max((lengthmillis - (millis() - startmillis)),0);
+}
+
 void valve::loop() {
-  if (enabled && startmillis != 0 && (millis() - startmillis > lengthmillis)) {
+  if (enabled && ActiveLeft()==0) {
     //Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
     HandleSwitch(false);
   }

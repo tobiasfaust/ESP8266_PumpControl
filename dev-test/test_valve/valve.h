@@ -15,7 +15,7 @@ class valve {
   
   public:
     valve();
-    ~valve();
+    //~valve();
     
     void      loop();
     void      init(String SubTopic); // Virtual
@@ -25,6 +25,7 @@ class valve {
     void      OnForTimer(int duration);
     void      SetOn();
     void      SetOff();
+    int       ActiveLeft();
     
     bool      enabled;  //grundsätzlich aktiviert in WebUI
     bool      active;   // Ventil ist gerade aktiv/geöffnet

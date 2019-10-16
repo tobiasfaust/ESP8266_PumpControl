@@ -2,24 +2,26 @@
   #define valveHardware_h
   
   #if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
+    #include "Arduino.h"
   #else
-  #include "WProgram.h"
+    #include "WProgram.h"
   #endif
 
   #include <vector>
-  #include "Wire.h"
+  #include <Wire.h>
   #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
-  #include "WEMOS_Motor.h" // https://github.com/wemos/WEMOS_Motor_Shield_Arduino_Library -> TB6612FNG
+  #include "Grove_Motor_Driver_TB6612FNG.h" // https://github.com/Seeed-Studio/Grove_Motor_Driver_TB6612FNG
 #endif 
 
 enum HWType_t {GPIO, PCF, TB6612};
+
 typedef struct {
     void* Device;
     HWType_t HWType;
     uint8_t i2cAddress;
   } HWdev_t;
 
+#define vState(x) ((x)?"An":"Aus") // Boolean in lesbare Ausgabe
 
 class valveHardware {
   
@@ -31,6 +33,8 @@ class valveHardware {
     uint8_t internalPort;
   } PortMap_t;
 
+  #define TB6612MotorChanType(x) ((x)?MOTOR_CHA:MOTOR_CHB) //Konvertierung (int)internalPort -> (TB6612FNG)MotorChannel_type
+
   public:
     valveHardware(uint8_t sda, uint8_t scl);
     
@@ -39,12 +43,11 @@ class valveHardware {
     void SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, uint16_t duration);
     
   private:
-    //HWdev_t* HWDev = NULL;
-    //uint8_t HWDevCount = 0;
-
+    
     // https://www.learncpp.com/cpp-tutorial/6-16-an-introduction-to-stdvector/
     // https://www.learncpp.com/cpp-tutorial/7-10-stdvector-capacity-and-stack-behavior/
-    std::vector<HWdev_t*> HWDevice;
+    // https://de.wikibooks.org/wiki/C%2B%2B-Programmierung:_Vector
+    std::vector<HWdev_t> *HWDevice;
     
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;

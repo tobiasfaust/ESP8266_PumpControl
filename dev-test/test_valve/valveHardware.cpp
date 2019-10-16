@@ -6,45 +6,45 @@
 // Constructor
 valveHardware::valveHardware(uint8_t sda, uint8_t scl)
   : pin_sda(sda), pin_scl(scl) {
-  
-  //HWDevCount = 1;
-  //HWDev = (HWdev_t*)malloc(sizeof(HWdev_t) * HWDevCount);
-  //HWDev[0].HWType = GPIO;
-  //HWDev[0].i2cAddress=0x00;
 
-  // initial immer das GPIO HArdwareDevice erstellen
-  HWdev_t* t = NULL; 
-    t->HWType=GPIO;
-    t->i2cAddress=0x00;
-  HWDevice.push_back(t);
+  HWDevice = new std::vector<HWdev_t>{};
+  
+  // initial immer das GPIO HardwareDevice erstellen
+  HWdev_t t; 
+  t.HWType=GPIO;
+  t.i2cAddress=0x00;
+  HWDevice->push_back(t);
+
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Initialisiere HardwareDevice mit GPIO auf ic2Adresse 0x%02X", t.i2cAddress);
+  Serial.println(buffer);
 
   Wire.begin(sda, scl);
 }
 
 void valveHardware::addI2CDevice(uint8_t i2cAddress) {
   if (!I2CIsPresent(i2cAddress)) {
-    //HWDevCount++;
-    //HWDev = (HWdev_t*)realloc(HWDev, sizeof(HWdev_t) * HWDevCount);
-    //HWDev[HWDevCount].i2cAddress = i2cAddress;
-    //setHWType(&HWDev[HWDevCount]);
-    //ConnectHWdevice(&HWDev[HWDevCount]);
-
-    HWdev_t* t = NULL; 
-    t->i2cAddress = i2cAddress;
-    setHWType(t);
-    ConnectHWdevice(t);
-    HWDevice.push_back(t);
+    HWdev_t t; 
+    t.i2cAddress = i2cAddress;
+    setHWType(&t);
+    ConnectHWdevice(&t);
+    HWDevice->push_back(t);
   }
 }
 
 bool valveHardware::I2CIsPresent(uint8_t i2cAddress) {
-  //for (uint8_t i=0; i<HWDevCount; i++) {
-  //  if (HWDev[i].i2cAddress == i2cAddress) {
-  //    return true;
-  //  }
-  //}
-  for (const auto &element : HWDevice) {
-    if (element->i2cAddress == i2cAddress) {
+  char buffer[100] = {0};
+  //for (const auto &element : HWDevice) {
+  for (uint8_t i=0; i<HWDevice->size(); i++) {
+    memset(buffer, 0, sizeof(buffer));
+    sprintf(buffer, "Pruefe ic2Adresse 0x%02X ob HW-Element 0x%02X schon existiert", i2cAddress, HWDevice->at(i).i2cAddress);
+    Serial.println(buffer);
+    
+    if (HWDevice->at(i).i2cAddress == i2cAddress) {
+      memset(buffer, 0, sizeof(buffer));
+      sprintf(buffer, "HW-Element von i2cAdresse 0x%02X gefunden", i2cAddress);
+      Serial.println(buffer);
       return true;
     }
   }
@@ -52,15 +52,10 @@ bool valveHardware::I2CIsPresent(uint8_t i2cAddress) {
 }
 
 HWdev_t* valveHardware::getI2CDevice(uint8_t i2cAddress) {
-  //for (uint8_t i=0; i<HWDevCount; i++) {
-  //  if (HWDev[i].i2cAddress == i2cAddress) {
-  //    return &HWDev[i];
-  //  }
-  //}
-
-  for (const auto &element : HWDevice) {
-    if (element->i2cAddress == i2cAddress) {
-      return element;
+  //for (const auto &element : HWDevice) {
+  for (uint8_t i=0; i<HWDevice->size(); i++) {
+    if (HWDevice->at(i).i2cAddress == i2cAddress) {
+      return &HWDevice->at(i);
     }
   }
 }
@@ -77,33 +72,48 @@ void valveHardware::setHWType(HWdev_t* dev) {
 
 void valveHardware::ConnectHWdevice(HWdev_t* dev) {
   if(dev->HWType == PCF) {
-    PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device); // https://www.learncpp.com/cpp-tutorial/613-void-pointers/
-    pcf8574 = new PCF8574(dev->i2cAddress, pin_sda, pin_scl);
+    PCF8574* pcf8574 = new PCF8574(dev->i2cAddress);
     pcf8574->begin();
+    dev->Device = pcf8574;
   } else if(dev->HWType == TB6612) {
-    // nothing to do
+    MotorDriver* motor = new MotorDriver();
+    motor->init(dev->i2cAddress);
+    dev->Device = motor;
   }
+
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Hardwaredevice fuer Typ %d auf i2c-Adresse 0x%02X erfolgreich erstellt", dev->HWType, dev->i2cAddress);
+  Serial.println(buffer);
 }
 
 HWdev_t* valveHardware::RegisterPort(uint8_t Port) {
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Fordere Registrierung Port %d an", Port);
+  Serial.println(buffer);
+  
   PortMap_t PortMap;
   PortMap.Port = Port;
   PortMapping(&PortMap); // need i2cAddress and internalPort
-  
   addI2CDevice(PortMap.i2cAddress);
   HWdev_t* t = getI2CDevice(PortMap.i2cAddress);
-
   if(t->HWType == PCF) {
     PCF8574* pcf8574 = static_cast<PCF8574*>(t->Device);
     pcf8574->pinMode(PortMap.internalPort, OUTPUT);
     pcf8574->digitalWrite(PortMap.internalPort, HIGH);
   } else if (t->HWType == TB6612) {
-    Motor* motor = static_cast<Motor*>(t->Device);
-    motor = new Motor(PortMap.i2cAddress, PortMap.internalPort, 1000);    
+    MotorDriver* motor = static_cast<MotorDriver*>(t->Device);
+    motor->dcMotorStop(TB6612MotorChanType(PortMap.internalPort));
   } else if (t->HWType == GPIO) {
     pinMode(PortMap.internalPort, OUTPUT);
     digitalWrite(PortMap.internalPort, LOW);
   }
+
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Port %d als internalPort %d fuer HardwareTyp %d auf i2c-Adresse 0x%02X erfolgreich registriert", Port, PortMap.internalPort, t->HWType, t->i2cAddress);
+  Serial.println(buffer);
+  
   return t;
 }
 
@@ -112,17 +122,23 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
   PortMap1.Port = Port1; PortMap2.Port = Port2;
   PortMapping(&PortMap1); PortMapping(&PortMap2); // need internalPort
   if (dev->HWType == PCF) { //schaltet auf LOW
-    PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device);
+    PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device); // , pin_sda, pin_scl
     pcf8574->digitalWrite(PortMap1.internalPort, !state); 
     if (Port2) {pcf8574->digitalWrite(PortMap2.internalPort, state); }
     if (duration) {delay(duration);}
     if (Port2) {pcf8574->digitalWrite(PortMap1.internalPort, HIGH); }
     if (Port2) {pcf8574->digitalWrite(PortMap2.internalPort, HIGH); }
   } else if (dev->HWType == TB6612) {
-    Motor* motor = static_cast<Motor*>(dev->Device);
-    motor->setmotor(state?_CW:_CCW);
-    if (duration) {delay(duration);}
-    motor->setmotor(_STOP);
+    MotorDriver* motor = static_cast<MotorDriver*>(dev->Device);
+    if (duration) {
+      motor->dcMotorRun(TB6612MotorChanType(PortMap1.internalPort), (state?255:-255));
+      delay(duration);
+      motor->dcMotorStop(TB6612MotorChanType(PortMap1.internalPort));
+    } else if (state) {
+      motor->dcMotorRun(TB6612MotorChanType(PortMap1.internalPort), 255);
+    } else if (!state) {
+      motor->dcMotorStop(TB6612MotorChanType(PortMap1.internalPort));
+    }
     // Port 2 nicht relevant
   } else if (dev->HWType == GPIO) {
     digitalWrite(PortMap1.internalPort,  state);
@@ -131,6 +147,11 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
     if (Port2) {digitalWrite(PortMap1.internalPort, LOW); }
     if (Port2) {digitalWrite(PortMap2.internalPort, LOW); }
   }
+  
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Aenderung Port %d nach Status: %s ", Port1, vState(state));
+  Serial.println(buffer);
 }
 
 void valveHardware::SetPort(HWdev_t* dev, uint8_t Port, bool state) {
