@@ -1,17 +1,16 @@
-#ifndef valveHardware_h
-  #define valveHardware_h
+#ifndef VALVEHARDWARE_H
+#define VALVEHARDWARE_H
   
-  #if defined(ARDUINO) && ARDUINO >= 100
-    #include "Arduino.h"
-  #else
-    #include "WProgram.h"
-  #endif
+#if defined(ARDUINO) && ARDUINO >= 100
+  #include "Arduino.h"
+#else
+  #include "WProgram.h"
+#endif
 
-  #include <vector>
-  #include <Wire.h>
-  #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
-  #include "Grove_Motor_Driver_TB6612FNG.h" // https://github.com/Seeed-Studio/Grove_Motor_Driver_TB6612FNG
-#endif 
+#include <vector>
+#include <Wire.h>
+#include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
+#include "Grove_Motor_Driver_TB6612FNG.h" // https://github.com/Seeed-Studio/Grove_Motor_Driver_TB6612FNG
 
 enum HWType_t {GPIO, PCF, TB6612};
 
@@ -39,8 +38,10 @@ class valveHardware {
     valveHardware(uint8_t sda, uint8_t scl);
     
     HWdev_t* RegisterPort(uint8_t Port);
-    void SetPort(HWdev_t* dev, uint8_t Port, bool state);
-    void SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, uint16_t duration);
+    void    SetPort(HWdev_t* dev, uint8_t Port, bool state);
+    void    SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, uint16_t duration);
+    bool    IsValidPort(uint8_t Port);
+    uint8_t GetI2CAddress(uint8_t Port);
     
   private:
     
@@ -63,3 +64,4 @@ class valveHardware {
     
 };
 
+#endif

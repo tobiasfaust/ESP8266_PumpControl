@@ -117,6 +117,20 @@ HWdev_t* valveHardware::RegisterPort(uint8_t Port) {
   return t;
 }
 
+bool valveHardware::IsValidPort(uint8_t Port) {
+  PortMap_t PortMap;
+  PortMap.Port = Port;
+  PortMapping(&PortMap);
+  if(PortMap.Port == Port) {return true;} else {return false;}
+}
+
+uint8_t valveHardware::GetI2CAddress(uint8_t Port) {
+  PortMap_t PortMap;
+  PortMap.Port = Port;
+  PortMapping(&PortMap);
+  return PortMap.i2cAddress;
+}
+
 void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, uint16_t duration) {
   PortMap_t PortMap1, PortMap2;
   PortMap1.Port = Port1; PortMap2.Port = Port2;
@@ -229,6 +243,8 @@ void valveHardware::PortMapping(PortMap_t* Map) {
     Map->i2cAddress=0x00;
     Map->internalPort=Map->Port-200;
     Map->HWType = GPIO;
+  } else {
+    Map->Port = 0;
   }
 }
 

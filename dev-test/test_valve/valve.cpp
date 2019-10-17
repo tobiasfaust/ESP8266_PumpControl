@@ -1,7 +1,6 @@
 #include "valve.h"
 
-valve::valve() : enabled(true), active(false){
-
+valve::valve() : enabled(true), active(false), ValveType(NONE){
 }
 
 void valve::init(String SubTopic) {
@@ -17,6 +16,17 @@ void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
   subtopic = SubTopic;
 }
 
+void valve::AddPort1(valveHardware* Device, uint8_t Port1) {
+  myHWdev = valveHWClass->RegisterPort(Port1);
+  port1 = Port1;  
+}
+
+void valve::AddPort2(valveHardware* Device, uint8_t Port2) {
+  myHWdev = valveHWClass->RegisterPort(Port2);
+  port2 = Port2;  
+}
+
+/*
 void valve::init(valveHardware* vHW, uint8_t Port1, uint8_t Port2, uint16_t P1ms, uint16_t P2ms, String SubTopic) {
   valveHWClass = vHW;
   myHWdev = valveHWClass->RegisterPort(Port1);
@@ -28,21 +38,18 @@ void valve::init(valveHardware* vHW, uint8_t Port1, uint8_t Port2, uint16_t P1ms
   port2ms = P2ms;
   subtopic = SubTopic;  
 }
+*/
 
 void valve::OnForTimer(int duration) {
-  HandleSwitch(true, duration);
+  if (enabled) {HandleSwitch(true, duration);}
 }
 
 void valve::SetOn() {
-  HandleSwitch(true, 3600); //Sicherheitsabschaltung nach 1h
+  if (enabled) {HandleSwitch(true, NULL);}
 }
 
 void valve::SetOff() {
-  HandleSwitch(false);
-}
-
-void valve::HandleSwitch (bool state) {
-  HandleSwitch(state, 0);
+  HandleSwitch(false, NULL);
 }
 
 void valve::HandleSwitch (bool state, int duration) {
@@ -59,7 +66,7 @@ void valve::HandleSwitch (bool state, int duration) {
 
   active = state;
   
-  if (state) {
+  if (state && duration) {
     startmillis = millis();
     lengthmillis = duration * 1000;
   } else {
@@ -67,14 +74,36 @@ void valve::HandleSwitch (bool state, int duration) {
   }
 }
 
-int valve::ActiveLeft() {
+int valve::ActiveTimeLeft() {
   return _max((lengthmillis - (millis() - startmillis)),0);
 }
 
+void valve::SetValveType(String type) {
+  if (type == "n") { ValveType = NORMAL; }
+  else if (type=="b") { ValveType = BISTABIL; }
+  else if (type=="v") { ValveType = VIRTUAL; }
+  else { ValveType = NONE; }
+}
+
+String valve::GetValveType() {
+  if (ValveType == NORMAL) { return "n"; }
+  else if (ValveType == BISTABIL) { return "b"; }
+  else if (ValveType == VIRTUAL) { return "v"; }
+  else { return ""; }
+}
+
+uint8_t valve::GetPort1() {
+  return port1;
+}
+
+uint8_t valve::GetPort2() {
+  return port2;
+}
+
 void valve::loop() {
-  if (enabled && ActiveLeft()==0) {
+  if (ActiveTimeLeft()==0) {
     //Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
-    HandleSwitch(false);
+    SetOff();
   }
 }
 
