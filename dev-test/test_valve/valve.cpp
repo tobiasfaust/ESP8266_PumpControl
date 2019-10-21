@@ -26,33 +26,26 @@ void valve::AddPort2(valveHardware* Device, uint8_t Port2) {
   port2 = Port2;  
 }
 
-/*
-void valve::init(valveHardware* vHW, uint8_t Port1, uint8_t Port2, uint16_t P1ms, uint16_t P2ms, String SubTopic) {
-  valveHWClass = vHW;
-  myHWdev = valveHWClass->RegisterPort(Port1);
-  if (Port2>0) { myHWdev = valveHWClass->RegisterPort(Port2); }
-  ValveType = BISTABIL;
-  port1 = Port1;
-  if (Port2>0) { port2 = Port2; }
-  port1ms = P1ms; 
-  port2ms = P2ms;
-  subtopic = SubTopic;  
-}
-*/
-
-void valve::OnForTimer(int duration) {
-  if (enabled) {HandleSwitch(true, duration);}
+bool valve::OnForTimer(int duration) {
+  bool ret;
+  if (enabled && ActiveTimeLeft() < duration) {ret = HandleSwitch(true, duration);}
+  if (duration == 0) { SetOff(); }
+  return ret;
 }
 
-void valve::SetOn() {
-  if (enabled) {HandleSwitch(true, NULL);}
+bool valve::SetOn() {
+  bool ret = false;
+  if (enabled) {ret = HandleSwitch(true, NULL);}
+  return ret;
 }
 
-void valve::SetOff() {
-  HandleSwitch(false, NULL);
+bool valve::SetOff() {
+  bool ret = false;
+  ret = HandleSwitch(false, NULL);
+  return ret;
 }
 
-void valve::HandleSwitch (bool state, int duration) {
+bool valve::HandleSwitch (bool state, int duration) {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   sprintf(buffer, "Starte Change Status Ventil Port %d : %s -> %s vom Type %d", port1, vState(active), vState(state), ValveType);
@@ -72,6 +65,13 @@ void valve::HandleSwitch (bool state, int duration) {
   } else {
     startmillis = lengthmillis = 0;
   }
+
+  if(mqtt) {
+    snprintf (buffer, sizeof(buffer), "%s/state", this->subtopic.c_str());
+    mqtt->Publish(buffer, state);
+  }
+
+  return true;
 }
 
 int valve::ActiveTimeLeft() {
@@ -100,10 +100,15 @@ uint8_t valve::GetPort2() {
   return port2;
 }
 
+void valve::SetMQTTClass(MQTT* mqtt) {
+  this->mqtt = mqtt;
+}
+
 void valve::loop() {
   if (ActiveTimeLeft()==0) {
     //Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
     SetOff();
   }
 }
+
 

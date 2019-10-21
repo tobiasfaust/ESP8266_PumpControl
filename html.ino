@@ -515,8 +515,8 @@ String getPage_Relations() {
   html_str += "<tr>\n";
   html_str += "<td style='width: 25px;'>Nr</td>\n";
   html_str += "<td style='width: 25px;'>Active</td>\n";
-  html_str += "<td style='width: 250px;'>Master</td>\n";
-  html_str += "<td style='width: 250px;'>Client</td>\n";
+  html_str += "<td style='width: 250px;'>Trigger Topic</td>\n";
+  html_str += "<td style='width: 250px;'>Port</td>\n";
   html_str += "<td style='width: 25px;'>Delete</td>\n";
 
   html_str += "</tr>\n";
@@ -539,9 +539,9 @@ String getPage_Relations() {
     html_str += "    </div>\n";
     html_str += "  </td>\n";
 
-    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='portA_%d' type='text' size='10' value='%s'/></td>\n", i, i, valveRel[i].portA->subtopic);
+    sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='10' value='%s'/></td>\n", i, i, valveRel[i].portA->subtopic);
     html_str += buffer;
-    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='portB_%d' type='text' size='10' value='%s'/></td>\n", i, i, valveRel[i].portB->subtopic );
+    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='port_%d' type='text' size='10' value='%s'/></td>\n", i, i, valveRel[i].portB->subtopic );
     html_str += buffer;
     html_str += "  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n";
     html_str += "</tr>\n";

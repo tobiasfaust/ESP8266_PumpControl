@@ -13,6 +13,7 @@
 #include <i2cdetect.h>
 #include "valveRelation.h"
 #include "valve.h"
+#include "MQTT.h"
 #include "JavaScript.h"
 #include "CSS.h"
   
@@ -22,22 +23,31 @@ class valveStructure {
     valveStructure(uint8_t sda, uint8_t scl);
     void      loop();
     void      OnForTimer(String SubTopic, int duration);
+    void      SetOff(String SubTopic);
+    uint8_t   CountActiveThreads();
+    void      SetMQTTClass(MQTT* mqtt);
 
     void      StoreJsonConfig(String json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
     void      getWebJsParameter(String* html);
+    void      ReceiveMQTT(const char* topic, const char* value);
   
   private:
     void      addValve(String SubTopic); // Virtual
     void      addValve(uint8_t Port, String SubTopic); // Normal
-
+    valve*    GetValveItem(uint8_t Port);
+      
     valveHardware* ValveHW = NULL;
+    valveRelation* ValveRel = NULL;
     std::vector<valve> *Valves = NULL;
     i2cdetect* I2Cdetect = NULL;
+    MQTT* mqtt = NULL;
     
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;
+    uint8_t parallelThreads = 0;
 };
 
 #endif
+

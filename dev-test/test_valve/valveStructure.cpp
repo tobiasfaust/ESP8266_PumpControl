@@ -4,6 +4,7 @@ valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   pin_sda(sda), pin_scl(scl) {
   ValveHW = new valveHardware(sda, scl);
   Valves  = new std::vector<valve>{};
+  ValveRel = new valveRelation();
   I2Cdetect = new i2cdetect(sda, scl);
   
   LoadJsonConfig();
@@ -12,18 +13,45 @@ valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
 void valveStructure::addValve(String SubTopic) {
   valve myValve;
   myValve.init(SubTopic);
+  if (mqtt) {myValve.SetMQTTClass(mqtt);}
   Valves->push_back(myValve);
 }
  
 void valveStructure::addValve(uint8_t Port, String SubTopic) {
   valve myValve;
   myValve.init(ValveHW, Port, SubTopic);
+  if (mqtt) {myValve.SetMQTTClass(mqtt);}
   Valves->push_back(myValve);
 }
 
 void valveStructure::OnForTimer(String SubTopic, int duration) {
+  bool ret = false;
   for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).subtopic == SubTopic) {Valves->at(i).OnForTimer(duration);}
+    if (Valves->at(i).enabled && duration > 0 && Valves->at(i).subtopic == SubTopic) { 
+      ret = Valves->at(i).OnForTimer(duration);
+      if (ret) {
+        //ValveRel->AddSubscriberPort(Valves->at(i).GetPort1());
+        mqtt->Publish("Threads", CountActiveThreads());
+      }
+    }
+  }
+}
+
+void valveStructure::SetOff(String SubTopic) {
+  bool ret = false;
+  for (uint8_t i=0; i<Valves->size(); i++) {
+    if (Valves->at(i).enabled && Valves->at(i).subtopic == SubTopic) { 
+      if (Valves->at(i).active) { Valves->at(i).SetOff(); }
+      ValveRel->DelSubscriberPort(Valves->at(i).GetPort1()); 
+      mqtt->Publish("Threads", CountActiveThreads());
+    }
+  }
+}
+
+void valveStructure::SetMQTTClass(MQTT* mqtt) {
+  this->mqtt = mqtt;
+  for (uint8_t i=0; i<Valves->size(); i++) {
+    Valves->at(i).SetMQTTClass(mqtt);
   }
 }
 
@@ -31,6 +59,48 @@ void valveStructure::loop() {
   for (uint8_t i=0; i<Valves->size(); i++) {
     Valves->at(i).loop();
   }
+}
+
+void valveStructure::ReceiveMQTT(const char* topic, const char* value) {
+  char buffer[50] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  int duration = atoi(value);
+  String SubTopic(topic);
+  SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
+  
+  if (strcmp(topic+mqtt->GetRoot().length(), "/test/on-for-timer")==0) { Valves->at(0).OnForTimer(duration); }
+
+  if (strstr(topic, "on-for-timer")) { OnForTimer(SubTopic, duration); }
+  if (strstr(topic, "state") && duration==0) { SetOff(SubTopic); }
+
+  // Check auf Ventile, die auf Relationen ansprechen sollen
+  std::vector<uint8_t>* Ports = new std::vector<uint8_t>{};
+  String BaseTopic(topic);
+  BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));Serial.print("BaseTopic: ");Serial.println(BaseTopic);
+  ValveRel->GetPortDependencies(Ports, BaseTopic);
+  for (uint8_t i=0; i<Ports->size(); i++) {
+    if (duration > 0 && strstr(topic, "on-for-timer")) {
+      OnForTimer(GetValveItem(Ports->at(i))->subtopic, duration);
+      ValveRel->AddSubscriberPort(GetValveItem(Ports->at(i))->GetPort1(), BaseTopic);
+    } else if (duration == 0) {
+      ValveRel->DelSubscriberPort(GetValveItem(Ports->at(i))->GetPort1());
+    }
+  }
+}
+
+valve* valveStructure::GetValveItem(uint8_t Port) {
+  for (uint8_t i=0; i<Valves->size(); i++) {
+    if (Valves->at(i).GetPort1() == Port) {return &Valves->at(i);}
+  }
+  return NULL;
+}
+
+uint8_t valveStructure::CountActiveThreads() {
+  uint8_t count = 0;
+  for (uint8_t i=0; i<Valves->size(); i++) {
+    if (Valves->at(i).active) {count++;}
+  }
+  return count;
 }
 
 void valveStructure::StoreJsonConfig(String json) {
