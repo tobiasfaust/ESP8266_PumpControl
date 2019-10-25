@@ -27,7 +27,7 @@ class valveRelation {
     void      DelSubscriberPort(uint8_t Port);
     uint8_t   CountActiveSubscribers(String SubTopic);
     
-    void      StoreJsonConfig(String json); 
+    void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
     

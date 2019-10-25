@@ -1,5 +1,7 @@
 #include "valve.h"
 
+extern MQTT* mqtt;
+
 valve::valve() : enabled(true), active(false), ValveType(NONE){
 }
 
@@ -46,10 +48,8 @@ bool valve::SetOff() {
 }
 
 bool valve::HandleSwitch (bool state, int duration) {
-  char buffer[100] = {0};
+  char buffer[50] = {0};
   memset(buffer, 0, sizeof(buffer));
-  sprintf(buffer, "Starte Change Status Ventil Port %d : %s -> %s vom Type %d", port1, vState(active), vState(state), ValveType);
-  Serial.println(buffer);
   
   if (ValveType == NORMAL) {
     valveHWClass->SetPort(myHWdev, port1, state);
@@ -100,15 +100,10 @@ uint8_t valve::GetPort2() {
   return port2;
 }
 
-void valve::SetMQTTClass(MQTT* mqtt) {
-  this->mqtt = mqtt;
-}
-
 void valve::loop() {
   if (ActiveTimeLeft()==0) {
     //Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
     SetOff();
   }
 }
-
 

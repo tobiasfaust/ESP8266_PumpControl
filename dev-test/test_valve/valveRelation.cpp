@@ -3,7 +3,7 @@
 valveRelation::valveRelation() {
   _relationen  = new std::vector<relation_t>{};
   _subscriber  = new std::vector<relation_t>{};
-
+  SPIFFS.begin();
   LoadJsonConfig();
 }
 
@@ -13,15 +13,10 @@ void valveRelation::AddRelation(bool enabled, String SubTopic, uint8_t Port) {
   rel.TriggerSubTopic = SubTopic;
   rel.ActorPort = Port;
   _relationen->push_back(rel); 
-  Serial.print("Add Relation: "); Serial.print(rel.ActorPort);Serial.print(", "); Serial.println(rel.TriggerSubTopic);
 }
 
 void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubTopic) {
-  char buffer[50] = {0};
-  memset(buffer, 0, sizeof(buffer));
-  
   for (uint8_t i=0; i<_relationen->size(); i++) {
-    sprintf(buffer, "Deps: SubTopic: %s, Port: %d", _relationen->at(i).TriggerSubTopic.c_str(), _relationen->at(i).ActorPort); Serial.println(buffer);
     if (_relationen->at(i).TriggerSubTopic == SubTopic) {
       bool stillpresent=false;
       for (uint8_t j=0; j<Ports->size(); j++) {
@@ -33,15 +28,11 @@ void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubT
 }
 
 void valveRelation::AddSubscriberPort(uint8_t Port, String TriggerSubTopic) {
-  char buffer[50] = {0};
-  memset(buffer, 0, sizeof(buffer));
   relation_t s;
   s.enabled = true;
   s.TriggerSubTopic = TriggerSubTopic;
   s.ActorPort = Port;
   _subscriber->push_back(s); 
-  sprintf(buffer, "Add Subscriber: %d - %s", _subscriber->at(0).ActorPort, _subscriber->at(0).TriggerSubTopic.c_str());
-  Serial.println(buffer);   
 }
 
 void valveRelation::DelSubscriberPort(uint8_t Port) {
@@ -59,22 +50,22 @@ uint8_t valveRelation::CountActiveSubscribers(String SubTopic) {
   return count;
 }
 
-void valveRelation::StoreJsonConfig(String json) {
+void valveRelation::StoreJsonConfig(String* json) {
   //https://arduinojson.org/v5/api/jsonobject/begin_end/
   DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(json);
+  JsonObject& root = jsonBuffer.parseObject(*json);
     
   if (root.success()) {
     File configFile = SPIFFS.open("/Relations.json", "w");
     if (!configFile) {
       Serial.println("failed to open Relations.json file for writing");
-    }
+    } else {
+      root.printTo(Serial);
+      root.printTo(configFile);
+      configFile.close();
   
-    root.printTo(Serial);
-    root.printTo(configFile);
-    configFile.close();
-
-    LoadJsonConfig();
+      LoadJsonConfig();
+    }
   }
 }
 
@@ -100,7 +91,7 @@ void valveRelation::LoadJsonConfig() {
         uint8_t count = 0;
         if (json.containsKey("count")) { count = json["count"].as<int>(); }
         if(count == 0) {
-          Serial.println("something went wrong with json config, load default config");
+          Serial.println("something went wrong with Relations.json config, load default config");
           loadDefaultConfig = true;
         }
         
@@ -132,7 +123,7 @@ void valveRelation::LoadJsonConfig() {
   }
 
   if (loadDefaultConfig) {
-    Serial.println("lade Relation DefaultConfig");
+    Serial.println("lade Relations DefaultConfig");
     AddRelation(true, "testhost/TestVirtualValve1", 203);
     AddRelation(true, "testhost/TestVirtualValve2", 203);
   }
@@ -142,8 +133,8 @@ void valveRelation::GetWebContent(String* html) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
 
-    html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n");
-  html->concat("<form id='submitForm'>\n");
+  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n");
+  html->concat("<form id='DataForm'>\n");
   html->concat("<table id='maintable' class='editorDemoTable'>\n");
   html->concat("<thead>\n");
   html->concat("<tr>\n");
@@ -157,7 +148,7 @@ void valveRelation::GetWebContent(String* html) {
   html->concat("</thead>\n");
   html->concat("<tbody>\n\n");
 
-  for (uint8_t i=0; i<_relationen->size(); i++) {
+  for (uint8_t i=0; i< _relationen->size(); i++) {
     html->concat("<tr>\n");
     sprintf(buffer, "  <td>%d</td>\n", i+1);
     html->concat(buffer);
@@ -173,9 +164,10 @@ void valveRelation::GetWebContent(String* html) {
     html->concat("    </div>\n");
     html->concat("  </td>\n");
 
-    sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='10' value='%s'/></td>\n", i, i, _relationen->at(i).TriggerSubTopic.c_str());
+    sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>\n", i, i, _relationen->at(i).TriggerSubTopic.c_str());
     html->concat(buffer);
-    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='port_%d' type='text' size='10' value='%s'/></td>\n", i, i, _relationen->at(i).ActorPort);
+
+    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>\n", i, i, _relationen->at(i).ActorPort);
     html->concat(buffer);
     html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
     html->concat("</tr>\n");
@@ -184,7 +176,7 @@ void valveRelation::GetWebContent(String* html) {
   html->concat("</tbody>\n");
   html->concat("</table>\n");
   html->concat("</form>\n\n<br />\n");
-  html->concat("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit()'>\n");
+  html->concat("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
   html->concat("  <input type='text' id='json' name='json' />\n");
   html->concat("  <input type='submit' value='Speichern' />\n");
   html->concat("</form>\n\n");

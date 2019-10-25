@@ -1,8 +1,10 @@
 #include "MQTT.h"
 
+//extern valveStructure* VStruct;
+
 MQTT::MQTT(const char* server, uint16_t port, String root) {  
   this->mqtt_root = root;
-  /*WiFiManager wifiManager;
+  WiFiManager wifiManager;
   wifiManager.setTimeout(300);
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
     Serial.println("failed to connect and hit timeout");
@@ -13,7 +15,7 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   }
   Serial.print("WiFi connected with local IP: ");
   Serial.println(WiFi.localIP());
-  */
+  
   mqtt.setClient(espClient);
   mqtt.setServer(server, port);
   mqtt.setCallback([this] (char* topic, byte* payload, unsigned int length) { this->callback(topic, payload, length); });
@@ -43,6 +45,14 @@ void MQTT::callback(char* topic, byte* payload, unsigned int length) {
   if (MyCallback) {
     MyCallback(topic,payload,length);
   }
+/*  String* msg;
+  Serial.print("Message arrived [");Serial.print(topic);Serial.print("] ");
+  
+  for (int i = 0; i < length; i++) { msg->concat((char)payload[i]); }
+  Serial.print("Message: ");Serial.println(msg->c_str());
+  
+  //VStruct->ReceiveMQTT(topic, msg->c_str());
+  */
 }
 
 String MQTT::GetRoot() {
@@ -67,13 +77,17 @@ void MQTT::Publish(const char* subtopic, char* value ) {
   char topic[50];
   memset(&topic[0], 0, sizeof(topic));
   snprintf (topic, sizeof(topic), "%s/%s", this->mqtt_root.c_str(), subtopic);
-  mqtt.publish(topic, value);
-  Serial.print("Publish "); Serial.print(topic); Serial.print(": "); Serial.println(value);
+  if (mqtt.connected()) {
+    mqtt.publish(topic, value);
+    Serial.print("Publish "); Serial.print(topic); Serial.print(": "); Serial.println(value);
+  } else { Serial.println(F("Request for MQTT Publish, but not connected to Broker")); }
 }
 
 void MQTT::setCallback(CALLBACK_FUNCTION) {
     this->MyCallback = MyCallback;
 }
+
+//bool MQTT::connected() { return mqtt.connected(); }
 
 void MQTT::loop() {
   if (!mqtt.connected() && WiFi.status() == WL_CONNECTED) { 
@@ -85,5 +99,4 @@ void MQTT::loop() {
     mqtt.loop();
   }
 }
-
 

@@ -1,26 +1,26 @@
 #include "valveStructure.h"
 
+extern MQTT* mqtt;
+extern valveRelation* ValveRel;
+extern i2cdetect* I2Cdetect;
+
 valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   pin_sda(sda), pin_scl(scl) {
   ValveHW = new valveHardware(sda, scl);
   Valves  = new std::vector<valve>{};
-  ValveRel = new valveRelation();
-  I2Cdetect = new i2cdetect(sda, scl);
-  
+  SPIFFS.begin();
   LoadJsonConfig();
 }
 
 void valveStructure::addValve(String SubTopic) {
   valve myValve;
   myValve.init(SubTopic);
-  if (mqtt) {myValve.SetMQTTClass(mqtt);}
   Valves->push_back(myValve);
 }
  
 void valveStructure::addValve(uint8_t Port, String SubTopic) {
   valve myValve;
   myValve.init(ValveHW, Port, SubTopic);
-  if (mqtt) {myValve.SetMQTTClass(mqtt);}
   Valves->push_back(myValve);
 }
 
@@ -30,8 +30,7 @@ void valveStructure::OnForTimer(String SubTopic, int duration) {
     if (Valves->at(i).enabled && duration > 0 && Valves->at(i).subtopic == SubTopic) { 
       ret = Valves->at(i).OnForTimer(duration);
       if (ret) {
-        //ValveRel->AddSubscriberPort(Valves->at(i).GetPort1());
-        mqtt->Publish("Threads", CountActiveThreads());
+        if (mqtt) {mqtt->Publish("Threads", CountActiveThreads()); }
       }
     }
   }
@@ -43,15 +42,8 @@ void valveStructure::SetOff(String SubTopic) {
     if (Valves->at(i).enabled && Valves->at(i).subtopic == SubTopic) { 
       if (Valves->at(i).active) { Valves->at(i).SetOff(); }
       ValveRel->DelSubscriberPort(Valves->at(i).GetPort1()); 
-      mqtt->Publish("Threads", CountActiveThreads());
+      if (mqtt) { mqtt->Publish("Threads", CountActiveThreads()); }
     }
-  }
-}
-
-void valveStructure::SetMQTTClass(MQTT* mqtt) {
-  this->mqtt = mqtt;
-  for (uint8_t i=0; i<Valves->size(); i++) {
-    Valves->at(i).SetMQTTClass(mqtt);
   }
 }
 
@@ -65,8 +57,9 @@ void valveStructure::ReceiveMQTT(const char* topic, const char* value) {
   char buffer[50] = {0};
   memset(buffer, 0, sizeof(buffer));
   int duration = atoi(value);
-  String SubTopic(topic);
+  String SubTopic(topic), BaseTopic(topic);
   SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
+  BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
   
   if (strcmp(topic+mqtt->GetRoot().length(), "/test/on-for-timer")==0) { Valves->at(0).OnForTimer(duration); }
 
@@ -75,8 +68,6 @@ void valveStructure::ReceiveMQTT(const char* topic, const char* value) {
 
   // Check auf Ventile, die auf Relationen ansprechen sollen
   std::vector<uint8_t>* Ports = new std::vector<uint8_t>{};
-  String BaseTopic(topic);
-  BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));Serial.print("BaseTopic: ");Serial.println(BaseTopic);
   ValveRel->GetPortDependencies(Ports, BaseTopic);
   for (uint8_t i=0; i<Ports->size(); i++) {
     if (duration > 0 && strstr(topic, "on-for-timer")) {
@@ -103,22 +94,22 @@ uint8_t valveStructure::CountActiveThreads() {
   return count;
 }
 
-void valveStructure::StoreJsonConfig(String json) {
+void valveStructure::StoreJsonConfig(String* json) {
   //https://arduinojson.org/v5/api/jsonobject/begin_end/
   DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(json);
+  JsonObject& root = jsonBuffer.parseObject(*json);
     
   if (root.success()) {
     File configFile = SPIFFS.open("/VentilConfig.json", "w");
     if (!configFile) {
       Serial.println("failed to open VentilConfig.json file for writing");
-    }
+    } else {
+      root.printTo(Serial);
+      root.printTo(configFile);
+      configFile.close();
   
-    root.printTo(Serial);
-    root.printTo(configFile);
-    configFile.close();
-
-    LoadJsonConfig();
+      LoadJsonConfig();
+    }
   }
 }
 
@@ -143,7 +134,7 @@ void valveStructure::LoadJsonConfig() {
         uint8_t count = 0;
         if (json.containsKey("count")) { count = json["count"].as<int>(); }
         if(count == 0) {
-          Serial.println("something went wrong with json config, load default config");
+          Serial.println("something went wrong with Ventilconfig, load default config");
           loadDefaultConfig = true;
         }
         
@@ -199,7 +190,7 @@ void valveStructure::GetWebContent(String* html) {
   memset(buffer, 0, sizeof(buffer));
   
   html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n");
-  html->concat("<form id='submitForm'>\n");
+  html->concat("<form id='DataForm'>\n");
   html->concat("<table id='maintable' class='editorDemoTable'>\n");
   html->concat("<thead>\n");
   html->concat("<tr>\n");
@@ -282,7 +273,7 @@ void valveStructure::GetWebContent(String* html) {
   html->concat("</tbody>\n");
   html->concat("</table>\n");
   html->concat("</form>\n\n<br />\n");
-  html->concat("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit()'>\n");
+  html->concat("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
   html->concat("  <input type='text' id='json' name='json' />\n");
   html->concat("  <input type='submit' value='Speichern' />\n");
   html->concat("</form>\n\n");
@@ -295,16 +286,16 @@ void valveStructure::getWebJsParameter(String* html) {
   
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-  sprintf(buffer, "const gpio_disabled = [%d,%d];\n", pin_sda, pin_scl);
+sprintf(buffer, "const gpio_disabled = [%d,%d];\n", this->pin_sda, this->pin_scl);
   html->concat(buffer);
 
   // anhand gefundener pcf Devices die verfügbaren Ports bereit stellen
   //const pcf_found = [65,72,200];
   html->concat("const availablePorts = [");
   uint8_t count=0;
-  for (uint8_t i=1; i<=255; i++) {
-    if (ValveHW->IsValidPort(i) && I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(i))) {
-      sprintf(buffer, "%s%d", (count>0?",":"") , i);
+  for (uint8_t p=1; p<=254; p++) {
+    if (ValveHW->IsValidPort(p) && I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p))) {
+      sprintf(buffer, "%s%d", (count>0?",":"") , p);
       html->concat(buffer);
       count++;
     }

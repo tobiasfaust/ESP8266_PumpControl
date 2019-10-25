@@ -286,11 +286,10 @@ blendet Zeilen der Tabelle aus
 *******************************/
 function radioselection(a,b) {
   for(var i = 0; i < a.length; i++){
-    document.getElementById(a[i]).style.display = 'table-row';
+    if (document.getElementById(a[i])) {document.getElementById(a[i]).style.display = 'table-row';}
   }
-  for(var i = 0; i < b.length; i++){
-    document.getElementById(b[i]).style.display = 'none';
+  for(var j = 0; j < b.length; j++){
+    if(document.getElementById(b[j])) {document.getElementById(b[j]).style.display = 'none';}
   }
 }
 )=====";
-

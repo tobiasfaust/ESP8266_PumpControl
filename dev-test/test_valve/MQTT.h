@@ -9,7 +9,8 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-//#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
+//#include "ValveStructure.h"
 
 #if defined(ESP8266) || defined(ESP32)
   #include <functional>
@@ -43,5 +44,4 @@ class MQTT {
 };
 
 #endif
-
 

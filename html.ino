@@ -144,7 +144,7 @@ String getPage_Status() {
 
   html_str += "<tr>\n";
   html_str += "<td>Free Memory:</td>\n";
-  sprintf(buffer, "<td>%d</td>\n", ESP.getFreeHeap());
+  sprintf(buffer, "<td>%d</td>\n", ESP.getFreeHeap()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
   html_str += buffer;
   html_str += "</tr>\n";
 

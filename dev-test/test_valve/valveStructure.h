@@ -14,8 +14,6 @@
 #include "valveRelation.h"
 #include "valve.h"
 #include "MQTT.h"
-#include "JavaScript.h"
-#include "CSS.h"
   
 class valveStructure {
 
@@ -25,9 +23,8 @@ class valveStructure {
     void      OnForTimer(String SubTopic, int duration);
     void      SetOff(String SubTopic);
     uint8_t   CountActiveThreads();
-    void      SetMQTTClass(MQTT* mqtt);
-
-    void      StoreJsonConfig(String json); 
+    
+    void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
     void      getWebJsParameter(String* html);
@@ -39,10 +36,7 @@ class valveStructure {
     valve*    GetValveItem(uint8_t Port);
       
     valveHardware* ValveHW = NULL;
-    valveRelation* ValveRel = NULL;
     std::vector<valve> *Valves = NULL;
-    i2cdetect* I2Cdetect = NULL;
-    MQTT* mqtt = NULL;
     
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;
@@ -50,4 +44,3 @@ class valveStructure {
 };
 
 #endif
-
