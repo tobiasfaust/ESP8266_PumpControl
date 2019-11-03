@@ -1,7 +1,6 @@
 #pragma once
 
-//#include <FS.h> 
-#include <Wire.h>
+/*#include <Wire.h>
 #include "PCF8574.h"
 #include "Grove_Motor_Driver_TB6612FNG.h"
 #include <ArduinoJson.h>
@@ -14,6 +13,8 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include "uptime.h"
+#include <i2cdetect.h>
+*/
 
 #include <vector>
 #include "BaseConfig.h"
@@ -21,7 +22,6 @@
 #include "MQTT.h"
 #include "WebServer.h"
 #include "sensor.h"
-#include <i2cdetect.h>
 
 i2cdetect* I2Cdetect = NULL;
 BaseConfig* Config = NULL;

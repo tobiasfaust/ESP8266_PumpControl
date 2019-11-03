@@ -8,7 +8,7 @@
 #endif
 
 #include <FS.h> 
-#include <ArduinoJson.h>
+#include "ArduinoJson.h"
 
 class BaseConfig {
 
