@@ -189,7 +189,7 @@ void valveStructure::GetWebContent(String* html) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   
-  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n");
+  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
   html->concat("<form id='DataForm'>\n");
   html->concat("<table id='maintable' class='editorDemoTable'>\n");
   html->concat("<thead>\n");
@@ -286,11 +286,11 @@ void valveStructure::getWebJsParameter(String* html) {
   
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-sprintf(buffer, "const gpio_disabled = [%d,%d];\n", this->pin_sda, this->pin_scl);
+  sprintf(buffer, "const gpio_disabled = [%d,%d];\n", this->pin_sda + 200, this->pin_scl + 200);
   html->concat(buffer);
 
   // anhand gefundener pcf Devices die verfügbaren Ports bereit stellen
-  //const pcf_found = [65,72,200];
+  //const pcf_found = [65,72];
   html->concat("const availablePorts = [");
   uint8_t count=0;
   for (uint8_t p=1; p<=254; p++) {

@@ -25,8 +25,6 @@ class BaseConfig {
     const String&  GetMqttRoot()    const {return mqtt_root;}
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
     const uint8_t& GetMaxParallel() const {return max_parallel;}
-    const uint8_t& GetThresholdMin()const {return threshold_min;}
-    const uint8_t& GetThresholdMax()const {return threshold_max;}
     
   private:
     String    mqtt_server;
@@ -36,8 +34,6 @@ class BaseConfig {
     uint8_t   pin_scl;
     bool      enable_oled;
     uint8_t   i2caddress_oled;
-    uint8_t   threshold_min;
-    uint8_t   threshold_max;
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;

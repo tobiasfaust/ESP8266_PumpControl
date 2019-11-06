@@ -1,11 +1,5 @@
 #include "WebServer.h"
 
-extern BaseConfig* Config;
-extern sensor* LevelSensor;
-extern valveStructure* VStruct;
-extern valveRelation* ValveRel;
-extern i2cdetect* I2Cdetect;
-
 WebServer::WebServer() : DoReboot(false) {
   server = new ESP8266WebServer(80);
 
@@ -161,9 +155,6 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
   html->concat(buffer);
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
-  sprintf(buffer, "   <td class='navi %s' style='width: 100px'>Automatik</td>\n", (pageactive==AUTOCONFIG)?"navi_active":"");
-  html->concat(buffer);
-  html->concat("   <td class='navi' style='width: 50px'></td>\n");
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
   html->concat(buffer);
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
@@ -171,7 +162,7 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
   html->concat(" </tr>\n");
   html->concat("  <tr>\n");
-  html->concat("   <td colspan='13'>\n");
+  html->concat("   <td colspan='11'>\n");
   html->concat("   <p />\n");
 }
 

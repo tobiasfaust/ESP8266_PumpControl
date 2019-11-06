@@ -11,6 +11,8 @@
 #include <ArduinoJson.h>
 #include "MQTT.h"
 
+extern MQTT* mqtt;
+
 enum sensorType_t {NONE, HCSR04, ANALOG};
 
 class sensor {
@@ -26,6 +28,8 @@ class sensor {
     const int& GetRaw() const {return raw;}
     const int& GetLvl() const {return level; }
     const sensorType_t& GetType() const {return Type; }
+    const uint8_t& GetThresholdMin()const {return threshold_min;}
+    const uint8_t& GetThresholdMax()const {return threshold_max;}
     
   private:
     void      loop_analog();
@@ -40,6 +44,9 @@ class sensor {
     uint8_t   measureDistMin;
     uint8_t   measureDistMax;
     uint16_t  measurecycle;
+    uint8_t   threshold_min;
+    uint8_t   threshold_max;
+    
     unsigned long previousMillis = 0;
     
 };

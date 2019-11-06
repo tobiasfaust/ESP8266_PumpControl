@@ -1,7 +1,5 @@
 #include "MQTT.h"
 
-//extern valveStructure* VStruct;
-
 MQTT::MQTT(const char* server, uint16_t port, String root) {  
   this->mqtt_root = root;
   WiFiManager wifiManager;

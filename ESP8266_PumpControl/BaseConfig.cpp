@@ -51,8 +51,6 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("sel_3wege"))        { if (strcmp(json["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
         
         if (json.containsKey("i2coled"))          { this->i2caddress_oled = atoi(json["i2coled"]);}
-        if (json.containsKey("treshold_min"))     { this->threshold_min = atoi(json["treshold_min"]);}
-        if (json.containsKey("treshold_max"))     { this->threshold_max = atoi(json["treshold_max"]);}
         if (json.containsKey("ventil3wege_port")) { this->ventil3wege_port = atoi(json["ventil3wege_port"]);}
         
       } else {
@@ -73,8 +71,6 @@ void BaseConfig::LoadJsonConfig() {
     this->pin_scl = 0;
     this->enable_oled = false;
     this->i2caddress_oled = 60; //0x3C;
-    this->threshold_min = 26;
-    this->threshold_max = 30;
     this->enable_3wege = false;
     this->ventil3wege_port = 0;
     this->max_parallel = 0;
@@ -151,19 +147,6 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("</tr>\n");
  
   html->concat("<tr>\n");
-  html->concat("<td >Sensor Treshold Min</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", this->threshold_min);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  html->concat("<tr>\n");
-  html->concat("<td>Sensor Treshold Max</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", this->threshold_max);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-  html->concat("<tr>\n");
-  
-  html->concat("<tr>\n");
   html->concat("  <td colspan='2'>\n");
   
   html->concat("    <div class='inline'>");
@@ -179,7 +162,7 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("  </td>\n");
   html->concat("</tr>\n");
 
-  sprintf(buffer, "<tr class='%s' id='3wege_0'>\n", (this->ventil3wege_port?"":"hide"));
+  sprintf(buffer, "<tr class='%s' id='3wege_0'>\n", (this->enable_3wege?"":"hide"));
   html->concat(buffer);
   html->concat("<td>3WegeVentil Trinkwasser Bypass</td>\n");
   sprintf(buffer, "<td><input min='0' max='254' id='ConfiguredPorts_0' name='ventil3wege_port' type='number' value='%d'/></td>\n", this->ventil3wege_port);

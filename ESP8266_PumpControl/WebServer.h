@@ -21,6 +21,12 @@
 #include "valveStructure.h"
 #include "valveRelation.h"
 
+extern BaseConfig* Config;
+extern sensor* LevelSensor;
+extern valveStructure* VStruct;
+extern valveRelation* ValveRel;
+extern i2cdetect* I2Cdetect;
+
 /*
 #ifdef __AVR__
   #define CB_HTML_VALVE void (*htmlValve)(String*)

@@ -106,7 +106,7 @@ void valveRelation::LoadJsonConfig() {
           sprintf(buffer, "mqtttopic_%d", i);
           if (json.containsKey(buffer)) {SubTopic = json[buffer].as<String>();}
  
-          sprintf(buffer, "port_%d_1", i);
+          sprintf(buffer, "port_%d", i);
           if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { Port = json[buffer].as<int>();}
 
           AddRelation(enabled, SubTopic, Port);
@@ -133,7 +133,7 @@ void valveRelation::GetWebContent(String* html) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
 
-  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n");
+  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
   html->concat("<form id='DataForm'>\n");
   html->concat("<table id='maintable' class='editorDemoTable'>\n");
   html->concat("<thead>\n");
@@ -167,7 +167,7 @@ void valveRelation::GetWebContent(String* html) {
     sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>\n", i, i, _relationen->at(i).TriggerSubTopic.c_str());
     html->concat(buffer);
 
-    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>\n", i, i, _relationen->at(i).ActorPort);
+    sprintf(buffer, "  <td><input id='ConfiguredPorts_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>\n", i, i, _relationen->at(i).ActorPort);
     html->concat(buffer);
     html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
     html->concat("</tr>\n");

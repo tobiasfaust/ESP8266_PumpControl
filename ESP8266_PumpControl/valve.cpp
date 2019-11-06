@@ -1,7 +1,5 @@
 #include "valve.h"
 
-extern MQTT* mqtt;
-
 valve::valve() : enabled(true), active(false), ValveType(NONE){
 }
 
@@ -19,12 +17,12 @@ void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
 }
 
 void valve::AddPort1(valveHardware* Device, uint8_t Port1) {
-  myHWdev = valveHWClass->RegisterPort(Port1);
+  myHWdev = Device->RegisterPort(Port1);
   port1 = Port1;  
 }
 
 void valve::AddPort2(valveHardware* Device, uint8_t Port2) {
-  myHWdev = valveHWClass->RegisterPort(Port2);
+  myHWdev = Device->RegisterPort(Port2);
   port2 = Port2;  
 }
 

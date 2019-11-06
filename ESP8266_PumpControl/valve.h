@@ -10,6 +10,8 @@
 #include "valveHardware.h"
 #include "MQTT.h"
 
+extern MQTT* mqtt;
+
 class valve {
 
   enum vType_t {NONE, BISTABIL, NORMAL, VIRTUAL};

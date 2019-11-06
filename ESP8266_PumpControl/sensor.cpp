@@ -1,7 +1,5 @@
 #include "sensor.h"
 
-extern MQTT* mqtt;
-
 sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycle(10) {
   SPIFFS.begin();
   LoadJsonConfig();  
@@ -103,6 +101,8 @@ void sensor::LoadJsonConfig() {
         if (json.containsKey("measureDistMax"))       { this->measureDistMax = atoi(json["measureDistMax"]);}
         if (json.containsKey("pinhcsr04trigger"))     { this->pinTrigger = atoi(json["pinhcsr04trigger"]) - 200;}
         if (json.containsKey("pinhcsr04echo"))        { this->pinEcho = atoi(json["pinhcsr04echo"]) - 200;}
+        if (json.containsKey("treshold_min"))     { this->threshold_min = atoi(json["treshold_min"]);}
+        if (json.containsKey("treshold_max"))     { this->threshold_max = atoi(json["treshold_max"]);}
         if(strcmp(json["selection"],"analog")==0)      { init(); }
           else if(strcmp(json["selection"],"hcsr04")==0) { init(this->pinTrigger, this->pinEcho); }              
           else if(strcmp(json["selection"],"none")==0)   { Serial.println("No LevelSensor requested"); }  
@@ -119,6 +119,9 @@ void sensor::LoadJsonConfig() {
 
   if (loadDefaultConfig) {
     // do something
+    this->threshold_min = 26;
+    this->threshold_max = 30;
+
     loadDefaultConfig = false; //set back
   }
 }
@@ -141,17 +144,17 @@ void sensor::GetWebContent(String* html) {
   html->concat("  <td colspan='2'>\n");
   
   html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1', 'analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'])\"/>", (this->Type==NONE)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'])\"/>", (this->Type==NONE)?"checked":"");
   html->concat(buffer);
   html->concat("<label for='sel0'>keine Füllstandsmessung</label></div>\n");
   
   html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_1','analog_2'])\"/>", (this->Type==HCSR04)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_1','analog_2'])\"/>", (this->Type==HCSR04)?"checked":"");
   html->concat(buffer);
   html->concat("<label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
   
   html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'])\"/>", (this->Type==ANALOG)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'])\"/>", (this->Type==ANALOG)?"checked":"");
   html->concat(buffer);
   html->concat("<label for='sel2'>Füllstandsmessung mit analogem Signal (an A0)</label></div>\n");
   
@@ -207,6 +210,21 @@ void sensor::GetWebContent(String* html) {
   html->concat(buffer);
   html->concat("</tr>\n");
 
+  sprintf(buffer, "<tr class='%s' id='all_2'>\n", (this->Type==NONE?"hide":""));
+  html->concat(buffer);
+  html->concat("<td >Sensor Treshold Min für 3WegeVentil</td>\n");
+  sprintf(buffer, "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", this->threshold_min);
+  html->concat(buffer);
+  html->concat("</tr>\n");
+
+  sprintf(buffer, "<tr class='%s' id='all_3'>\n", (this->Type==NONE?"hide":""));
+  html->concat(buffer);
+  html->concat("<td>Sensor Treshold Max für 3WegeVentil</td>\n");
+  sprintf(buffer, "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", this->threshold_max);
+  html->concat(buffer);
+  html->concat("</tr>\n");
+  html->concat("<tr>\n");
+  
   html->concat("</tbody>\n");
   html->concat("</table>\n");
   html->concat("</form>\n\n<br />\n");

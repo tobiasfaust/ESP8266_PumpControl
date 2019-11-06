@@ -1,17 +1,17 @@
 const char JAVASCRIPT[] PROGMEM = R"=====(
 //############ DO NOT CHANGE BELOW ###################
 // alle GPIOs des ESP8266
-const gpio = [  {port: 16, name:'D0'},
-                {port:  5, name:'D1'},
-                {port:  4, name:'D2/SDA'},
-                {port:  0, name:'D3/SCL'},
-                {port:  2, name:'D4'},
-                {port: 14, name:'D5'},
-                {port: 12, name:'D6'},
-                {port: 13, name:'D7'},
-                {port: 15, name:'D8'},
-                {port:  1, name:'RX'},
-                {port:  3, name:'TX'}
+const gpio = [  {port: 216, name:'D0'},
+                {port: 205, name:'D1'},
+                {port: 204, name:'D2/SDA'},
+                {port: 200, name:'D3/SCL'},
+                {port: 202, name:'D4'},
+                {port: 214, name:'D5'},
+                {port: 212, name:'D6'},
+                {port: 213, name:'D7'},
+                {port: 215, name:'D8'},
+                {port: 201, name:'RX'},
+                {port: 203, name:'TX'}
              ];
 
 window.addEventListener('load', init, false);
@@ -58,21 +58,19 @@ function createPortSelectionList(id, name, value) {
   for ( i = 0; i < gpio.length; i += 1 ) {
     // alle GPIO Pins in die Liste
     _option = document.createElement( 'option' );
-    _option.value = gpio[i].port+200; 
-    if(gpio_disabled.indexOf(gpio[i].port+200)>=0) {_option.disabled = true;}
-    if(value == (gpio[i].port+200)) { _option.selected = true;}
+    _option.value = gpio[i].port; 
+    if(gpio_disabled.indexOf(gpio[i].port)>=0) {_option.disabled = true;}
+    if(value == (gpio[i].port)) { _option.selected = true;}
     _option.text  = gpio[i].name;
     _select.add( _option ); 
   }
   if (id.match(/^Alle.*/)) {
     // Alle PCF Ports in die Liste wenn ID match "Alle*"
-    for ( k = 0; k < pcf_found.length; k++ ) {
-      for ( i = 0; i < 8; i += 1 ) {
-        _option = document.createElement( 'option' );
-        _option.value = _option.text = pcf_found[k]+i;
-        if(value == pcf_found[k]+i) { _option.selected = true;}
-        _select.add( _option );
-      }
+    for ( k = 0; k < availablePorts.length; k++ ) {
+      _option = document.createElement( 'option' );
+      _option.value = _option.text = availablePorts[k];
+      if(value == availablePorts[k]) { _option.selected = true;}
+      _select.add( _option );
     }
   }
   return _select;
@@ -259,7 +257,7 @@ function onSubmit(DataForm, SubmitForm){
     if(elems[i].name && elems[i].value) {
       if (elems[i].style.display == 'none') {continue;}
       if (elems[i].parentNode.tagName == 'DIV' && elems[i].parentNode.style.display == 'none') {continue;}
-      if (elems[i].parentNode.parentNode.tagName == 'DIV' && elems[i].parentNode.parentNode.style.display == 'none') {continue;}
+      if (elems[i].parentNode.parentNode.tagName == 'TR' && elems[i].parentNode.parentNode.style.display == 'none') {continue;}
       
       if (elems[i].type == "checkbox") {
         formData[elems[i].name] = (elems[i].checked==true?1:0);
@@ -292,4 +290,5 @@ function radioselection(a,b) {
     if(document.getElementById(b[j])) {document.getElementById(b[j]).style.display = 'none';}
   }
 }
+
 )=====";
