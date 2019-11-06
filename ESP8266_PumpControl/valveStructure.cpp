@@ -47,6 +47,24 @@ void valveStructure::SetOff(String SubTopic) {
   }
 }
 
+void valveStructure::SetOn(String SubTopic) {
+  bool ret = false;
+  for (uint8_t i=0; i<Valves->size(); i++) {
+    if (Valves->at(i).enabled && Valves->at(i).subtopic == SubTopic) { 
+      if (!Valves->at(i).active) { Valves->at(i).SetOn(); }
+      if (mqtt) { mqtt->Publish("Threads", CountActiveThreads()); }
+    }
+  }
+}
+
+void valveStructure::SetOn(uint8_t Port) {
+  GetValveItem(Port)->SetOn();
+}
+
+void valveStructure::SetOff(uint8_t Port) {
+  GetValveItem(Port)->SetOff();
+}
+
 void valveStructure::loop() {
   for (uint8_t i=0; i<Valves->size(); i++) {
     Valves->at(i).loop();

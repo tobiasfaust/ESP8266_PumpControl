@@ -51,6 +51,11 @@ void sensor::loop() {
     this->raw = this->level = 0;
     if (this->Type == ANALOG) {loop_analog();}
     if (this->Type == HCSR04) {loop_hcsr04();}
+
+    if (this->Type != NONE && this->level !=0 && Config->Enabled3Wege()) {
+      if (this->level < this->threshold_min) { VStruct->SetOn(Config->Get3WegePort()); }
+      if (this->level > this->threshold_max) { VStruct->SetOff(Config->Get3WegePort()); }
+    }
     
     if (this->Type != NONE && mqtt) {
       if (this->raw > 0 )   { mqtt->Publish("raw", this->raw); }

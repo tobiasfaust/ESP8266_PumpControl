@@ -10,8 +10,12 @@
 #include <FS.h> 
 #include <ArduinoJson.h>
 #include "MQTT.h"
+#include "valveStructure.h"
+#include "BaseConfig.h"
 
 extern MQTT* mqtt;
+extern valveStructure* VStruct;
+extern BaseConfig* Config;
 
 enum sensorType_t {NONE, HCSR04, ANALOG};
 

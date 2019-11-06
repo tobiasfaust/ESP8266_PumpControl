@@ -21,7 +21,10 @@ class valveStructure {
     valveStructure(uint8_t sda, uint8_t scl);
     void      loop();
     void      OnForTimer(String SubTopic, int duration);
+    void      SetOn(String SubTopic);
+    void      SetOn(uint8_t Port);
     void      SetOff(String SubTopic);
+    void      SetOff(uint8_t Port);
     uint8_t   CountActiveThreads();
     
     void      StoreJsonConfig(String* json); 
