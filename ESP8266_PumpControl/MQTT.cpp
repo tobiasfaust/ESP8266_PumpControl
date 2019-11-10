@@ -2,6 +2,8 @@
 
 MQTT::MQTT(const char* server, uint16_t port, String root) {  
   this->mqtt_root = root;
+  this->subscriptions = new std::vector<String>{};
+  
   WiFiManager wifiManager;
   wifiManager.setTimeout(300);
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
@@ -25,13 +27,19 @@ void MQTT::reconnect() {
   Serial.println("Attempting MQTT connection...");
   snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
   if (mqtt.connect(mqtt_root.c_str())) {
-    Serial.print("connected, subscribe to: ");
+    Serial.println("connected... ");
     // Once connected, publish an announcement...
     //client.publish("outTopic", "hello world");
     // ... and resubscribe
     snprintf (topic, sizeof(topic), "%s/#", mqtt_root.c_str());
-    Serial.println(topic);
     mqtt.subscribe(topic);
+    Serial.print(F("MQTT Subscribe to: ")); Serial.println(FPSTR(topic));
+
+    for (uint8_t i=0; i< this->subscriptions->size(); i++) {
+      mqtt.subscribe(this->subscriptions->at(i).c_str()); 
+      Serial.print(F("MQTT Subscribe to: ")); Serial.println(FPSTR(this->subscriptions->at(i).c_str()));
+    }
+    
   } else {
     Serial.print("failed, rc=");
     Serial.print(mqtt.state());
@@ -43,14 +51,6 @@ void MQTT::callback(char* topic, byte* payload, unsigned int length) {
   if (MyCallback) {
     MyCallback(topic,payload,length);
   }
-/*  String* msg;
-  Serial.print("Message arrived [");Serial.print(topic);Serial.print("] ");
-  
-  for (int i = 0; i < length; i++) { msg->concat((char)payload[i]); }
-  Serial.print("Message: ");Serial.println(msg->c_str());
-  
-  //VStruct->ReceiveMQTT(topic, msg->c_str());
-  */
 }
 
 String MQTT::GetRoot() {
@@ -85,7 +85,20 @@ void MQTT::setCallback(CALLBACK_FUNCTION) {
     this->MyCallback = MyCallback;
 }
 
-//bool MQTT::connected() { return mqtt.connected(); }
+void MQTT::Subscribe(String topic) {
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  snprintf(buffer, sizeof(buffer), "%s/#", topic.c_str());
+  this->subscriptions->push_back(buffer);
+  if (mqtt.connected()) {mqtt.subscribe(buffer); Serial.print(F("MQTT Subscribe at: ")); Serial.println(FPSTR(buffer));}
+}
+
+void MQTT::ClearSubscriptions() {
+  for (uint8_t i=0; i< this->subscriptions->size(); i++) {
+    if (mqtt.connected()) {mqtt.unsubscribe(this->subscriptions->at(i).c_str());}
+  }
+  this->subscriptions->clear();
+}
 
 void MQTT::loop() {
   if (!mqtt.connected() && WiFi.status() == WL_CONNECTED) { 

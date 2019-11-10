@@ -10,7 +10,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
-//#include "ValveStructure.h"
+#include <vector>
 
 #if defined(ESP8266) || defined(ESP32)
   #include <functional>
@@ -30,6 +30,8 @@ class MQTT {
     void    Publish(const char* subtopic, char* value);
     void    setCallback(CALLBACK_FUNCTION);
     String  GetRoot();
+    void    Subscribe(String topic);
+    void    ClearSubscriptions();
 
   private:
     WiFiClient espClient;
@@ -37,6 +39,7 @@ class MQTT {
     CALLBACK_FUNCTION;
     void    reconnect();
     void    callback(char* topic, byte* payload, unsigned int length);
+    std::vector<String>* subscriptions = NULL;
 
     String  mqtt_root = "";
     unsigned long mqttreconnect_lasttry = 0;

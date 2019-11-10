@@ -55,7 +55,7 @@ bool valve::HandleSwitch (bool state, int duration) {
     valveHWClass->SetPort(myHWdev, port1, port2, state, (state?port1ms:port2ms));
   }
 
-  active = state;
+  this->active = state;
   
   if (state && duration) {
     startmillis = millis();

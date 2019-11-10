@@ -56,7 +56,7 @@ void setup() {
   VStruct = new valveStructure(0,4);
   webserver = new WebServer(); 
  
-  VStruct->OnForTimer("Valve1", 10);
+  //VStruct->OnForTimer("Valve1", 10);
 
   delay(1000);
   //VStruct->ReceiveMQTT("pumpHost/TestVirtualValve1/on-for-timer", "10");
