@@ -10,6 +10,9 @@
 #include <FS.h> 
 #include <vector>
 #include <ArduinoJson.h>
+#include "MQTT.h"
+
+extern MQTT* mqtt;
 
 class valveRelation {
 

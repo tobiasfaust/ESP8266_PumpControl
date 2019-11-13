@@ -12,12 +12,14 @@ void valveRelation::AddRelation(bool enabled, String SubTopic, uint8_t Port) {
   rel.enabled = enabled;
   rel.TriggerSubTopic = SubTopic;
   rel.ActorPort = Port;
-  _relationen->push_back(rel); 
+  _relationen->push_back(rel);
+  
+  mqtt->Subscribe(SubTopic.c_str());
 }
 
 void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubTopic) {
   for (uint8_t i=0; i<_relationen->size(); i++) {
-    if (_relationen->at(i).TriggerSubTopic == SubTopic) {
+    if (_relationen->at(i).TriggerSubTopic == SubTopic && _relationen->at(i).enabled) {
       bool stillpresent=false;
       for (uint8_t j=0; j<Ports->size(); j++) {
         if (Ports->at(j) == _relationen->at(i).ActorPort) {stillpresent=true;}
@@ -36,11 +38,12 @@ void valveRelation::AddSubscriberPort(uint8_t Port, String TriggerSubTopic) {
 }
 
 void valveRelation::DelSubscriberPort(uint8_t Port) {
-  for (auto i=_subscriber->begin(); i!=_subscriber->end(); ++i) {
+// --> hier tritt eine out-of-range exception auf
+/*  for (auto i=_subscriber->begin(); i!=_subscriber->end(); ++i) {
      uint8_t p = std::distance(_subscriber->begin(), i);
      if (_subscriber->at(p).ActorPort == Port) { _subscriber->erase(i); Serial.print("Del Subscriber: "); Serial.println(Port);}
   }
-}
+*/}
 
 uint8_t valveRelation::CountActiveSubscribers(String SubTopic) {
   uint8_t count=0;
@@ -76,6 +79,7 @@ void valveRelation::LoadJsonConfig() {
 
   _relationen->clear(); // leere den Valve Vector bevor neu befüllt wird
   _subscriber->clear();
+  mqtt->ClearSubscriptions();
   
   if (SPIFFS.exists("/Relations.json")) {
     File configFile = SPIFFS.open("/Relations.json", "r");
