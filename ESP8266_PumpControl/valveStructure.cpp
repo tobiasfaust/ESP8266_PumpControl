@@ -281,8 +281,8 @@ void valveStructure::GetWebContent(String* html) {
     html->concat(buffer);
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
     html->concat(buffer);
-    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_2' name='type_%d' value='v' %s onclick='chg_type(this.id)' /><label for='type_%d_2'>virtual</label></div>\n",i, i, (Valves->at(i).GetValveType()=="v"?"checked":""),i);
-    html->concat(buffer);
+    //sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_2' name='type_%d' value='v' %s onclick='chg_type(this.id)' /><label for='type_%d_2'>virtual</label></div>\n",i, i, (Valves->at(i).GetValveType()=="v"?"checked":""),i);
+    //html->concat(buffer);
     
     html->concat("  </td>\n");
     html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
