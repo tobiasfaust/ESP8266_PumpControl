@@ -22,6 +22,7 @@
 #include "MQTT.h"
 #include "WebServer.h"
 #include "sensor.h"
+#include "oled.h"
 
 i2cdetect* I2Cdetect = NULL;
 BaseConfig* Config = NULL;
@@ -29,6 +30,7 @@ valveRelation* ValveRel = NULL;
 valveStructure* VStruct = NULL;
 MQTT* mqtt = NULL;
 sensor* LevelSensor = NULL;
+OLED* oled = NULL;
 WebServer* webserver = NULL;
 
 //test
@@ -47,13 +49,14 @@ void setup() {
   
   Config = new BaseConfig();
   
-  mqtt = new MQTT("192.168.10.10", 1883, "PumpControlDev");
+  mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
   mqtt->setCallback(myMQTTCallBack);
 
-  I2Cdetect = new i2cdetect(SDA, SCL);
+  I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSDA());
   LevelSensor = new sensor();
+  oled = new OLED(Config->GetPinSDA(), Config->GetPinSDA());
   ValveRel = new valveRelation();
-  VStruct = new valveStructure(0,4);
+  VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSDA());
   webserver = new WebServer(); 
  
   //VStruct->OnForTimer("Valve1", 10);
@@ -78,5 +81,6 @@ void loop() {
   // put your main code here, to run repeatedly:
   VStruct->loop();
   mqtt->loop();
+  oled->loop();
   webserver->loop();
 }

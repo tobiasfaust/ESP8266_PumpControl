@@ -110,7 +110,7 @@ void sensor::LoadJsonConfig() {
         if (json.containsKey("treshold_max"))     { this->threshold_max = atoi(json["treshold_max"]);}
         if(strcmp(json["selection"],"analog")==0)      { init(); }
           else if(strcmp(json["selection"],"hcsr04")==0) { init(this->pinTrigger, this->pinEcho); }              
-          else if(strcmp(json["selection"],"none")==0)   { this->type=NONE; Serial.println("No LevelSensor requested"); }  
+          else if(strcmp(json["selection"],"none")==0)   { this->Type=NONE; Serial.println("No LevelSensor requested"); }  
         
       } else {
         Serial.println("failed to load json config, load default config");
