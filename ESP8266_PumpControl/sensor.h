@@ -12,20 +12,25 @@
 #include "MQTT.h"
 #include "valveStructure.h"
 #include "BaseConfig.h"
+#include "oled.h"
 
 extern MQTT* mqtt;
 extern valveStructure* VStruct;
 extern BaseConfig* Config;
+extern OLED* oled;
 
-enum sensorType_t {NONE, HCSR04, ANALOG};
+enum sensorType_t {NONE, EXTERN, HCSR04, ANALOG};
 
 class sensor {
 
   public:
     sensor();
     void      init(uint8_t pinTrigger, uint8_t pinEcho);
+    void      init(String externalSensor);
     void      init();
+    void      setSensorType(sensorType_t t);
     void      loop();
+    void      SetLvl(int lvl);
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
@@ -34,6 +39,7 @@ class sensor {
     const sensorType_t& GetType() const {return Type; }
     const uint8_t& GetThresholdMin()const {return threshold_min;}
     const uint8_t& GetThresholdMax()const {return threshold_max;}
+    const String&  GetExternalSensor() const {return externalSensor;}
     
   private:
     void      loop_analog();
@@ -42,7 +48,7 @@ class sensor {
     uint8_t   pinTrigger;
     uint8_t   pinEcho;
     int       raw;
-    int       level;
+    uint8_t   level;
     uint16_t  MAX_DIST;
     sensorType_t   Type;
     uint8_t   measureDistMin;
@@ -50,6 +56,7 @@ class sensor {
     uint16_t  measurecycle;
     uint8_t   threshold_min;
     uint8_t   threshold_max;
+    String    externalSensor;
     
     unsigned long previousMillis = 0;
     

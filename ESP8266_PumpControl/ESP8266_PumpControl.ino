@@ -1,8 +1,9 @@
 #pragma once
 
-/*#include <Wire.h>
+#include <Wire.h>
 #include "PCF8574.h"
 #include "Grove_Motor_Driver_TB6612FNG.h"
+#include "SSD1306Wire.h"
 #include <ArduinoJson.h>
 #include <i2cdetect.h>
 #include <DNSServer.h>
@@ -13,8 +14,8 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include "uptime.h"
-#include <i2cdetect.h>
-*/
+#include "i2cdetect.h"
+
 
 #include <vector>
 #include "BaseConfig.h"
@@ -46,17 +47,22 @@ void setup() {
 
   //clean FS, for testing
   //SPIFFS.format();
-  
+
+  oled = new OLED();
   Config = new BaseConfig();
-  
+
+  Serial.print(F("Starting WIRE at (SDA, SCL)): "));Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
+  Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
+    
+  Serial.println("Starting MQTT");
   mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
   mqtt->setCallback(myMQTTCallBack);
-
-  I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSDA());
+  
+  I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSCL());
   LevelSensor = new sensor();
-  oled = new OLED(Config->GetPinSDA(), Config->GetPinSDA());
+  
   ValveRel = new valveRelation();
-  VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSDA());
+  VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
   webserver = new WebServer(); 
  
   //VStruct->OnForTimer("Valve1", 10);
@@ -73,14 +79,15 @@ void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   
   for (int i = 0; i < length; i++) { msg.concat((char)payload[i]); }
   Serial.print("Message: ");Serial.println(msg.c_str());
-  
-  VStruct->ReceiveMQTT(topic, msg.c_str());
+
+  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str())>0) { LevelSensor->SetLvl(atoi(msg.c_str())); }
+  else { VStruct->ReceiveMQTT(topic, msg.c_str()); }
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   VStruct->loop();
   mqtt->loop();
-  oled->loop();
+  LevelSensor->loop();
   webserver->loop();
 }

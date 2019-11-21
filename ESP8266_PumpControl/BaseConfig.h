@@ -9,6 +9,9 @@
 
 #include <FS.h> 
 #include "ArduinoJson.h"
+#include "oled.h"
+
+extern OLED* oled;
 
 class BaseConfig {
 

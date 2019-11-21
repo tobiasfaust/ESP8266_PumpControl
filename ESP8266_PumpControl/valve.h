@@ -15,7 +15,6 @@ extern MQTT* mqtt;
 class valve {
 
   enum vType_t {NONE, BISTABIL, NORMAL, VIRTUAL};
-  //enum vSpecials_t  {NORMAL, BYPASS, 3WAY};
   
   public:
     valve();

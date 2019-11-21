@@ -13,8 +13,8 @@ void valveRelation::AddRelation(bool enabled, String SubTopic, uint8_t Port) {
   rel.TriggerSubTopic = SubTopic;
   rel.ActorPort = Port;
   _relationen->push_back(rel);
-  
-  mqtt->Subscribe(SubTopic.c_str());
+
+  mqtt->Subscribe(SubTopic, MQTT::RELATION);
 }
 
 void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubTopic) {
@@ -79,7 +79,7 @@ void valveRelation::LoadJsonConfig() {
 
   _relationen->clear(); // leere den Valve Vector bevor neu befüllt wird
   _subscriber->clear();
-  mqtt->ClearSubscriptions();
+  mqtt->ClearSubscriptions(MQTT::RELATION);
   
   if (SPIFFS.exists("/Relations.json")) {
     File configFile = SPIFFS.open("/Relations.json", "r");

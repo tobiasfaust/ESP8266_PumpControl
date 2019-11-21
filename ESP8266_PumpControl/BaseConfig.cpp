@@ -50,7 +50,7 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
         if (json.containsKey("sel_3wege"))        { if (strcmp(json["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
         
-        if (json.containsKey("i2coled"))          { this->i2caddress_oled = atoi(json["i2coled"]);}
+        if (json.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(json["i2coled"], NULL, 16);} // hex convert to dec        
         if (json.containsKey("ventil3wege_port")) { this->ventil3wege_port = atoi(json["ventil3wege_port"]);}
         
       } else {
@@ -67,8 +67,8 @@ void BaseConfig::LoadJsonConfig() {
     this->mqtt_server = "192.178.10.1";
     this->mqtt_port  = 1883;
     this->mqtt_root = "PumpControl";
-    this->pin_sda = 4;
-    this->pin_scl = 0;
+    this->pin_sda = 5;
+    this->pin_scl = 4;
     this->enable_oled = false;
     this->i2caddress_oled = 60; //0x3C;
     this->enable_3wege = false;
@@ -76,6 +76,11 @@ void BaseConfig::LoadJsonConfig() {
     this->max_parallel = 0;
     
     loadDefaultConfig = false; //set back
+  }
+
+  if (this->enable_oled) { 
+    oled->init(this->pin_sda, this->pin_scl, this->i2caddress_oled);
+    oled->Enable(this->enable_oled);
   }
 }
 

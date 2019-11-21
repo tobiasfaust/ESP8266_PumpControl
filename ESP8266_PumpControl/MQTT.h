@@ -11,6 +11,9 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <vector>
+#include "oled.h"
+
+extern OLED* oled;
 
 #if defined(ESP8266) || defined(ESP32)
   #include <functional>
@@ -19,10 +22,18 @@
   #define CALLBACK_FUNCTION void (*MyCallback)(char*, uint8_t*, unsigned int)
 #endif
 
-  
 class MQTT {
 
   public:
+
+    enum MqttSubscriptionType_t {RELATION, SENSOR};
+    
+    typedef struct {
+      String subscription = "";
+      MqttSubscriptionType_t identifier;
+      bool active;
+    } subscription_t;
+    
     MQTT(const char* server, uint16_t port, String root);
     void    loop();
     void    Publish(const char* subtopic, bool b);
@@ -30,8 +41,8 @@ class MQTT {
     void    Publish(const char* subtopic, char* value);
     void    setCallback(CALLBACK_FUNCTION);
     String  GetRoot();
-    void    Subscribe(String topic);
-    void    ClearSubscriptions();
+    void    Subscribe(String topic, MqttSubscriptionType_t identifier);
+    void    ClearSubscriptions(MqttSubscriptionType_t identifier);
 
   private:
     WiFiClient espClient;
@@ -39,7 +50,7 @@ class MQTT {
     CALLBACK_FUNCTION;
     void    reconnect();
     void    callback(char* topic, byte* payload, unsigned int length);
-    std::vector<String>* subscriptions = NULL;
+    std::vector<subscription_t>* subscriptions = NULL;
 
     String  mqtt_root = "";
     unsigned long mqttreconnect_lasttry = 0;

@@ -19,8 +19,6 @@ valveHardware::valveHardware(uint8_t sda, uint8_t scl)
   memset(buffer, 0, sizeof(buffer));
   sprintf(buffer, "Initialisiere HardwareDevice mit GPIO auf ic2Adresse 0x%02X", t.i2cAddress);
   Serial.println(buffer);
-
-  Wire.begin(sda, scl);
 }
 
 void valveHardware::addI2CDevice(uint8_t i2cAddress) {
