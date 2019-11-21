@@ -7,45 +7,42 @@ SSD1306Wire* ssd = NULL;
 
 void oled_setup() {
   // Read parameters previously from SPIFFS via getParameters procedure
-  if(i2caddress_oled > 0) {
-    Serial.print("Starting OLED 1306: (");
-    Serial.print(i2caddress_oled);
-    Serial.print(", ");Serial.print(pin_sda);
-    Serial.print(", ");Serial.print(pin_scl);
-    Serial.println(")");
-  
-    ssd = new SSD1306Wire(i2caddress_oled, pin_sda, pin_scl);
-    ssd->init();
-    ssd->flipScreenVertically();
-    ssd->clear();
-    display_header();
-    ssd->display();
-  }
+  Serial.print("Starting OLED 1306: (");
+  Serial.print(i2caddress_oled);
+  Serial.print(", ");Serial.print(pin_sda);
+  Serial.print(", ");Serial.print(pin_scl);
+  Serial.println(")");
+
+  ssd = new SSD1306Wire(i2caddress_oled, pin_sda, pin_scl);
+  ssd->init();
+  ssd->flipScreenVertically();
+  ssd->clear();
+  display_header();
+  ssd->display();
 }
 
 void oled_loop() {
-  if(i2caddress_oled > 0) {
-    // clear the display
-    ssd->clear();
-    // draw the percentage as String
-    ssd->setTextAlignment(TEXT_ALIGN_CENTER);
-    ssd->setFont(ArialMT_Plain_24);
-    ssd->drawString(64, 35, String(sensor_level) + "%"); 
-  
-    /*long rssi = WiFi.RSSI();
-    int bars = getBarsSignal(rssi);
-    for (int b=0; b <= bars; b++) {
-      // display.fillRect(59 + (b*5),33 - (b*5),3,b*5,WHITE); 
-      ssd->fillRect(10 + (b*5),48 - (b*5),3,b*5); 
-    }
-    */
-    display_header();
-      
-    // write the buffer to the display
-    ssd->display();
+  // clear the display
+  ssd->clear();
+  // draw the percentage as String
+  ssd->setTextAlignment(TEXT_ALIGN_CENTER);
+  ssd->setFont(ArialMT_Plain_24);
+  ssd->drawString(64, 35, String(hcsr04_level) + "%"); 
+
+  /*long rssi = WiFi.RSSI();
+  int bars = getBarsSignal(rssi);
+  for (int b=0; b <= bars; b++) {
+    // display.fillRect(59 + (b*5),33 - (b*5),3,b*5,WHITE); 
+    ssd->fillRect(10 + (b*5),48 - (b*5),3,b*5); 
   }
-}  
-  
+  */
+  display_header();
+    
+  // write the buffer to the display
+  ssd->display();
+}
+
+
 void display_header() {
   if (WiFi.status() == WL_CONNECTED) {
     String title = WiFi.SSID();

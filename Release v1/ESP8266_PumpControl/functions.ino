@@ -25,15 +25,22 @@ void ReadConfigParam() {
         if (json.success()) {
           Serial.println("\nparsed json");
 
-          if (json.containsKey("mqtt_server"))         { strcpy(mqtt_server, json["mqtt_server"]);}
-          if (json.containsKey("mqtt_root"))           { strcpy(mqtt_root, json["mqtt_root"]);}
-          if (json.containsKey("mqtt_port"))           { mqtt_port = json["mqtt_port"];}
-          if (json.containsKey("pin_hcsr04_trigger"))  { pin_hcsr04_trigger = json["pin_hcsr04_trigger"];}
-          if (json.containsKey("pin_hcsr04_echo"))     { pin_hcsr04_echo = json["pin_hcsr04_echo"];}
-          if (json.containsKey("pin_sda"))             { pin_sda = json["pin_sda"];}
-          if (json.containsKey("pin_scl"))             { pin_scl = json["pin_scl"];}
-          if (json.containsKey("i2caddress_oled"))     { i2caddress_oled = json["i2caddress_oled"];}
+          strcpy(mqtt_server, json["mqtt_server"]);
+          strcpy(mqtt_root, json["mqtt_root"]);
+          mqtt_port = json["mqtt_port"];
+          pin_hcsr04_trigger = json["pin_hcsr04_trigger"];
+          pin_hcsr04_echo = json["pin_hcsr04_echo"];
+          pin_sda = json["pin_sda"];
+          pin_scl = json["pin_scl"];
+          i2caddress_oled = json["i2caddress_oled"];
 
+          // sperren für die VentilConfig
+          //handleMyGPIOPin(pin_sda, false);
+          //handleMyGPIOPin(pin_scl, false);
+          //handleMyGPIOPin(pin_hcsr04_trigger, false);
+          //handleMyGPIOPin(pin_hcsr04_echo, false);
+          
+          
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
@@ -66,15 +73,9 @@ void ReadConfigParam() {
         json.printTo(Serial);
         if (json.success()) {
           Serial.println("\nparsed json");
-          if (json.containsKey("measurecycle"))   { measurecycle = max(atoi(json["measurecycle"]), 10);}
-          if (json.containsKey("measureDistMin")) { measureDistMin = atoi(json["measureDistMin"]);}
-          if (json.containsKey("measureDistMax")) { measureDistMax = atoi(json["measureDistMax"]);}
-          if (json.containsKey("measureType"))    { 
-            if(strcmp(json["measureType"],"analog")==0)      {measureType=ANALOG;}
-            else if(strcmp(json["measureType"],"hcsr04")==0) {measureType=HCSR04;}              
-            else if(strcmp(json["measureType"],"none")==0)   {measureType=NONE;}  
-          }
-          
+          hc_sr04_interval = json["hc_sr04_interval"];
+          hc_sr04_distmin = json["hc_sr04_distmin"];
+          hc_sr04_distmax = json["hc_sr04_distmax"];
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
@@ -107,14 +108,14 @@ void ReadConfigParam() {
         json.printTo(Serial);
         if (json.success()) {
           Serial.println("\nparsed json");
-          if (json.containsKey("treshold_min"))      { treshold_min = json["treshold_min"];}
-          if (json.containsKey("treshold_max"))      { treshold_max = json["treshold_max"];}
-          if (json.containsKey("syncswitch_port"))   { syncswitch_port = json["syncswitch_port"];}
-          if (json.containsKey("ventil3wege_port"))  { ventil3wege_port = json["ventil3wege_port"];}
-          if (json.containsKey("max_parallel"))      { max_parallel = json["max_parallel"];}
+          hc_sr04_treshold_min = json["hc_sr04_treshold_min"];
+          hc_sr04_treshold_max = json["hc_sr04_treshold_max"];
+          syncswitch_port = json["syncswitch_port"];
+          ventil3wege_port = json["ventil3wege_port"];
+          max_parallel = json["max_parallel"];
 
           if (strcmp(json["enable_syncswitch"],"1")==0) {enable_syncswitch = true;} else {enable_syncswitch = false;}
-          if (strcmp(json["enable_3wege"],"1")==0)      {enable_3wege = true;}      else {enable_3wege = false;}
+          if (strcmp(json["enable_3wege"],"1")==0) {enable_3wege = true;} else {enable_3wege = false;}
         } else {
           Serial.println("failed to load json config, load default config");
           loadDefaultConfig = true;
@@ -186,22 +187,13 @@ void MQTT_reconnect() {
     //snprintf (topic, sizeof(topic), "%s-%s", mqtt_root, WiFi.macAddress().c_str());
     snprintf (topic, sizeof(topic), "ESP8266Client_%s", WiFi.macAddress().c_str());
     if (client.connect(topic)) {
-      Serial.println("connected, subscribe to:");
+      Serial.println("connected");
       // Once connected, publish an announcement...
       //client.publish("outTopic", "hello world");
       // ... and resubscribe
       snprintf (topic, sizeof(topic), "%s/#", mqtt_root);
       Serial.println(topic);
       client.subscribe(topic);
-
-      for(int i=0; i < pcf8574devCount; i++) {
-        if (strcmp(pcf8574dev[i].type, "v")==0) {
-         // auf alle virtuellen Ports subscriben
-          sprintf(topic, "/%s/#", pcf8574dev[i].subtopic);
-          Serial.println(topic);
-          client.subscribe(topic);
-        }
-      }
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -231,7 +223,6 @@ void MQTT_publish(const char* subtopic, char* value ) {
   client.publish(topic, value);
   Serial.print("Publish "); Serial.print(topic); Serial.print(": "); Serial.println(value);
 }
-
 
 void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   char msg[length+1];
@@ -264,23 +255,14 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
         //Serial.print("on-for-timer: Pin gefunden: ");Serial.println(pcf8574dev[i].port);
         PCF8574_onfortimer(&duration, &pcf8574dev[i]);
       }
-
-      sprintf(buffer, "/%s/set", pcf8574dev[i].subtopic);
-      if (strcmp(topic+strlen(mqtt_root), buffer)==0 && strcmp(msg, "off")==0 && pcf8574dev[i].enabled) {
-        handleSwitch(&pcf8574dev[i], false);
-      }
-    }
-  } else {
-    // TODO: virtuelle Ports
-    Serial.print("Virtual Port recognized: "); Serial.println(topic);
-    for(int i=0; i < pcf8574devCount; i++) {
-      if (strcmp(pcf8574dev[i].type, "v")==0) {
-        sprintf(buffer, "/%s/on-for-timer", pcf8574dev[i].subtopic);
-        if (strcmp(topic, buffer)==0) {
-          PCF8574_onfortimer(&duration, &pcf8574dev[i]);
-        }
-      }
     }
   }
 }
 
+/*
+void handleMyGPIOPin(uint8_t pin, boolean state) {
+  for(int i=0; i < 11; i++) {
+    if (mygpiopin[i].pinnumber == pin) { mygpiopin[i].active = state; }
+  }
+}
+*/

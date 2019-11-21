@@ -13,8 +13,6 @@
 #include <Wire.h>
 #include "Arduino.h"
 #include "PCF8574.h"  
-#include "uptime.h"
-#include "i2cdetect.h"
 
 #include "PumpControl.h"
 
@@ -23,8 +21,6 @@ ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiClient espClient;
 PubSubClient client(espClient);
-uptime* UpTime = NULL;
-i2cdetect* I2Cdetect = NULL;
   
 void setup() {
   // put your setup code here, to run once:
@@ -53,7 +49,6 @@ void setup() {
   server.on("/SensorConfig", handleSensorConfig);
   server.on("/VentilConfig", handleVentilConfig);
   server.on("/AutoConfig", handleAutoConfig);
-  server.on("/Relations", handleRelations);
   
   server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/javascript.js", HTTP_GET, handleJS);
@@ -61,9 +56,8 @@ void setup() {
   
   server.on("/StorePinConfig", HTTP_POST, handleStorePinConfig);
   server.on("/StoreSensorConfig", HTTP_POST, handleStoreSensorConfig);
-  server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig2);
+  server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig);
   server.on("/StoreAutoConfig", HTTP_POST, handleStoreAutoConfig);
-  server.on("/StoreRelations", HTTP_POST, handleStoreRelations);
   server.on("/reboot", HTTP_GET, handleReboot);
 
   // start a server
@@ -71,12 +65,10 @@ void setup() {
   server.begin();
   Serial.println("Server started");
   
-  //Wire.begin(pin_sda, pin_scl);
-  I2Cdetect = new i2cdetect(pin_sda, pin_scl);
-  //I2Cdetect->scan(); //Scan again if needed??
+  Wire.begin(pin_sda, pin_scl);
+  i2cdetect();
 
-  if (measureType==HCSR04) {hcsr04_setup();}
-  if (measureType==ANALOG) {analog_setup();}
+  hcsr04_setup();
   oled_setup();
   PCF8574_setup();
 }
@@ -91,12 +83,10 @@ void loop() {
     }
   }
   client.loop();
-  UpTime->loop();
   
-  if (millis() - previousMillis > measurecycle*1000) {
+  if (millis() - previousMillis > hc_sr04_interval*1000) {
     previousMillis = millis();   // aktuelle Zeit abspeichern
-    if (measureType==HCSR04) {hcsr04_loop();}
-    if (measureType==ANALOG) {analog_loop();}
+    hcsr04_loop();
     oled_loop();
   }
 

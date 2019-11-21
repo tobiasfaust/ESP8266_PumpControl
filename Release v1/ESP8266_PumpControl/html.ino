@@ -15,11 +15,11 @@ String getJSParam() {
   //const pcf_found = [65];
   html_str += "const pcf_found = [";
   uint8_t count=0;
-  for (uint8_t i=56; i<=63; i++) {
-    if(I2Cdetect->i2cIsPresent(i)) {
-      sprintf(buffer, "%s%d", (count>0?",":"") ,((i-55)*8)+57);
+  for (uint8_t i=0; i<8; i++) {
+    if (i2c_adresses[i] > 0 && i2c_adresses[i] >= 56 && i2c_adresses[i] <= 63) {
+      sprintf(buffer, "%s%d", (count>0?",":"") ,((i2c_adresses[i]-55)*8)+57);
       html_str += buffer;
-      count++;
+      count++;    
     }
   }
   html_str += "];\n";
@@ -70,9 +70,6 @@ String getPageHeader(int pageactive) {
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/AutoConfig'>Automatik</a></td>\n", (pageactive==5)?"navi_active":"");
   html_str += buffer;
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
-  sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==6)?"navi_active":"");
-  html_str += buffer;
-  html_str += "   <td class='navi' style='width: 50px'></td>\n";
   html_str += "   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>\n";
   html_str += "   <td class='navi' style='width: 50px'></td>\n";
   html_str += " </tr>\n";
@@ -84,8 +81,9 @@ String getPageHeader(int pageactive) {
 }
 
 void setPage_Footer() {
-  html_str += "  </td></tr>";
-  html_str += "</table>";
+  html_str += "   <td>\n";
+  html_str += "  <tr>\n";
+  html_str += "</table>\n";
   html_str += "</body>\n";
   html_str += "</html>\n";
 }
@@ -120,7 +118,18 @@ String getPage_Status() {
   html_str += "<tr>\n";
   html_str += "<td>i2c Bus:</td>\n";
   html_str += "<td>";
-  html_str += I2Cdetect->i2cGetPrintOut();
+  count=false;
+  for (uint8_t i=0; i<8; i++) {
+    if (i2c_adresses[i] > 0) {
+      sprintf(buffer, " %02x", i2c_adresses[i]);
+      html_str += buffer;
+      html_str += ", ";
+      count = true;
+    } 
+  }
+  if (!count) {
+    html_str += "keine i2c Devices gefunden";
+  }
   html_str += "</td>\n";
   html_str += "</tr>\n";
   
@@ -138,13 +147,13 @@ String getPage_Status() {
 
   html_str += "<tr>\n";
   html_str += "<td>Uptime:</td>\n";
-  sprintf(buffer, "<td>%d</td>\n", UpTime->getFormatUptime());
+  sprintf(buffer, "<td>%d</td>\n", WiFi.RSSI());
   html_str += buffer;
   html_str += "</tr>\n";
 
   html_str += "<tr>\n";
   html_str += "<td>Free Memory:</td>\n";
-  sprintf(buffer, "<td>%d</td>\n", ESP.getFreeHeap()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
+  sprintf(buffer, "<td>%d</td>\n", ESP.getFreeHeap());
   html_str += buffer;
   html_str += "</tr>\n";
 
@@ -162,20 +171,12 @@ String getPage_Status() {
   if (!count) { html_str += "alle Ventile geschlossen\n"; }
   html_str += "</td></tr>\n";
 
-  if (measureType != NONE) {  
-    html_str += "<tr>\n";
-    html_str += "<td>Sensor RAW Value:</td>\n";
-    sprintf(buffer, "<td>%d %%</td>\n", sensor_RawValue);
-    html_str += buffer;
-    html_str += "</tr>\n";
-  
-    html_str += "<tr>\n";
-    html_str += "<td>Füllstand in %:</td>\n";
-    sprintf(buffer, "<td>%d %%</td>\n", sensor_level);
-    html_str += buffer;
-    html_str += "</tr>\n";
-  }
-  
+  html_str += "<tr>\n";
+  html_str += "<td>Füllstand:</td>\n";
+  sprintf(buffer, "<td>%d %%</td>\n", hcsr04_level);
+  html_str += buffer;
+  html_str += "</tr>\n";
+
   html_str += "<tr>\n";
   html_str += "<td>Firmware Update</td>\n";
   html_str += "<td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n";
@@ -188,7 +189,7 @@ String getPage_Status() {
 
   html_str += "</tbody>\n";
   html_str += "</table>\n";
-  
+
   setPage_Footer();
   return html_str.c_str();  
 }
@@ -228,20 +229,18 @@ String getPage_PinConfig() {
   html_str += buffer;
   html_str += "</tr>\n";
 
-  if(measureType != NONE) {
-    html_str += "<tr>\n";
-    html_str += "<td>Pin HC-SR04 Trigger</td>\n";
-    sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_0' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
-    html_str += buffer;
-    html_str += "</tr>\n";
-  
-    html_str += "<tr>\n";
-    html_str += "<td>Pin HC-SR04 Echo</td>\n";
-    sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_1' name='pinhcsr04echo' type='number' value='%d'/></td>\n", pin_hcsr04_echo);
-    html_str += buffer;
-    html_str += "</tr>\n";
-  }
-  
+  html_str += "<tr>\n";
+  html_str += "<td>Pin HC-SR04 Trigger</td>\n";
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_0' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", pin_hcsr04_trigger); 
+  html_str += buffer;
+  html_str += "</tr>\n";
+
+  html_str += "<tr>\n";
+  html_str += "<td>Pin HC-SR04 Echo</td>\n";
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_1' name='pinhcsr04echo' type='number' value='%d'/></td>\n", pin_hcsr04_echo);
+  html_str += buffer;
+  html_str += "</tr>\n";
+
   html_str += "<tr>\n";
   html_str += "<td>Pin i2c SDA</td>\n";
   sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_2' name='pinsda' type='number' value='%d'/></td>\n", pin_sda);
@@ -263,18 +262,17 @@ String getPage_PinConfig() {
   html_str += "</tbody>\n";
   html_str += "</table>\n";
   html_str += "<p><br /><input class='button' type='submit' value='Speichern' /></form>\n";
-  
+
   setPage_Footer();
   return html_str.c_str();  
 }
 
 
 String getPage_SensorConfig() {
-  char buffer[200] = {0};
+  char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   html_str = getPageHeader(3);
-  String hide = "";
-  
+
   html_str += "<form id='F2' action='StoreSensorConfig' method='POST'>\n";
   html_str += "<table class='editorDemoTable'>\n";
   html_str += "<thead>\n";
@@ -286,57 +284,21 @@ String getPage_SensorConfig() {
   html_str += "<tbody>\n";
 
   html_str += "<tr>\n";
-  html_str += "  <td colspan='2'>\n";
-  sprintf(buffer, "    <div class='inline'><input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['analog_1','analog_2','hcsr04_1','hcsr04_2'])\"/><label for='sel0'>keine Füllstandsmessung</label></div>\n", (measureType==NONE)?"checked":"");
-  html_str += buffer;
-  sprintf(buffer, "    <div class='inline'><input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','hcsr04_1','hcsr04_2'],['analog_1','analog_2'])\"/><label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n", (measureType==HCSR04)?"checked":"");
-  html_str += buffer;
-  sprintf(buffer, "    <div class='inline'><input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','analog_1','analog_2'],['hcsr04_1','hcsr04_2'])\"/><label for='sel2'>Füllstandsmessung mit analogem Signal (an A0)</label></div>\n", (measureType==ANALOG)?"checked":"");
-  html_str += buffer;
-  
-  html_str += "  </td>\n";
-  html_str += "</tr>\n";
-
-  if (measureType==NONE) {hide="hide";} else {hide="";}
-  sprintf(buffer, "<tr class='%s' id='all_1'>\n", hide.c_str());
-  html_str += buffer;
-  html_str += "<td>Messintervall</td>\n";
-  sprintf(buffer, "<td><input min='0' max='254' name='measurecycle' type='number' value='%d'/></td>\n", measurecycle);
+  html_str += "<td>Messintervall HC-SR04</td>\n";
+  sprintf(buffer, "<td><input min='0' max='254' name='hcsr04interval' type='number' value='%d'/></td>\n", hc_sr04_interval);
   html_str += buffer;
   html_str += "</tr>\n";
 
-  if (measureType==HCSR04) {hide="";} else {hide="hide";}
-  sprintf(buffer, "<tr class='%s' id='hcsr04_1'>\n", hide.c_str());
-  html_str += buffer;
+  html_str += "<tr>\n";
   html_str += "<td>Abstand Sensor min (in cm)</td>\n";
-  sprintf(buffer, "<td><input min='0' max='254' name='measureDistMin' type='number' value='%d'/></td>\n", measureDistMin);
+  sprintf(buffer, "<td><input min='0' max='254' name='hcsr04distmin' type='number' value='%d'/></td>\n", hc_sr04_distmin);
   html_str += buffer;
   html_str += "</tr>\n";
-
-  if (measureType==HCSR04) {hide="";} else {hide="hide";}
-  sprintf(buffer, "<tr class='%s' id='hcsr04_2'>\n", hide.c_str());
-  html_str += buffer;
+  html_str += "<tr>\n";
   html_str += "<td>Abstand Sensor max (in cm)</td>\n";
-  sprintf(buffer, "<td><input min='0' max='254' name='measureDistMax' type='number' value='%d'/></td>\n", measureDistMax);
+  sprintf(buffer, "<td><input min='0' max='254' name='hcsr04distmax' type='number' value='%d'/></td>\n", hc_sr04_distmax);
   html_str += buffer;
   html_str += "</tr>\n";
-
-  if (measureType==ANALOG) {hide="";} else {hide="hide";}
-  sprintf(buffer, "<tr class='%s' id='analog_1'>\n", hide.c_str());
-  html_str += buffer;
-  html_str += "<td>Kalibrierung: 0% entsricht RAW Wert</td>\n";
-  sprintf(buffer, "<td><input min='0' size='5' name='measureDistMin' type='number' value='%d'/></td>\n", measureDistMin);
-  html_str += buffer;
-  html_str += "</tr>\n";
-
-  if (measureType==ANALOG) {hide="";} else {hide="hide";}
-  sprintf(buffer, "<tr class='%s' id='analog_2'>\n", hide.c_str());
-  html_str += buffer;
-  html_str += "<td>Kalibrierung: 100% entsricht RAW Wert</td>\n";
-  sprintf(buffer, "<td><input min='0' max='1024' name='measureDistMax' type='number' value='%d'/></td>\n", measureDistMax);
-  html_str += buffer;
-  html_str += "</tr>\n";
-
   html_str += "</tbody>\n";
   html_str += "</table>\n";
   html_str += "<p><br /><input class='button' type='submit' value='Speichern' /></form>\n";
@@ -347,103 +309,42 @@ String getPage_SensorConfig() {
 
 
 String getPage_VentilConfig() {
-  char buffer[200] = {0};
+  char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   html_str = getPageHeader(4);
 
-  html_str += "<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n";
-  html_str += "<form id='submitForm'>\n";
-  html_str += "<table id='maintable' class='editorDemoTable'>\n";
+  html_str += "<form id='F2' action='StoreVentilConfig' method='POST'>\n";
+  html_str += "<table class='editorDemoTable'>\n";
   html_str += "<thead>\n";
   html_str += "<tr>\n";
   html_str += "<td style='width: 25px;'>Nr</td>\n";
   html_str += "<td style='width: 25px;'>Active</td>\n";
   html_str += "<td style='width: 250px;'>MQTT SubTopic</td>\n";
-  html_str += "<td style='width: 210 px;'>Port</td>\n";
-  html_str += "<td style='width: 80px;'>Type</td>\n";
-  html_str += "<td style='width: 25px;'>Delete</td>\n";
-
+  html_str += "<td style='width: 50 px;'>Port</td>\n";
   html_str += "</tr>\n";
   html_str += "</thead>\n";
   html_str += "<tbody>\n\n";
   
+  html_str += "<tr>\n";
   for(int i=0; i < pcf8574devCount; i++) {
-    html_str += "<tr>\n";
-    sprintf(buffer, "  <td>%d</td>\n", i+1);
+    sprintf(buffer, "<tr><td>%d</td>", i);
     html_str += buffer;
-    html_str += "  <td>\n";
-    html_str += "    <div class='onoffswitch'>";
-    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>\n", i, i, (pcf8574dev[i].enabled?"checked":""));
+    sprintf(buffer, "<td><input name='active_%d' type='checkbox' value='1' %s/></td>", i, (pcf8574dev[i].enabled?"checked":""));
     html_str += buffer;
-    sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
+    sprintf(buffer, "<td><input maxlength='20' name='mqtttopic_%d' type='text' value='%s'/></td>", i, pcf8574dev[i].subtopic);
     html_str += buffer;
-    html_str += "        <span class='onoffswitch-inner'></span>\n";
-    html_str += "        <span class='onoffswitch-switch'></span>\n";
-    html_str += "      </label>\n";
-    html_str += "    </div>\n";
-    html_str += "  </td>\n";
-    
-    sprintf(buffer, "  <td><input maxlength='20' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, pcf8574dev[i].subtopic);
+    sprintf(buffer, "<td><input id='AllePorts_%d' name='pcfport_%d' type='number' min='0' max='220' value='%d'/></td>", i, i, pcf8574dev[i].port);
     html_str += buffer;
-    sprintf(buffer, "  <td id='tdport_%d'>\n", i);
-    html_str += buffer;
-    
-    if (strcmp(pcf8574dev[i].type, "b")==0) {
-      sprintf(buffer, "    <div id='PortA_%d'>\n", i);
-      html_str += buffer;
-      html_str += "    <div class='inline'>\n";
-      sprintf(buffer, "      <input id='AllePorts_%d_0' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, pcf8574dev[i].port);
-      html_str += buffer;
-      html_str += "      <label>for</label>\n";
-      sprintf(buffer, "      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, pcf8574dev[i].portms);
-      html_str += buffer;
-      html_str += "      <label>ms</label>\n";
-      html_str += "    </div>\n";
-      
-      sprintf(buffer, "    <div id='PortB_%d'>\n", i);
-      html_str += buffer;
-      html_str += "      <div class='inline'>\n";
-      sprintf(buffer, "      <input id='AllePorts_%d_1' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, pcf8574dev[i].port2);
-      html_str += buffer;
-      html_str += "      <label>for</label>\n";
-      sprintf(buffer, "      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, pcf8574dev[i].port2ms);
-      html_str += buffer;
-      html_str += "      <label>ms</label>\n";
-      html_str += "    </div>\n";
-    } else if (strcmp(pcf8574dev[i].type, "n")==0) {
-      sprintf(buffer, "    <div id='Port_%d'>\n", i);
-      html_str += buffer;
-      sprintf(buffer, "      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, pcf8574dev[i].port);
-      html_str += buffer;
-      html_str += "    </div>\n";
-    } else if (strcmp(pcf8574dev[i].type, "n")==0) {
-      //do nothing
-    }
-    html_str += "  </td>\n";
-    html_str += "  <td>\n";
-    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, ((strcmp(pcf8574dev[i].type, "n")==0)?"checked":""),i);
-    html_str += buffer;
-    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, ((strcmp(pcf8574dev[i].type, "b")==0)?"checked":""),i);
-    html_str += buffer;
-    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_2' name='type_%d' value='v' %s onclick='chg_type(this.id)' /><label for='type_%d_2'>virtual</label></div>\n",i, i, ((strcmp(pcf8574dev[i].type, "v")==0)?"checked":""),i);
-    html_str += buffer;
-    
-    html_str += "  </td>\n";
-    html_str += "  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n";
     html_str += "</tr>\n";
   }
   html_str += "</tbody>\n";
   html_str += "</table>\n";
-  html_str += "</form>\n\n<br />\n";
-  html_str += "<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit()'>\n";
-  html_str += "  <input type='text' id='json' name='json' />\n";
-  html_str += "  <input type='submit' value='Speichern' />\n";
-  html_str += "</form>\n\n";
-  html_str += "<div id='ErrorText' class='errortext'></div>\n";
-    
+  html_str += "<br /><input class='button' type='submit' value='Speichern' /></form>\n";
+
   setPage_Footer();
   return html_str.c_str();  
 }
+
 
 String getPage_AutoConfig() {
   char buffer[200] = {0};
@@ -462,13 +363,13 @@ String getPage_AutoConfig() {
   html_str += "<tr>\n";
   html_str += "<td style='text-align: center;'>&nbsp;</td>\n";
   html_str += "<td >Sensor Treshold Min</td>\n";
-  sprintf(buffer, "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", treshold_min);
+  sprintf(buffer, "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", hc_sr04_treshold_min);
   html_str += buffer;
   html_str += "</tr>\n";
   html_str += "<tr>\n";
   html_str += "<td style='text-align: center;'>&nbsp;</td>\n";
   html_str += "<td>Sensor Treshold Max</td>\n";
-  sprintf(buffer, "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", treshold_max);
+  sprintf(buffer, "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", hc_sr04_treshold_max);
   html_str += buffer;
   html_str += "</tr>\n";
   html_str += "<tr>\n";
@@ -501,62 +402,5 @@ String getPage_AutoConfig() {
 
   setPage_Footer();
   return html_str.c_str();  
-}
-
-String getPage_Relations() {
-  char buffer[200] = {0};
-  memset(buffer, 0, sizeof(buffer));
-  html_str = getPageHeader(6);
-
-  html_str += "<p><input type='button' value='&#10010; add new Port' onclick='addrow()'></p>\n";
-  html_str += "<form id='submitForm'>\n";
-  html_str += "<table id='maintable' class='editorDemoTable'>\n";
-  html_str += "<thead>\n";
-  html_str += "<tr>\n";
-  html_str += "<td style='width: 25px;'>Nr</td>\n";
-  html_str += "<td style='width: 25px;'>Active</td>\n";
-  html_str += "<td style='width: 250px;'>Trigger Topic</td>\n";
-  html_str += "<td style='width: 250px;'>Port</td>\n";
-  html_str += "<td style='width: 25px;'>Delete</td>\n";
-
-  html_str += "</tr>\n";
-  html_str += "</thead>\n";
-  html_str += "<tbody>\n\n";
-
-  for(int i=0; i < valveRelCount; i++) {
-    html_str += "<tr>\n";
-    sprintf(buffer, "  <td>%d</td>\n", i+1);
-    html_str += buffer;
-    html_str += "  <td>\n";
-    html_str += "    <div class='onoffswitch'>";
-    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>\n", i, i, (valveRel[i].enabled?"checked":""));
-    html_str += buffer;
-    sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
-    html_str += buffer;
-    html_str += "        <span class='onoffswitch-inner'></span>\n";
-    html_str += "        <span class='onoffswitch-switch'></span>\n";
-    html_str += "      </label>\n";
-    html_str += "    </div>\n";
-    html_str += "  </td>\n";
-
-    sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='10' value='%s'/></td>\n", i, i, valveRel[i].portA->subtopic);
-    html_str += buffer;
-    sprintf(buffer, "  <td><input id='ConfiguredTopics_%d' name='port_%d' type='text' size='10' value='%s'/></td>\n", i, i, valveRel[i].portB->subtopic );
-    html_str += buffer;
-    html_str += "  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n";
-    html_str += "</tr>\n";
-  }
-
-  html_str += "</tbody>\n";
-  html_str += "</table>\n";
-  html_str += "</form>\n\n<br />\n";
-  html_str += "<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit()'>\n";
-  html_str += "  <input type='text' id='json' name='json' />\n";
-  html_str += "  <input type='submit' value='Speichern' />\n";
-  html_str += "</form>\n\n";
-  html_str += "<div id='ErrorText' class='errortext'></div>\n";
-  
-  setPage_Footer();
-  return html_str.c_str();
 }
 

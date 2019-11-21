@@ -37,10 +37,6 @@ void hcsr04_setup() {
   //digitalWrite(pin_hcsr04_echo, LOW);
 }
 
-void analog_setup() {
-  
-}
-
 void hcsr04_loop() {
   digitalWrite(pin_hcsr04_trigger, LOW);
   delayMicroseconds(2);
@@ -50,46 +46,29 @@ void hcsr04_loop() {
   delayMicroseconds(10);
   digitalWrite(pin_hcsr04_trigger, LOW);
 
-  sensor_level = 0;
+  int distance = 0;//unsigned, since we don't get negative distances.
+  hcsr04_level = 0;
   
-  sensor_RawValue = pulseIn(pin_hcsr04_echo, HIGH, MAX_DIST); //Distance in CM's, use /148 for inches.
-  sensor_RawValue = (sensor_RawValue / 2) / 29.1;
+  distance = pulseIn(pin_hcsr04_echo, HIGH, MAX_DIST); //Distance in CM's, use /148 for inches.
+  distance = (distance / 2) / 29.1;
 
-  if (sensor_RawValue == 0){//Reached timeout
+  if (distance == 0){//Reached timeout
     Serial.println("Out of range");
   }
   else {
     //Serial.print(distance);Serial.println(" cm");
-    MQTT_publish(MQTT_sensorRawValue, &sensor_RawValue);
+    MQTT_publish(MQTT_distance, &distance);
     
-    if (measureDistMax - measureDistMin > 0) {
-      sensor_level = (((measureDistMax - sensor_RawValue)*100)/(measureDistMax - measureDistMin));
+    if (hc_sr04_distmax - hc_sr04_distmin > 0) {
+      hcsr04_level = (((hc_sr04_distmax - distance)*100)/(hc_sr04_distmax - hc_sr04_distmin));
 
       // MQTT 
-      MQTT_publish(MQTT_level, &sensor_level);
+      MQTT_publish(MQTT_level, &hcsr04_level);
     
       // Automatik
-      auto_3wegeVentil();
+      if(enable_3wege && hcsr04_level <= hc_sr04_treshold_min && !pcf8574dev[ventil3wegeDevice].active) {handleSwitch(&pcf8574dev[ventil3wegeDevice], true);}
+      if(enable_3wege && hcsr04_level >= hc_sr04_treshold_max &&  pcf8574dev[ventil3wegeDevice].active) {handleSwitch(&pcf8574dev[ventil3wegeDevice], false);}
     }
   }
-}
-
-void analog_loop() {
-  
-  sensor_RawValue = analogRead(A0);
-  
-  MQTT_publish(MQTT_sensorRawValue, &sensor_RawValue); //raw-Wert
-  
-  sensor_level = map(sensor_RawValue, measureDistMin, measureDistMax, 0, 100); // 0-100%
-  Serial.print(sensor_level);Serial.println(" %");
-  MQTT_publish(MQTT_level, &sensor_level);
-
-  //Automatik
-  auto_3wegeVentil();
-}
-
-void auto_3wegeVentil() {
-  if(enable_3wege && sensor_level <= treshold_min && !pcf8574dev[ventil3wegeDevice].active) {handleSwitch(&pcf8574dev[ventil3wegeDevice], true);}
-  if(enable_3wege && sensor_level >= treshold_max &&  pcf8574dev[ventil3wegeDevice].active) {handleSwitch(&pcf8574dev[ventil3wegeDevice], false);}
 }
 

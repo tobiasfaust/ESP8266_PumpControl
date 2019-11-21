@@ -25,37 +25,32 @@ void handleAutoConfig() {
   server.send(200, "text/html", getPage_AutoConfig());   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
-void handleRelations() {
-  server.send(200, "text/html", getPage_Relations());   // Send HTTP status 200 (Ok) and send some text to the browser/client
-}
-
 void handleCSS() {
   server.send(200, "text/css", STYLE_CSS);
 }
 
 void handleJS() {
-  server.send(200, "text/javascript", JAVASCRIPT);
+  server.send(200, "text/js", JAVASCRIPT);
 }
 
 void handleJSParam() {
-  server.send(200, "text/javascript", getJSParam());
+  server.send(200, "text/js", getJSParam());
 }
 
 void handleReboot() {
   server.sendHeader("Location","/");
   server.send(303); 
-  delay(3000);
   ESP.restart();  
 }
 
 void handleStorePinConfig() {
   strcpy(mqtt_server, server.arg("mqttserver").c_str());
-  mqtt_port = atoi(server.arg("mqttport").c_str())|1883;
+  mqtt_port = atoi(server.arg("mqttport").c_str());
   strcpy(mqtt_root, server.arg("mqttroot").c_str());
-  pin_hcsr04_trigger = atoi(server.arg("pinhcsr04trigger").c_str())|0;
-  pin_hcsr04_echo = atoi(server.arg("pinhcsr04echo").c_str())|0;
-  pin_sda = atoi(server.arg("pinsda").c_str())|0;
-  pin_scl = atoi(server.arg("pinscl").c_str())|0;
+  pin_hcsr04_trigger = atoi(server.arg("pinhcsr04trigger").c_str());
+  pin_hcsr04_echo = atoi(server.arg("pinhcsr04echo").c_str());
+  pin_sda = atoi(server.arg("pinsda").c_str());
+  pin_scl = atoi(server.arg("pinscl").c_str());
   i2caddress_oled = strtoul(server.arg("i2coled").c_str(), NULL, 16); // hex convert to dec
   
   //save the custom parameters to FS
@@ -91,21 +86,17 @@ void handleStoreSensorConfig() {
   char buffer[20] = {0};
   memset(buffer, 0, sizeof(buffer));
 
-  measurecycle = atoi(server.arg("measurecycle").c_str());
-  measureDistMin = atoi(server.arg("measureDistMin").c_str());
-  measureDistMax = atoi(server.arg("measureDistMax").c_str());
-  
-  if (strcmp(server.arg("selection").c_str(), "analog")==0) { measureType=ANALOG; }
-  if (strcmp(server.arg("selection").c_str(), "hcsr04")==0) { measureType=HCSR04; }
+  hc_sr04_interval = atoi(server.arg("hcsr04interval").c_str());
+  hc_sr04_distmin = atoi(server.arg("hcsr04distmin").c_str());
+  hc_sr04_distmax = atoi(server.arg("hcsr04distmax").c_str());
   
   if (true) {
     Serial.println("saving config");
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-    json["measurecycle"] = measurecycle;
-    json["measureDistMin"] = measureDistMin;
-    json["measureDistMax"] = measureDistMax;
-    json["measureType"] = toLowerCase(measureType);
+    json["hc_sr04_interval"] = hc_sr04_interval;
+    json["hc_sr04_distmin"] = hc_sr04_distmin;
+    json["hc_sr04_distmax"] = hc_sr04_distmax;
     
     File configFile = SPIFFS.open("/SensorConfig.json", "w");
     if (!configFile) {
@@ -122,53 +113,60 @@ void handleStoreSensorConfig() {
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }
 
-//#############################################
-void handleStoreVentilConfig2() {
-  //https://arduinojson.org/v5/api/jsonobject/begin_end/
+void handleStoreVentilConfig() {
   char buffer[20] = {0};
-  unsigned int i;
   memset(buffer, 0, sizeof(buffer));
+  uint8_t enabled = 0;
   
-  //char json[] = "{\"first\":\"hello\",\"second\":\"world\"}";
-  //strcpy(pcf8574dev[i].subtopic, server.arg(buffer).c_str());
-  String json = server.arg("json");
+  for(int i=0; i < pcf8574devCount; i++) {
+    sprintf(buffer, "mqtttopic_%d", i);
+    strcpy(pcf8574dev[i].subtopic, server.arg(buffer).c_str());
+    sprintf(buffer, "pcfport_%d", i);
+    pcf8574dev[i].port = atoi(server.arg(buffer).c_str());
+    sprintf(buffer, "active_%d", i);
+    enabled = atoi(server.arg(buffer).c_str());
+    if (enabled == 1) { pcf8574dev[i].enabled = true;} else { pcf8574dev[i].enabled = false;}
+  }
   
-  Serial.print("json empfangen: ");
-  Serial.println(json);
-  
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(json);
-  root.printTo(Serial);
+  //save the custom parameters to FS
+  if (true) {
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["count"] = pcf8574devCount;
+    for(int i=0; i < pcf8574devCount; i++) {
+      sprintf(buffer, "mqtttopic_%d", i);
+      json[buffer] = pcf8574dev[i].subtopic;
+      sprintf(buffer, "pcfport_%d", i);
+      json[buffer] = pcf8574dev[i].port;
+      sprintf(buffer, "active_%d", i);
+      json[buffer] = (pcf8574dev[i].enabled?1:0);
+    }
     
-  if (root.success()) {
     File configFile = SPIFFS.open("/VentilConfig.json", "w");
     if (!configFile) {
       Serial.println("failed to open VentilConfig.json file for writing");
     }
-  
-    root.printTo(Serial);
-    root.printTo(configFile);
+
+    json.printTo(Serial);
+    json.printTo(configFile);
     configFile.close();
-  
+
     // ReRead and initialize Objects
     PCF8574_setup();
-    MQTT_reconnect(); // ggf neue virtuelle Ports müssen subscribed werden
     
-  } else {
-      Serial.println("something went wrong to parse json string");
   }
   server.sendHeader("Location","/VentilConfig");        // Add a header to respond with a new location for the browser to go to the home page again
-  server.send(303);     
+  server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
 }
 
-//#############################################
 void handleStoreAutoConfig() {
   char buffer[20] = {0};
   memset(buffer, 0, sizeof(buffer));
   uint8_t enabled = 0;
 
-  treshold_min  = atoi(server.arg("treshold_min").c_str());
-  treshold_max  = atoi(server.arg("treshold_max").c_str());
+  hc_sr04_treshold_min  = atoi(server.arg("treshold_min").c_str());
+  hc_sr04_treshold_max  = atoi(server.arg("treshold_max").c_str());
   syncswitch_port       = atoi(server.arg("syncswitch_port").c_str());
   ventil3wege_port      = atoi(server.arg("ventil3wege_port").c_str());
   max_parallel          = atoi(server.arg("max_parallel").c_str());
@@ -182,8 +180,8 @@ void handleStoreAutoConfig() {
     Serial.println("saving config");
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-    json["treshold_min"] = treshold_min;
-    json["treshold_max"] = treshold_max;
+    json["hc_sr04_treshold_min"] = hc_sr04_treshold_min;
+    json["hc_sr04_treshold_max"] = hc_sr04_treshold_max;
     json["syncswitch_port"] = syncswitch_port;
     json["ventil3wege_port"] = ventil3wege_port;
     json["max_parallel"] = max_parallel;
@@ -206,39 +204,5 @@ void handleStoreAutoConfig() {
   
   server.sendHeader("Location","/AutoConfig");        // Add a header to respond with a new location for the browser to go to the home page again
   server.send(303);                         // Send it back to the browser with an HTTP status 303 (See Other) to redirect
-}
-
-void handleStoreRelations() {
-  char buffer[20] = {0};
-  unsigned int i;
-  memset(buffer, 0, sizeof(buffer));
-  
-  String json = server.arg("json");
-  
-  Serial.print("json empfangen: ");
-  Serial.println(json);
-  
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(json);
-  root.printTo(Serial);
-    
-  if (root.success()) {
-    File configFile = SPIFFS.open("/Relations.json", "w");
-    if (!configFile) {
-      Serial.println("failed to open Relations.json file for writing");
-    }
-  
-    root.printTo(Serial);
-    root.printTo(configFile);
-    configFile.close();
-
-    // load Relations
-    loadValveRelations();
-  
-  } else {
-      Serial.println("something went wrong to parse json string");
-  }
-  server.sendHeader("Location","/Relations");        // Add a header to respond with a new location for the browser to go to the home page again
-  server.send(303);     
 }
 
