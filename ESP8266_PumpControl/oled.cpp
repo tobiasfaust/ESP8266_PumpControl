@@ -46,7 +46,7 @@ void OLED::SetSSID(String ssid) {
 }
 
 void OLED::SetRSSI(int rssi) {
-  if(ssd && this->enabled && (abs(rssi) < abs(this->rssi)-1 || abs(rssi) > abs(this->rssi)+1)) { //this->rssi != rssi && (abs(this->rssi)-1 <= abs(rssi) && abs(rssi) <= abs(this->rssi)+1)
+  if(ssd && this->enabled && (abs(rssi) < abs(this->rssi)-3 || abs(rssi) > abs(this->rssi)+3)) { 
     this->rssi = rssi;
     display_wifibars();
     ssd->display(); 
@@ -88,7 +88,6 @@ void OLED::SetLevel(uint8_t Level) {
 void OLED::SetLevel(uint8_t Level, bool force) {
   if(ssd && this->enabled && (this->SensorLevel != Level || force)) {
     this->SensorLevel = Level;
-
     ssd->setColor(BLACK);
     ssd->fillRect(1, 32, 127, 63); // 
     ssd->setColor(WHITE);
@@ -124,14 +123,14 @@ void OLED::display_header() {
   ssd->setFont(ArialMT_Plain_10);
   ssd->setColor(WHITE);
   ssd->drawString(56, 1, title);
-  ssd->drawString(56, 17, subtitle);
+  ssd->drawString(56, 15, subtitle);
 }
 
 void OLED::display_MqttConnectInfo() {
   ssd->setFont(ArialMT_Plain_10);
   ssd->setTextAlignment(TEXT_ALIGN_LEFT);
   int x = 100;
-  int y = 17;
+  int y = 15;
   String text("MQTT");
   int width = ssd->getStringWidth(text);
   

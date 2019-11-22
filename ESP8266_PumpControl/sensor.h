@@ -30,12 +30,12 @@ class sensor {
     void      init();
     void      setSensorType(sensorType_t t);
     void      loop();
-    void      SetLvl(int lvl);
+    void      SetLvl(uint8_t lvl);
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
     const int& GetRaw() const {return raw;}
-    const int& GetLvl() const {return level; }
+    const uint8_t& GetLvl() const {return level; }
     const sensorType_t& GetType() const {return Type; }
     const uint8_t& GetThresholdMin()const {return threshold_min;}
     const uint8_t& GetThresholdMax()const {return threshold_max;}

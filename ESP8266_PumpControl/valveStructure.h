@@ -34,8 +34,7 @@ class valveStructure {
     void      ReceiveMQTT(const char* topic, const char* value);
   
   private:
-    void      addValve(String SubTopic); // Virtual
-    void      addValve(uint8_t Port, String SubTopic); // Normal
+    void      addValve(uint8_t Port, String SubTopic);
     valve*    GetValveItem(uint8_t Port);
       
     valveHardware* ValveHW = NULL;

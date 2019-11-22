@@ -24,7 +24,8 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
     oled->SetWiFiConnected(true);
   }
   Serial.println(WiFi.localIP());
-  
+
+  Serial.print("Starting MQTT (");Serial.print(server); Serial.print(":");Serial.print(port);Serial.println(")");
   mqtt.setClient(espClient);
   mqtt.setServer(server, port);
   mqtt.setCallback([this] (char* topic, byte* payload, unsigned int length) { this->callback(topic, payload, length); });
@@ -33,9 +34,11 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
 void MQTT::reconnect() {
   char topic[50];
   memset(&topic[0], 0, sizeof(topic));
-  Serial.println("Attempting MQTT connection...");
+  
   snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
-  if (mqtt.connect(mqtt_root.c_str())) {
+  Serial.print("Attempting MQTT connection as ");Serial.println(topic);
+  
+  if (mqtt.connect(topic)) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
     // Once connected, publish an announcement...

@@ -3,11 +3,6 @@
 valve::valve() : enabled(true), active(false), ValveType(NONE){
 }
 
-void valve::init(String SubTopic) {
-  ValveType = VIRTUAL;
-  subtopic = SubTopic;  
-}
-
 void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
   valveHWClass = vHW;
   myHWdev = valveHWClass->RegisterPort(Port);
@@ -35,13 +30,13 @@ bool valve::OnForTimer(int duration) {
 
 bool valve::SetOn() {
   bool ret = false;
-  if (enabled) {ret = HandleSwitch(true, NULL);}
+  if (this->enabled && !this->active) {ret = HandleSwitch(true, NULL);}
   return ret;
 }
 
 bool valve::SetOff() {
   bool ret = false;
-  ret = HandleSwitch(false, NULL);
+  if (this->active) {ret = HandleSwitch(false, NULL);}
   return ret;
 }
 
@@ -79,14 +74,12 @@ int valve::ActiveTimeLeft() {
 void valve::SetValveType(String type) {
   if (type == "n") { ValveType = NORMAL; }
   else if (type=="b") { ValveType = BISTABIL; }
-  else if (type=="v") { ValveType = VIRTUAL; }
   else { ValveType = NONE; }
 }
 
 String valve::GetValveType() {
   if (ValveType == NORMAL) { return "n"; }
   else if (ValveType == BISTABIL) { return "b"; }
-  else if (ValveType == VIRTUAL) { return "v"; }
   else { return ""; }
 }
 

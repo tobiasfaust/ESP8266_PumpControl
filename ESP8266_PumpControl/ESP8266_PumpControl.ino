@@ -54,7 +54,6 @@ void setup() {
   Serial.print(F("Starting WIRE at (SDA, SCL)): "));Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
   Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
     
-  Serial.println("Starting MQTT");
   mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
   mqtt->setCallback(myMQTTCallBack);
   
@@ -68,8 +67,8 @@ void setup() {
   //VStruct->OnForTimer("Valve1", 10);
 
   delay(1000);
-  //VStruct->ReceiveMQTT("pumpHost/TestVirtualValve1/on-for-timer", "10");
-  //VStruct->ReceiveMQTT("testhost/TestVirtualValve1/on-for-timer", "10");
+  //VStruct->ReceiveMQTT("pumpHost/TestValve1/on-for-timer", "10");
+  //VStruct->ReceiveMQTT("testhost/TestValve1/on-for-timer", "10");
   
 }
 

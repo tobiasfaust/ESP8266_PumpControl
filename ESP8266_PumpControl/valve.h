@@ -14,15 +14,14 @@ extern MQTT* mqtt;
 
 class valve {
 
-  enum vType_t {NONE, BISTABIL, NORMAL, VIRTUAL};
+  enum vType_t {NONE, BISTABIL, NORMAL};
   
   public:
     valve();
     //~valve();
     
     void      loop();
-    void      init(String SubTopic); // Virtual
-    void      init(valveHardware* Device, uint8_t Port, String SubTopic); // Normal
+    void      init(valveHardware* Device, uint8_t Port, String SubTopic);
     
     bool      OnForTimer(int duration);
     bool      SetOn();

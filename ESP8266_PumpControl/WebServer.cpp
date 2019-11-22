@@ -242,13 +242,14 @@ void WebServer::getPage_Status(String* html) {
   } else { html->concat("alle Ventile geschlossen\n"); }
   html->concat("</td></tr>\n");
 
-  if (LevelSensor->GetType() != NONE) {  
+  if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) {  
     html->concat("<tr>\n");
     html->concat("<td>Sensor RAW Value:</td>\n");
     sprintf(buffer, "<td>%d %%</td>\n", LevelSensor->GetRaw());
     html->concat(buffer);
     html->concat("</tr>\n");
-
+  }
+  if (LevelSensor->GetType() != NONE) {  
     html->concat("<tr>\n");
     html->concat("<td>Füllstand in %:</td>\n");
     sprintf(buffer, "<td>%d %%</td>\n", LevelSensor->GetLvl());

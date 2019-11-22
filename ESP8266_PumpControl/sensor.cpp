@@ -29,16 +29,21 @@ void sensor::setSensorType(sensorType_t t) {
   this->Type = t;
 }
 
-void sensor::SetLvl(int lvl) {
+void sensor::SetLvl(uint8_t lvl) {
   this->level = lvl;
+  oled->SetLevel(this->level);
 }
 
 void sensor::loop_analog() {
+  this->raw = this->level = 0;
+  
   this->raw   = analogRead(A0);
   this->level = map(raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
 }
 
 void sensor::loop_hcsr04() {
+  this->raw = this->level = 0;
+  
   digitalWrite(this->pinTrigger, LOW);
   delayMicroseconds(2);
 
@@ -62,7 +67,6 @@ void sensor::loop() {
   if (millis() - this->previousMillis > this->measurecycle*1000) {
     this->previousMillis = millis();
     
-    this->raw = this->level = 0;
     if (this->Type == ANALOG) {loop_analog();}
     if (this->Type == HCSR04) {loop_hcsr04();}
 
@@ -75,8 +79,8 @@ void sensor::loop() {
       if (this->raw > 0 )   { mqtt->Publish("raw", this->raw); }
       if (this->level > 0 ) { mqtt->Publish("level", this->level); }
     }
-
-    if (this->Type != NONE) {
+    
+    if (this->Type != NONE && this->Type != EXTERN) {
       oled->SetLevel(this->level);
     }
   }
@@ -194,7 +198,7 @@ void sensor::GetWebContent(String* html) {
   html->concat("  </td>\n");
   html->concat("</tr>\n");
 
-  sprintf(buffer, "<tr class='%s' id='all_1'>\n", (this->Type==NONE?"hide":""));
+  sprintf(buffer, "<tr class='%s' id='all_1'>\n", (this->Type==NONE||this->Type==EXTERN?"hide":""));
   html->concat(buffer);
   html->concat("<td>Messintervall</td>\n");
   sprintf(buffer, "<td><input min='0' max='254' name='measurecycle' type='number' value='%d'/></td>\n", this->measurecycle);
@@ -246,7 +250,7 @@ void sensor::GetWebContent(String* html) {
   sprintf(buffer, "<tr class='%s' id='extern_1'>\n", (this->Type==EXTERN?"":"hide"));
   html->concat(buffer);
   html->concat("<td>MQTT-Topic des externen Sensors (Füllstand in %)</td>\n");
-  sprintf(buffer, "<td><input maxlength='15' name='externalSensor' type='text' value='%s'/></td>\n", this->externalSensor.c_str());
+  sprintf(buffer, "<td><input size='30' name='externalSensor' type='text' value='%s'/></td>\n", this->externalSensor.c_str());
   html->concat(buffer);
   html->concat("</tr>\n");
   

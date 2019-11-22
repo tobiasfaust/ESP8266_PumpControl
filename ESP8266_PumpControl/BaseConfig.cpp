@@ -82,6 +82,7 @@ void BaseConfig::LoadJsonConfig() {
     oled->init(this->pin_sda, this->pin_scl, this->i2caddress_oled);
     oled->Enable(this->enable_oled);
   }
+
 }
 
 void BaseConfig::GetWebContent(String* html) {
@@ -100,13 +101,13 @@ void BaseConfig::GetWebContent(String* html) {
 
   html->concat("<tr>\n");
   html->concat("<td>Device Name</td>\n");
-  sprintf(buffer, "<td><input maxlength='40' name='mqttroot' type='text' value='%s'/></td>\n", this->mqtt_root.c_str());
+  sprintf(buffer, "<td><input size='30' maxlength='40' name='mqttroot' type='text' value='%s'/></td>\n", this->mqtt_root.c_str());
   html->concat(buffer);
   html->concat("</tr>\n");
   
   html->concat("<tr>\n");
   html->concat("<td>MQTT Server IP</td>\n");
-  sprintf(buffer, "<td><input maxlength='15' name='mqttserver' type='text' value='%s'/></td>\n", this->mqtt_server.c_str());
+  sprintf(buffer, "<td><input size='30' name='mqttserver' type='text' value='%s'/></td>\n", this->mqtt_server.c_str());
   html->concat(buffer);
   html->concat("</tr>\n");
   

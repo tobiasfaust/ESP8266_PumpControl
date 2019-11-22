@@ -24,6 +24,7 @@ class OLED {
     void      SetRSSI(int rssi);
     void      SetWiFiConnected(bool c);
     void      SetMqttConnected(bool c);
+    
     const bool& GetEnabled() const {return enabled;}
     
   private:

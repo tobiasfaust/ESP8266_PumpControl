@@ -12,12 +12,6 @@ valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   LoadJsonConfig();
 }
 
-void valveStructure::addValve(String SubTopic) {
-  valve myValve;
-  myValve.init(SubTopic);
-  Valves->push_back(myValve);
-}
- 
 void valveStructure::addValve(uint8_t Port, String SubTopic) {
   valve myValve;
   myValve.init(ValveHW, Port, SubTopic);
@@ -239,7 +233,7 @@ void valveStructure::GetWebContent(String* html) {
     html->concat("    </div>\n");
     html->concat("  </td>\n");
     
-    sprintf(buffer, "  <td><input maxlength='20' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
+    sprintf(buffer, "  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
     html->concat(buffer);
     sprintf(buffer, "  <td id='tdport_%d'>\n", i);
     html->concat(buffer);
@@ -272,17 +266,13 @@ void valveStructure::GetWebContent(String* html) {
       sprintf(buffer, "      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
       html->concat(buffer);
       html->concat("    </div>\n");
-    } else if (Valves->at(i).GetValveType() == "v") {
-      //do nothing
-    }
+    } 
     html->concat("  </td>\n");
     html->concat("  <td>\n");
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
     html->concat(buffer);
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
     html->concat(buffer);
-    //sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_2' name='type_%d' value='v' %s onclick='chg_type(this.id)' /><label for='type_%d_2'>virtual</label></div>\n",i, i, (Valves->at(i).GetValveType()=="v"?"checked":""),i);
-    //html->concat(buffer);
     
     html->concat("  </td>\n");
     html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");

@@ -25,7 +25,7 @@ class BaseConfig {
     const uint8_t& GetI2cOLED()     const {return i2caddress_oled;}
     const bool&    EnabledOled()    const {return enable_oled;}
     const String&  GetMqttServer()  const {return mqtt_server;}
-    const uint8_t& GetMqttPort()    const {return mqtt_port;}
+    const uint16_t& GetMqttPort()    const {return mqtt_port;}
     const String&  GetMqttRoot()    const {return mqtt_root;}
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
     const bool&    Enabled3Wege()   const {return enable_3wege;}
