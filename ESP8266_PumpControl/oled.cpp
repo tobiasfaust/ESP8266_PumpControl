@@ -24,11 +24,9 @@ void OLED::init(uint8_t sda, uint8_t scl, uint8_t i2cAddress) {
 }
 
 void OLED::Enable(bool e) {
-  Serial.println("OLED enabled");
-  if (e) {
-    this->enabled = e;
-    UpdateAll();
-  }
+  Serial.println((e?"OLED enabled":"OLED disabled"));
+  this->enabled = e;
+  if (e) { UpdateAll();}
 }
 
 void OLED::SetIP(String ip) {
@@ -64,7 +62,7 @@ void OLED::SetWiFiConnected(bool c) {
 void OLED::SetMqttConnected(bool c) {
   if(this->MqttConnected != c) {
     this->MqttConnected = c;
-    display_MqttConnectInfo(); 
+    if (this->enabled) { display_MqttConnectInfo(); }
     Serial.print(F("OLED: Change MQTT Connect Status to ")); Serial.println(c);
   }
 }

@@ -294,7 +294,7 @@ void valveStructure::getWebJsParameter(String* html) {
   
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-  sprintf(buffer, "const gpio_disabled = [%d,%d];\n", this->pin_sda + 200, this->pin_scl + 200);
+  sprintf(buffer, "const gpio_disabled = [%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200);
   html->concat(buffer);
 
   // anhand gefundener pcf Devices die verfügbaren Ports bereit stellen
@@ -302,7 +302,7 @@ void valveStructure::getWebJsParameter(String* html) {
   html->concat("const availablePorts = [");
   uint8_t count=0;
   for (uint8_t p=1; p<=254; p++) {
-    if (ValveHW->IsValidPort(p) && I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p))) {
+    if (ValveHW->IsValidPort(p) && I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p)) && (!Config->EnabledOled() || Config->GetI2cOLED()!=ValveHW->GetI2CAddress(p))) {
       sprintf(buffer, "%s%d", (count>0?",":"") , p);
       html->concat(buffer);
       count++;

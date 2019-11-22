@@ -78,10 +78,8 @@ void BaseConfig::LoadJsonConfig() {
     loadDefaultConfig = false; //set back
   }
 
-  if (this->enable_oled) { 
-    oled->init(this->pin_sda, this->pin_scl, this->i2caddress_oled);
-    oled->Enable(this->enable_oled);
-  }
+  if (this->enable_oled) {oled->init(this->pin_sda, this->pin_scl, this->i2caddress_oled);}
+  oled->Enable(this->enable_oled);
 
 }
 

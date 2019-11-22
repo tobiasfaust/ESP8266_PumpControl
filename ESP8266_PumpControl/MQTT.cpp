@@ -134,7 +134,7 @@ void MQTT::loop() {
     mqtt.loop();
   }
 
-  if (WiFi.status() == WL_CONNECTED && oled->GetEnabled()) {
+  if (WiFi.status() == WL_CONNECTED) {
     oled->SetIP(WiFi.localIP().toString());
     oled->SetRSSI(WiFi.RSSI());
     oled->SetSSID(WiFi.SSID());

@@ -11,10 +11,13 @@
 #include <FS.h> 
 #include <ArduinoJson.h>
 #include <i2cdetect.h>
+#include "BaseConfig.h"
 #include "valveRelation.h"
 #include "valve.h"
 #include "MQTT.h"
-  
+
+extern BaseConfig* Config;
+
 class valveStructure {
 
   public:
