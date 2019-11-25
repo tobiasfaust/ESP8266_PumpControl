@@ -35,7 +35,7 @@ class valve {
     uint8_t   GetPort2();
     
     bool      enabled;  //grundsätzlich aktiviert in WebUI
-    bool      active;   // Ventil ist gerade aktiv/geöffnet
+    bool      active;  // Ventil ist gerade aktiv/geöffnet
     uint16_t  port1ms; // millisekunden bei Type "b" für Port1: 10-999
     uint16_t  port2ms; // millisekunden bei Type "b" für Port2: 10-999
     String    subtopic; //ohne on-for-timer

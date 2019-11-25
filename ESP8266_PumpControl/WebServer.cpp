@@ -14,19 +14,19 @@ WebServer::WebServer() : DoReboot(false) {
   server->on("/BaseConfig", [this]() {this->handleBaseConfig(); });
   server->on("/SensorConfig", [this]() {this->handleSensorConfig(); });
   server->on("/VentilConfig", [this]() {this->handleVentilConfig(); });
-  //server->on("/AutoConfig", [this]() {this->handleAutoConfig(); });
   server->on("/Relations", [this]() {this->handleRelations(); });
   
   server->on("/style.css", HTTP_GET, [this]() {this->handleCSS(); });
   server->on("/javascript.js", HTTP_GET, [this]() {this->handleJS(); });
   server->on("/parameter.js", HTTP_GET, [this]() {this->handleJSParam(); });
   
-  server->on("/StoreBaseConfig", HTTP_POST, [this]() { this->ReceiveJSONConfiguration(BASECONFIG); });
+  server->on("/StoreBaseConfig", HTTP_POST, [this]()   { this->ReceiveJSONConfiguration(BASECONFIG); });
   server->on("/StoreSensorConfig", HTTP_POST, [this]() { this->ReceiveJSONConfiguration(SENSOR); });
   server->on("/StoreVentilConfig", HTTP_POST, [this]() { this->ReceiveJSONConfiguration(VENTILE); });
-  //server->on("/StoreAutoConfig", HTTP_POST, handleStoreAutoConfig);
-  server->on("/StoreRelations", HTTP_POST, [this]() { this->ReceiveJSONConfiguration(RELATIONS); });
-  server->on("/reboot", HTTP_GET, [this]() { this->handleReboot(); });
+  server->on("/StoreRelations", HTTP_POST, [this]()    { this->ReceiveJSONConfiguration(RELATIONS); });
+  server->on("/reboot", HTTP_GET, [this]()             { this->handleReboot(); });
+
+  server->on("/ajax", [this]() {this->handleAjax(); });
   
   Serial.println(F("WebServer started..."));
 
@@ -38,11 +38,6 @@ void WebServer::loop() {
   //UpTime->loop(); -> verursacht ESP Absturz
   if (this->DoReboot) {ESP.restart();}
 }
-
-/*void WebServer::SetHTMLFunction_Valve (CB_HTML_VALVE) {
-  Serial.println("CallBack Function Start");
-  this->htmlValve = htmlValve;
-}*/
 
 void WebServer::handleNotFound() {
   server->send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
@@ -122,6 +117,43 @@ void WebServer::ReceiveJSONConfiguration(page_t page) {
 
   server->sendHeader("Location", targetPage.c_str());
   server->send(303); 
+}
+
+void WebServer::handleAjax() {
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  String ret;
+    
+  DynamicJsonBuffer jsonBufferGet;
+  JsonObject& jsonGet = jsonBufferGet.parseObject(server->arg("json"));
+
+  DynamicJsonBuffer jsonBufferReturn;
+  JsonObject& jsonReturn = jsonBufferReturn.createObject();
+  
+  Serial.print("Ajax Json Empfangen: "); jsonGet.printTo(Serial); Serial.println();
+  if (jsonGet.success()) {
+    String action;
+    if (jsonGet.containsKey("action")) {action = jsonGet["action"].as<String>();}
+    if (action && strcmp(action.c_str(), "SetValve")==0) {
+      String newState; 
+      uint8_t port;
+      if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
+      if (jsonGet.containsKey("port"))     { port = atoi(jsonGet["port"]); }
+      
+      if (newState && port && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
+      else if (newState && port && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
+      else {
+        sprintf(buffer, "No valid Ajax Command: Action=%s, NewState=%s, Port=%d", action.c_str(), newState.c_str(), port);
+        Serial.println(buffer);
+        jsonReturn["accepted"] = 0;
+        jsonReturn["error"] = "no valid ajax command";
+      }
+      if (port) {jsonReturn["NewState"] = (VStruct->GetState(port)?"On":"Off");}
+    }
+  }
+  jsonReturn.printTo(ret);
+  Serial.print("Ajax Json Antwort: ");jsonReturn.printTo(Serial); Serial.println();
+  server->send(200, "text/html", ret.c_str());
 }
 
 void WebServer::getPageHeader(String* html, page_t pageactive) {

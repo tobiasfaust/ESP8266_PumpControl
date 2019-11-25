@@ -25,7 +25,7 @@ void BaseConfig::StoreJsonConfig(String* json) {
 }
 
 void BaseConfig::LoadJsonConfig() {
-    bool loadDefaultConfig = false;
+  bool loadDefaultConfig = false;
   if (SPIFFS.exists("/BaseConfig.json")) {
     //file exists, reading and loading
     Serial.println("reading sensor config file");

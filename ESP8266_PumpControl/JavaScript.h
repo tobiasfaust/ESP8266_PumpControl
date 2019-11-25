@@ -2,9 +2,9 @@ const char JAVASCRIPT[] PROGMEM = R"=====(
 //############ DO NOT CHANGE BELOW ###################
 // alle GPIOs des ESP8266
 const gpio = [  {port: 216, name:'D0'},
-                {port: 205, name:'D1/SDA'},
-                {port: 204, name:'D2/SCL'},
-                {port: 200, name:'D3'},
+                {port: 205, name:'D1'},
+                {port: 204, name:'D2/SDA'},
+                {port: 200, name:'D3/SCL'},
                 {port: 202, name:'D4'},
                 {port: 214, name:'D5'},
                 {port: 212, name:'D6'},
@@ -102,15 +102,15 @@ function showNormal(td, num, visiblility) {
 }
 
 // id: id des DIV Containers (PortA/PortB), Num: laufende RowNumber
-function createBiValPort(divID, num) { 
+function createBiValPort(divID, num, sub) { 
   _div = document.createElement( 'div' ); 
   //_div.style.border = '1px solid #777';
   _div.id = divID +'_'+ num;
       
-  _select = createPortSelectionList('AllePorts_'+divID, "pcfport_" + num + "_1");
+  _select = createPortSelectionList('AllePorts_' + divID + '_' + num, "pcfport_" + num + "_" + sub);
   _imp = document.createElement( 'input');
   _imp.type = 'number'; 
-  _imp.id = _imp.name = 'imp_'+num;
+  _imp.id = _imp.name = 'imp_' + num + "_" + sub;
   _imp.value = _imp.min = '10';
   _imp.max = '999'
   _label1 = document.createElement( 'label');
@@ -132,12 +132,12 @@ function showBiVal(td, num, visiblility) {
     if(document.getElementById('PortA_'+num)) {
       document.getElementById('PortA_'+num).style.display = 'inline';
     } else {
-      td.appendChild(createBiValPort('PortA', num));
+      td.appendChild(createBiValPort('PortA', num, 0));
     }
     if(document.getElementById('PortB_'+num)) {
       document.getElementById('PortB_'+num).style.display = 'inline';
     } else {
-      td.appendChild(createBiValPort('PortB', num));
+      td.appendChild(createBiValPort('PortB', num, 1));
     }
   } else {
     if(document.getElementById('PortA_'+num)) {
@@ -161,11 +161,7 @@ function chg_type(id) {
     // Typ "normal"
     showBiVal(_td, num, false);
     showNormal(_td, num, true); 
-  } else if (val == 'v') {
-    // Typ "virtuell"
-    showBiVal(_td, num, false);
-    showNormal(_td, num, false);
-  }
+  } 
   table = _td.parentNode.parentNode;
   validate_identifiers(table.id);
 }
@@ -196,7 +192,7 @@ function addrow(tableID) {
 }
 
 function validate_identifiers(tableID) {
-  table = document.getElementById(tableID);
+  table = document.getElementById(tableID); 
   for( i=1; i< table.rows.length; i++) { 
     row = table.rows[i];
     row.cells[0].innerHTML = i; 
@@ -245,6 +241,60 @@ function checkVentilConfig(SubmitForm) {
   }
   
   return true;
+}
+
+function ChangeValve(id) {
+  btn = document.getElementById(id);
+  num = id.replace(/^action_(\d+).*/g, "$1");
+  var data = {};
+  
+  data['action'] = "SetValve"
+  data['newState'] = btn.value.replace(/^Set\ (.*)/, "$1");
+  
+  port = document.getElementById('AllePorts_'+num); //'AllePorts_'+num
+  if (port && port.style.display != 'none') { data['port'] = port.value; }
+  port = document.getElementById('AllePorts_PortA_'+num);
+  if (port && port.style.display != 'none') { data['port'] = port.value; }
+  
+  //json = document.getElementById('jsonform').querySelectorAll("input[name='json']");
+  //json[0].value = JSON.stringify(data);
+  
+  ajax_send(btn, JSON.stringify(data));
+}
+
+function ajax_send(btn, json) {
+  var http = null;
+  if (window.XMLHttpRequest)  { http =new XMLHttpRequest(); }
+  else                        { http =new ActiveXObject("Microsoft.XMLHTTP"); }
+  
+  if(!http){ alert("AJAX is not supported."); return; }
+ 
+  var url = 'ajax';
+  var params = 'json='+json;
+  
+  http.open('POST', url, true);
+  
+  //Send the proper header information along with the request
+  http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  http.setRequestHeader('Content-length', params.length);
+  http.setRequestHeader('Connection', 'close');
+  
+  //http.onerror = function(){ alert (http.responseText); }
+  //http.onload = function(){ alert (http.responseText); }
+  
+  http.onreadystatechange = function() {//Call a function when the state changes.
+      if(http.readyState == 4 && http.status == 200) {
+          var jsonReturn = JSON.parse(http.responseText);
+          switch (jsonReturn.NewState) {
+            case 'On':
+              btn.value = 'Set Off';
+              break;
+            case 'Off':
+              btn.value = 'Set On';
+           }
+      } 
+    }
+  http.send(params);
 }
 
 function onSubmit(DataForm, SubmitForm){

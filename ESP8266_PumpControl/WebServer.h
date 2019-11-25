@@ -38,7 +38,7 @@ extern i2cdetect* I2Cdetect;
 
 class WebServer {
 
-  enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, RELATIONS, AUTOCONFIG};
+  enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, RELATIONS};
 
   public:
     WebServer();
@@ -66,6 +66,7 @@ class WebServer {
     void      handleVentilConfig();
     void      handleSensorConfig();
     void      handleRelations();
+    void      handleAjax();
     void      ReceiveJSONConfiguration(page_t page);
     void      getPageHeader(String* html, page_t pageactive);
     void      getPageFooter(String* html);

@@ -59,6 +59,10 @@ void valveStructure::SetOff(uint8_t Port) {
   GetValveItem(Port)->SetOff();
 }
 
+bool valveStructure::GetState(uint8_t Port) {
+  return GetValveItem(Port)->active;
+}
+
 void valveStructure::loop() {
   for (uint8_t i=0; i<Valves->size(); i++) {
     Valves->at(i).loop();
@@ -212,6 +216,7 @@ void valveStructure::GetWebContent(String* html) {
   html->concat("<td style='width: 210 px;'>Port</td>\n");
   html->concat("<td style='width: 80px;'>Type</td>\n");
   html->concat("<td style='width: 25px;'>Delete</td>\n");
+  html->concat("<td style='width: 25px;'>Action</td>\n");
 
   html->concat("</tr>\n");
   html->concat("</thead>\n");
@@ -242,7 +247,7 @@ void valveStructure::GetWebContent(String* html) {
       sprintf(buffer, "    <div id='PortA_%d'>\n", i);
       html->concat(buffer);
       html->concat("    <div class='inline'>\n");
-      sprintf(buffer, "      <input id='AllePorts_%d_0' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
+      sprintf(buffer, "      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
       html->concat(buffer);
       html->concat("      <label>for</label>\n");
       sprintf(buffer, "      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
@@ -253,7 +258,7 @@ void valveStructure::GetWebContent(String* html) {
       sprintf(buffer, "    <div id='PortB_%d'>\n", i);
       html->concat(buffer);
       html->concat("      <div class='inline'>\n");
-      sprintf(buffer, "      <input id='AllePorts_%d_1' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
+      sprintf(buffer, "      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
       html->concat(buffer);
       html->concat("      <label>for</label>\n");
       sprintf(buffer, "      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
@@ -273,9 +278,15 @@ void valveStructure::GetWebContent(String* html) {
     html->concat(buffer);
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
     html->concat(buffer);
-    
     html->concat("  </td>\n");
+    
     html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
+
+    html->concat("  <td>\n");
+    sprintf(buffer, "    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).active?"On":"Off"));
+    html->concat(buffer);
+    html->concat("  </td>\n");
+
     html->concat("</tr>\n");
   }
   html->concat("</tbody>\n");
