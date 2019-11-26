@@ -29,6 +29,8 @@ class valveStructure {
     void      SetOff(String SubTopic);
     void      SetOff(uint8_t Port);
     bool      GetState(uint8_t Port);
+    bool      GetEnabled(uint8_t Port);
+    void      SetEnable(uint8_t Port, bool state);
     uint8_t   CountActiveThreads();
     
     void      StoreJsonConfig(String* json);

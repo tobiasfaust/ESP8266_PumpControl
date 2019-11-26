@@ -123,6 +123,7 @@ void WebServer::handleAjax() {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   String ret;
+  bool RaiseError = false;
     
   DynamicJsonBuffer jsonBufferGet;
   JsonObject& jsonGet = jsonBufferGet.parseObject(server->arg("json"));
@@ -132,25 +133,39 @@ void WebServer::handleAjax() {
   
   Serial.print("Ajax Json Empfangen: "); jsonGet.printTo(Serial); Serial.println();
   if (jsonGet.success()) {
-    String action;
+    String action, newState; 
+    uint8_t port;
+        
     if (jsonGet.containsKey("action")) {action = jsonGet["action"].as<String>();}
+    if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
+    if (jsonGet.containsKey("port"))     { port = atoi(jsonGet["port"]); }
+
     if (action && strcmp(action.c_str(), "SetValve")==0) {
-      String newState; 
-      uint8_t port;
-      if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
-      if (jsonGet.containsKey("port"))     { port = atoi(jsonGet["port"]); }
-      
-      if (newState && port && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
+      if (newState && port && !VStruct->GetEnabled(port)) { jsonReturn["accepted"] = 0; jsonReturn["error"] = "Requested Port not enabled. Please enable first!";}
+      else if (newState && port && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
       else if (newState && port && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
-      else {
-        sprintf(buffer, "No valid Ajax Command: Action=%s, NewState=%s, Port=%d", action.c_str(), newState.c_str(), port);
-        Serial.println(buffer);
-        jsonReturn["accepted"] = 0;
-        jsonReturn["error"] = "no valid ajax command";
-      }
+      else { RaiseError = true; }
+
       if (port) {jsonReturn["NewState"] = (VStruct->GetState(port)?"On":"Off");}
     }
+
+    if (action && strcmp(action.c_str(), "EnableValve")==0) {
+      if (port && newState) {
+        uint8_t e = atoi(newState.c_str()); 
+        VStruct->SetEnable(port, e);
+        jsonReturn["NewState"] = (VStruct->GetEnabled(port)?"1":"0");
+        jsonReturn["accepted"] = 1;
+      }
+    }
+  } else { RaiseError = true; }
+
+  if (RaiseError) {
+    jsonReturn["accepted"] = 0;
+    snprintf(buffer, sizeof(buffer), "No supported Ajax Json Command: %s", server->arg("json").c_str());
+    Serial.println(FPSTR(buffer));
+    jsonReturn["error"] = buffer;
   }
+  
   jsonReturn.printTo(ret);
   Serial.print("Ajax Json Antwort: ");jsonReturn.printTo(Serial); Serial.println();
   server->send(200, "text/html", ret.c_str());

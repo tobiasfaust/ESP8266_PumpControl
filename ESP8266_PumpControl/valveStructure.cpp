@@ -63,6 +63,14 @@ bool valveStructure::GetState(uint8_t Port) {
   return GetValveItem(Port)->active;
 }
 
+bool valveStructure::GetEnabled(uint8_t Port) {
+  return GetValveItem(Port)->enabled;
+}
+
+void valveStructure::SetEnable(uint8_t Port, bool state) {
+  GetValveItem(Port)->enabled = state;
+}
+
 void valveStructure::loop() {
   for (uint8_t i=0; i<Valves->size(); i++) {
     Valves->at(i).loop();
@@ -228,7 +236,7 @@ void valveStructure::GetWebContent(String* html) {
     html->concat(buffer);
     html->concat("  <td>\n");
     html->concat("    <div class='onoffswitch'>\n");
-    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).enabled?"checked":""));
+    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).enabled?"checked":""));
     html->concat(buffer);
     sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
     html->concat(buffer);

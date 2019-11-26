@@ -243,6 +243,22 @@ function checkVentilConfig(SubmitForm) {
   return true;
 }
 
+function ChangeEnabled(id) {
+  obj = document.getElementById(id);
+  num = id.replace(/^.*_(\d+)$/g, "$1");
+  var data = {};
+
+  data['action'] = "EnableValve"
+  data['newState'] = obj.checked;
+
+  port = document.getElementById('AllePorts_'+num); //'AllePorts_'+num
+  if (port && port.style.display != 'none') { data['port'] = port.value; }
+  port = document.getElementById('AllePorts_PortA_'+num);
+  if (port && port.style.display != 'none') { data['port'] = port.value; }
+  
+  ajax_send(null, JSON.stringify(data));
+}
+
 function ChangeValve(id) {
   btn = document.getElementById(id);
   num = id.replace(/^action_(\d+).*/g, "$1");
@@ -256,14 +272,12 @@ function ChangeValve(id) {
   port = document.getElementById('AllePorts_PortA_'+num);
   if (port && port.style.display != 'none') { data['port'] = port.value; }
   
-  //json = document.getElementById('jsonform').querySelectorAll("input[name='json']");
-  //json[0].value = JSON.stringify(data);
-  
   ajax_send(btn, JSON.stringify(data));
 }
 
 function ajax_send(btn, json) {
   var http = null;
+  ShowError();
   if (window.XMLHttpRequest)  { http =new XMLHttpRequest(); }
   else                        { http =new ActiveXObject("Microsoft.XMLHTTP"); }
   
@@ -285,13 +299,16 @@ function ajax_send(btn, json) {
   http.onreadystatechange = function() {//Call a function when the state changes.
       if(http.readyState == 4 && http.status == 200) {
           var jsonReturn = JSON.parse(http.responseText);
-          switch (jsonReturn.NewState) {
-            case 'On':
-              btn.value = 'Set Off';
-              break;
-            case 'Off':
-              btn.value = 'Set On';
+          if (btn) {
+            switch (jsonReturn.NewState) {
+              case 'On':
+                btn.value = 'Set Off';
+                break;
+              case 'Off':
+                btn.value = 'Set On';
+             }
            }
+           if(jsonReturn.error) { ShowError(jsonReturn.error); }
       } 
     }
   http.send(params);
