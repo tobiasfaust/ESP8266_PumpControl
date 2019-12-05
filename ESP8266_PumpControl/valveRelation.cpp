@@ -133,57 +133,61 @@ void valveRelation::LoadJsonConfig() {
   }
 }
 
-void valveRelation::GetWebContent(String* html) {
+void valveRelation::GetWebContent(ESP8266WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
+  String html = "";
+  
+  html.concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
+  html.concat("<form id='DataForm'>\n");
+  html.concat("<table id='maintable' class='editorDemoTable'>\n");
+  html.concat("<thead>\n");
+  html.concat("<tr>\n");
+  html.concat("<td style='width: 25px;'>Nr</td>\n");
+  html.concat("<td style='width: 25px;'>Active</td>\n");
+  html.concat("<td style='width: 250px;'>Trigger Topic</td>\n");
+  html.concat("<td style='width: 250px;'>Port</td>\n");
+  html.concat("<td style='width: 25px;'>Delete</td>\n");
 
-  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
-  html->concat("<form id='DataForm'>\n");
-  html->concat("<table id='maintable' class='editorDemoTable'>\n");
-  html->concat("<thead>\n");
-  html->concat("<tr>\n");
-  html->concat("<td style='width: 25px;'>Nr</td>\n");
-  html->concat("<td style='width: 25px;'>Active</td>\n");
-  html->concat("<td style='width: 250px;'>Trigger Topic</td>\n");
-  html->concat("<td style='width: 250px;'>Port</td>\n");
-  html->concat("<td style='width: 25px;'>Delete</td>\n");
-
-  html->concat("</tr>\n");
-  html->concat("</thead>\n");
-  html->concat("<tbody>\n\n");
+  html.concat("</tr>\n");
+  html.concat("</thead>\n");
+  html.concat("<tbody>\n\n");
+  server->sendContent(html.c_str()); html = "";
 
   for (uint8_t i=0; i< _relationen->size(); i++) {
-    html->concat("<tr>\n");
+    html.concat("<tr>\n");
     sprintf(buffer, "  <td>%d</td>\n", i+1);
-    html->concat(buffer);
-    html->concat("  <td>\n");
-    html->concat("    <div class='onoffswitch'>");
+    html.concat(buffer);
+    html.concat("  <td>\n");
+    html.concat("    <div class='onoffswitch'>");
     sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>\n", i, i, (_relationen->at(i).enabled?"checked":""));
-    html->concat(buffer);
+    html.concat(buffer);
     sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
-    html->concat(buffer);
-    html->concat("        <span class='onoffswitch-inner'></span>\n");
-    html->concat("        <span class='onoffswitch-switch'></span>\n");
-    html->concat("      </label>\n");
-    html->concat("    </div>\n");
-    html->concat("  </td>\n");
+    html.concat(buffer);
+    html.concat("        <span class='onoffswitch-inner'></span>\n");
+    html.concat("        <span class='onoffswitch-switch'></span>\n");
+    html.concat("      </label>\n");
+    html.concat("    </div>\n");
+    html.concat("  </td>\n");
 
     sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>\n", i, i, _relationen->at(i).TriggerSubTopic.c_str());
-    html->concat(buffer);
+    html.concat(buffer);
 
     sprintf(buffer, "  <td><input id='ConfiguredPorts_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>\n", i, i, _relationen->at(i).ActorPort);
-    html->concat(buffer);
-    html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
-    html->concat("</tr>\n");
+    html.concat(buffer);
+    html.concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
+    html.concat("</tr>\n");
+    server->sendContent(html.c_str()); html = "";
   }
 
-  html->concat("</tbody>\n");
-  html->concat("</table>\n");
-  html->concat("</form>\n\n<br />\n");
-  html->concat("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
-  html->concat("  <input type='text' id='json' name='json' />\n");
-  html->concat("  <input type='submit' value='Speichern' />\n");
-  html->concat("</form>\n\n");
-  html->concat("<div id='ErrorText' class='errortext'></div>\n");
+  html.concat("</tbody>\n");
+  html.concat("</table>\n");
+  html.concat("</form>\n\n<br />\n");
+  html.concat("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  html.concat("  <input type='text' id='json' name='json' />\n");
+  html.concat("  <input type='submit' value='Speichern' />\n");
+  html.concat("</form>\n\n");
+  html.concat("<div id='ErrorText' class='errortext'></div>\n");
+  server->sendContent(html.c_str()); html = "";
 }
 

@@ -1,3 +1,6 @@
+// https://github.com/esp8266/Arduino/issues/3205
+// https://github.com/Hieromon/PageBuilder
+
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
@@ -15,6 +18,7 @@
 
 #include "BaseConfig.h"
 #include "JavaScript.h"
+#include "JsAjax.h"
 #include "CSS.h"
 #include "uptime.h"
 #include "sensor.h"
@@ -27,15 +31,6 @@ extern valveStructure* VStruct;
 extern valveRelation* ValveRel;
 extern i2cdetect* I2Cdetect;
 
-/*
-#ifdef __AVR__
-  #define CB_HTML_VALVE void (*htmlValve)(String*)
-#else
-  #include <functional>
-  #define CB_HTML_VALVE std::function<void(String*)> htmlValve
-#endif
-*/
-
 class WebServer {
 
   enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, RELATIONS};
@@ -44,7 +39,6 @@ class WebServer {
     WebServer();
 
     void      loop();
-    //void SetHTMLFunction_Valve (CB_HTML_VALVE);
 
   private:
     
@@ -53,13 +47,12 @@ class WebServer {
     ESP8266WebServer* server;
     ESP8266HTTPUpdateServer httpUpdater;
     uptime* UpTime = NULL;
-    
-    //CB_HTML_VALVE;
 
     void      handleNotFound();
     void      handleReboot();
     void      handleCSS();
     void      handleJS();
+    void      handleJsAjax();
     void      handleJSParam();
     void      handleRoot();
     void      handleBaseConfig();

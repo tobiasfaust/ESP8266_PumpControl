@@ -36,6 +36,7 @@ class valveStructure {
     void      StoreJsonConfig(String* json);
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
+    void      GetWebContent(ESP8266WebServer* server);
     void      getWebJsParameter(String* html);
     void      ReceiveMQTT(const char* topic, const char* value);
   

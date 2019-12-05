@@ -32,7 +32,7 @@ class valveRelation {
     
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(String* html);
+    void      GetWebContent(ESP8266WebServer* server);
     
   private:
     std::vector<relation_t>* _relationen  = NULL;

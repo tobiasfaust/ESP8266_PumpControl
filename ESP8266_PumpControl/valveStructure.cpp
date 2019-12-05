@@ -52,23 +52,25 @@ void valveStructure::SetOn(String SubTopic) {
 }
 
 void valveStructure::SetOn(uint8_t Port) {
-  GetValveItem(Port)->SetOn();
+  if (GetValveItem(Port)) { GetValveItem(Port)->SetOn();}
 }
 
 void valveStructure::SetOff(uint8_t Port) {
-  GetValveItem(Port)->SetOff();
+  if (GetValveItem(Port)) { GetValveItem(Port)->SetOff(); }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
-  return GetValveItem(Port)->active;
+  if (GetValveItem(Port)) { return GetValveItem(Port)->active; }
+  return NULL;
 }
 
 bool valveStructure::GetEnabled(uint8_t Port) {
-  return GetValveItem(Port)->enabled;
+  if (GetValveItem(Port)) { return GetValveItem(Port)->enabled;}
+  return NULL;
 }
 
 void valveStructure::SetEnable(uint8_t Port, bool state) {
-  GetValveItem(Port)->enabled = state;
+  if (GetValveItem(Port)) { GetValveItem(Port)->enabled = state; }
 }
 
 void valveStructure::loop() {
@@ -209,102 +211,104 @@ void valveStructure::LoadJsonConfig() {
   }
 }
 
-void valveStructure::GetWebContent(String* html) {
+void valveStructure::GetWebContent(ESP8266WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
-  
-  html->concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
-  html->concat("<form id='DataForm'>\n");
-  html->concat("<table id='maintable' class='editorDemoTable'>\n");
-  html->concat("<thead>\n");
-  html->concat("<tr>\n");
-  html->concat("<td style='width: 25px;'>Nr</td>\n");
-  html->concat("<td style='width: 25px;'>Active</td>\n");
-  html->concat("<td style='width: 250px;'>MQTT SubTopic</td>\n");
-  html->concat("<td style='width: 210 px;'>Port</td>\n");
-  html->concat("<td style='width: 80px;'>Type</td>\n");
-  html->concat("<td style='width: 25px;'>Delete</td>\n");
-  html->concat("<td style='width: 25px;'>Action</td>\n");
+  String html = "";
 
-  html->concat("</tr>\n");
-  html->concat("</thead>\n");
-  html->concat("<tbody>\n\n");
-  
+  html.concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
+  html.concat("<form id='DataForm'>\n");
+  html.concat("<table id='maintable' class='editorDemoTable'>\n");
+  html.concat("<thead>\n");
+  html.concat("<tr>\n");
+  html.concat("<td style='width: 25px;'>Nr</td>\n");
+  html.concat("<td style='width: 25px;'>Active</td>\n");
+  html.concat("<td style='width: 250px;'>MQTT SubTopic</td>\n");
+  html.concat("<td style='width: 210 px;'>Port</td>\n");
+  html.concat("<td style='width: 80px;'>Type</td>\n");
+  html.concat("<td style='width: 25px;'>Delete</td>\n");
+  html.concat("<td style='width: 25px;'>Action</td>\n");
+  html.concat("</tr>\n");
+  html.concat("</thead>\n");
+  server->sendContent(html.c_str()); html = "";
+
   for(uint8_t i=0; i<Valves->size(); i++) {
-    html->concat("<tr>\n");
+    html.concat("<tr>\n");
     sprintf(buffer, "  <td>%d</td>\n", i+1);
-    html->concat(buffer);
-    html->concat("  <td>\n");
-    html->concat("    <div class='onoffswitch'>\n");
+    html.concat(buffer);
+    html.concat("  <td>\n");
+    html.concat("    <div class='onoffswitch'>\n");
     sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).enabled?"checked":""));
-    html->concat(buffer);
+    html.concat(buffer);
     sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
-    html->concat(buffer);
-    html->concat("        <span class='onoffswitch-inner'></span>\n");
-    html->concat("        <span class='onoffswitch-switch'></span>\n");
-    html->concat("      </label>\n");
-    html->concat("    </div>\n");
-    html->concat("  </td>\n");
+    html.concat(buffer);
+    html.concat("        <span class='onoffswitch-inner'></span>\n");
+    html.concat("        <span class='onoffswitch-switch'></span>\n");
+    html.concat("      </label>\n");
+    html.concat("    </div>\n");
+    html.concat("  </td>\n");
     
     sprintf(buffer, "  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
-    html->concat(buffer);
+    html.concat(buffer);
     sprintf(buffer, "  <td id='tdport_%d'>\n", i);
-    html->concat(buffer);
+    html.concat(buffer);
     
     if (Valves->at(i).GetValveType() == "b") {
       sprintf(buffer, "    <div id='PortA_%d'>\n", i);
-      html->concat(buffer);
-      html->concat("    <div class='inline'>\n");
+      html.concat(buffer);
+      html.concat("    <div class='inline'>\n");
       sprintf(buffer, "      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
-      html->concat(buffer);
-      html->concat("      <label>for</label>\n");
+      html.concat(buffer);
+      html.concat("      <label>for</label>\n");
       sprintf(buffer, "      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
-      html->concat(buffer);
-      html->concat("      <label>ms</label>\n");
-      html->concat("    </div>\n");
+      html.concat(buffer);
+      html.concat("      <label>ms</label>\n");
+      html.concat("    </div>\n");
       
       sprintf(buffer, "    <div id='PortB_%d'>\n", i);
-      html->concat(buffer);
-      html->concat("      <div class='inline'>\n");
+      html.concat(buffer);
+      html.concat("      <div class='inline'>\n");
       sprintf(buffer, "      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
-      html->concat(buffer);
-      html->concat("      <label>for</label>\n");
+      html.concat(buffer);
+      html.concat("      <label>for</label>\n");
       sprintf(buffer, "      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
-      html->concat(buffer);
-      html->concat("      <label>ms</label>\n");
-      html->concat("    </div>\n");
+      html.concat(buffer);
+      html.concat("      <label>ms</label>\n");
+      html.concat("    </div>\n");
     } else if (Valves->at(i).GetValveType() == "n") {
       sprintf(buffer, "    <div id='Port_%d'>\n", i);
-      html->concat(buffer);
+      html.concat(buffer);
       sprintf(buffer, "      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
-      html->concat(buffer);
-      html->concat("    </div>\n");
+      html.concat(buffer);
+      html.concat("    </div>\n");
     } 
-    html->concat("  </td>\n");
-    html->concat("  <td>\n");
+    html.concat("  </td>\n");
+    html.concat("  <td>\n");
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
-    html->concat(buffer);
+    html.concat(buffer);
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
-    html->concat(buffer);
-    html->concat("  </td>\n");
+    html.concat(buffer);
+    html.concat("  </td>\n");
     
-    html->concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
+    html.concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
 
-    html->concat("  <td>\n");
+    html.concat("  <td>\n");
     sprintf(buffer, "    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).active?"On":"Off"));
-    html->concat(buffer);
-    html->concat("  </td>\n");
+    html.concat(buffer);
+    html.concat("  </td>\n");
 
-    html->concat("</tr>\n");
+    html.concat("</tr>\n");
+    server->sendContent(html.c_str()); html = "";
   }
-  html->concat("</tbody>\n");
-  html->concat("</table>\n");
-  html->concat("</form>\n\n<br />\n");
-  html->concat("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
-  html->concat("  <input type='text' id='json' name='json' />\n");
-  html->concat("  <input type='submit' value='Speichern' />\n");
-  html->concat("</form>\n\n");
-  html->concat("<div id='ErrorText' class='errortext'></div>\n");
+  html.concat("</tbody>\n");
+  html.concat("</table>\n");
+  html.concat("</form>\n\n<br />\n");
+  html.concat("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  html.concat("  <input type='text' id='json' name='json' />\n");
+  html.concat("  <input type='submit' value='Speichern' />\n");
+  html.concat("</form>\n\n");
+  html.concat("<div id='ErrorText' class='errortext'></div>\n");
+  server->sendContent(html.c_str()); html = "";
 }
 
 void valveStructure::getWebJsParameter(String* html) {

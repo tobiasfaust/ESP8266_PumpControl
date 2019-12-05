@@ -18,6 +18,7 @@ WebServer::WebServer() : DoReboot(false) {
   
   server->on("/style.css", HTTP_GET, [this]() {this->handleCSS(); });
   server->on("/javascript.js", HTTP_GET, [this]() {this->handleJS(); });
+  server->on("/jsajax.js", HTTP_GET, [this]() {this->handleJsAjax(); });
   server->on("/parameter.js", HTTP_GET, [this]() {this->handleJSParam(); });
   
   server->on("/StoreBaseConfig", HTTP_POST, [this]()   { this->ReceiveJSONConfiguration(BASECONFIG); });
@@ -48,20 +49,29 @@ void WebServer::handleRoot() {
   this->getPageHeader(&html, ROOT);
   this->getPage_Status(&html);
   this->getPageFooter(&html);
+  server->setContentLength(html.length());
   server->send(200, "text/html", html.c_str());   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
 void WebServer::handleCSS() {
-  server->send(200, "text/css", STYLE_CSS);
+  //server->setContentLength(sizeof(STYLE_CSS));
+  server->send_P(200, "text/css", STYLE_CSS);
 }
 
 void WebServer::handleJS() {
-  server->send(200, "text/javascript", JAVASCRIPT);
+  //server->setContentLength(sizeof(JAVASCRIPT));
+  server->send_P(200, "text/javascript", JAVASCRIPT);
+}
+
+void WebServer::handleJsAjax() {
+  //server->setContentLength(sizeof(JSAJAX));
+  server->send_P(200, "text/javascript", JSAJAX);
 }
 
 void WebServer::handleJSParam() {
   String html;
   VStruct->getWebJsParameter(&html);
+  server->setContentLength(html.length());
   server->send(200, "text/javascript", html.c_str());
 }
 
@@ -76,15 +86,19 @@ void WebServer::handleBaseConfig() {
   this->getPageHeader(&html, BASECONFIG);
   Config->GetWebContent(&html);
   this->getPageFooter(&html);
+  server->setContentLength(html.length());
   server->send(200, "text/html", html.c_str());   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
 void WebServer::handleVentilConfig() {
   String html;
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   this->getPageHeader(&html, VENTILE);
-  VStruct->GetWebContent(&html);
-  this->getPageFooter(&html);
   server->send(200, "text/html", html.c_str());
+  html = "";
+  VStruct->GetWebContent(server);
+  this->getPageFooter(&html);
+  server->sendContent(html.c_str());
 }
 
 void WebServer::handleSensorConfig() {
@@ -97,10 +111,13 @@ void WebServer::handleSensorConfig() {
 
 void WebServer::handleRelations() {
   String html;
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   this->getPageHeader(&html, RELATIONS);
-  ValveRel->GetWebContent(&html);
-  this->getPageFooter(&html);
   server->send(200, "text/html", html.c_str());
+  ValveRel->GetWebContent(server);
+  html = "";
+  this->getPageFooter(&html);
+  server->sendContent(html.c_str());
 }
 
 
@@ -180,6 +197,7 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("<link rel='stylesheet' type='text/css' href='/style.css'>\n");
   html->concat("<script language='javascript' type='text/javascript' src='/parameter.js'></script>\n");
   html->concat("<script language='javascript' type='text/javascript' src='/javascript.js'></script>\n");
+  html->concat("<script language='javascript' type='text/javascript' src='/jsajax.js'></script>\n");
   html->concat("<title>Bewässerungssteuerung</title></head>\n");
   html->concat("<body>\n");
   html->concat("<table>\n");
@@ -251,6 +269,8 @@ void WebServer::getPage_Status(String* html) {
   html->concat("<td>i2c Bus:</td>\n");
   html->concat("<td>");
   html->concat(I2Cdetect->i2cGetAddresses());
+  //https://fdossena.com/?p=html5cool/buttons/i.frag
+  html->concat("<a href='#' class='button bouncy'>&#8634;</a>");
   html->concat("</td>\n");
   html->concat("</tr>\n");
 
@@ -292,7 +312,7 @@ void WebServer::getPage_Status(String* html) {
   if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) {  
     html->concat("<tr>\n");
     html->concat("<td>Sensor RAW Value:</td>\n");
-    sprintf(buffer, "<td>%d %%</td>\n", LevelSensor->GetRaw());
+    sprintf(buffer, "<td>%d</td>\n", LevelSensor->GetRaw());
     html->concat(buffer);
     html->concat("</tr>\n");
   }
