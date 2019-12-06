@@ -1,5 +1,6 @@
 // https://github.com/esp8266/Arduino/issues/3205
 // https://github.com/Hieromon/PageBuilder
+// https://www.mediaevent.de/tutorial/sonderzeichen.html
 
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
