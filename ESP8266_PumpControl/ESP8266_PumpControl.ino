@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Wire.h>
+/*#include <Wire.h>
 #include "PCF8574.h"
 #include "Grove_Motor_Driver_TB6612FNG.h"
 #include "SSD1306Wire.h"
@@ -15,7 +15,7 @@
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include "uptime.h"
 #include "i2cdetect.h"
-
+*/
 
 #include <vector>
 #include "BaseConfig.h"
@@ -79,8 +79,13 @@ void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) { msg.concat((char)payload[i]); }
   Serial.print("Message: ");Serial.println(msg.c_str());
 
-  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str())>0) { LevelSensor->SetLvl(atoi(msg.c_str())); }
+  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str())>0) { 
+    LevelSensor->SetLvl(atoi(msg.c_str())); 
+  }
+  else if (strstr(topic, "/raw") ||  strstr(topic, "/level")) { /*SensorMeldungen*/ }
   else { VStruct->ReceiveMQTT(topic, msg.c_str()); }
+
+  Serial.print("(MQTTCallback) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
 }
 
 void loop() {

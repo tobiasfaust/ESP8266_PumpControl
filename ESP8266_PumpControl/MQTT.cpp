@@ -3,6 +3,8 @@
 MQTT::MQTT(const char* server, uint16_t port, String root) {  
   this->mqtt_root = root;
   this->subscriptions = new std::vector<subscription_t>{};
+  espClient = WiFiClient();
+  this->mqtt = new PubSubClient();
   
   WiFiManager wifiManager;
   wifiManager.setTimeout(300);
@@ -26,9 +28,9 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   Serial.println(WiFi.localIP());
 
   Serial.print("Starting MQTT (");Serial.print(server); Serial.print(":");Serial.print(port);Serial.println(")");
-  mqtt.setClient(espClient);
-  mqtt.setServer(server, port);
-  mqtt.setCallback([this] (char* topic, byte* payload, unsigned int length) { this->callback(topic, payload, length); });
+  mqtt->setClient(espClient);
+  mqtt->setServer(server, port);
+  mqtt->setCallback([this] (char* topic, byte* payload, unsigned int length) { this->callback(topic, payload, length); });
 }
 
 void MQTT::reconnect() {
@@ -38,26 +40,26 @@ void MQTT::reconnect() {
   snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
   Serial.print("Attempting MQTT connection as ");Serial.println(topic);
   
-  if (mqtt.connect(topic)) {
+  if (mqtt->connect(topic)) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
     // Once connected, publish an announcement...
     //client.publish("outTopic", "hello world");
     // ... and resubscribe
     snprintf (topic, sizeof(topic), "%s/#", mqtt_root.c_str());
-    mqtt.subscribe(topic);
-    Serial.print(F("MQTT Subscribe to: ")); Serial.println(FPSTR(topic));
+    mqtt->subscribe(topic);
+    Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(topic));
 
     for (uint8_t i=0; i< this->subscriptions->size(); i++) {
       if (this->subscriptions->at(i).active == true) {
-        mqtt.subscribe(this->subscriptions->at(i).subscription.c_str()); 
-        Serial.print(F("MQTT Subscribe to: ")); Serial.println(FPSTR(this->subscriptions->at(i).subscription.c_str()));
+        mqtt->subscribe(this->subscriptions->at(i).subscription.c_str()); 
+        Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(this->subscriptions->at(i).subscription.c_str()));
       }
     }
     
   } else {
     Serial.print(F("failed, rc="));
-    Serial.print(mqtt.state());
+    Serial.print(mqtt->state());
     Serial.println(F(" try again in few seconds"));
     oled->SetMqttConnected(false);
   }
@@ -73,27 +75,32 @@ String MQTT::GetRoot() {
   return mqtt_root;
 }
 
-void MQTT::Publish(const char* subtopic, bool b) {
-  char b1[2];
-  memset(&b1[0], 0, sizeof(b1));
-  if(b) {strcpy(b1, "1");} else {strcpy(b1, "0");}
-  Publish(subtopic, b1);
+void MQTT::Publish_Bool(const char* subtopic, bool b) {
+  //Serial.print("(Publish 1) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
+  //char b1[2];
+  //memset(&b1[0], 0, sizeof(b1));
+  //if(b) {strcpy(b1, "1");} else {strcpy(b1, "0");}
+  char* s = "0"; 
+  if(b) {s = "1";};
+  Publish_String(subtopic, s);
 }
 
-void MQTT::Publish(const char* subtopic, int* number ) {
-  char buffer[10];
+void MQTT::Publish_Int(const char* subtopic, int* number ) {
+  //Serial.print("(Publish 2) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
+  char buffer[10] = {0};
   memset(&buffer[0], 0, sizeof(buffer));
-  itoa(*number, buffer, 10);
-  Publish(subtopic, buffer);
+  snprintf(buffer, sizeof(buffer), "%d", number);
+  //itoa(*number, buffer, 10);
+  Publish_String(subtopic, buffer);
 }
 
-void MQTT::Publish(const char* subtopic, char* value ) {
-  char topic[50];
+void MQTT::Publish_String(const char* subtopic, char* value ) {
+  char topic[50] = {0};
   memset(&topic[0], 0, sizeof(topic));
   snprintf (topic, sizeof(topic), "%s/%s", this->mqtt_root.c_str(), subtopic);
-  if (mqtt.connected()) {
-    mqtt.publish(topic, value);
-    Serial.print(F("Publish ")); Serial.print(topic); Serial.print(F(": ")); Serial.println(value);
+  if (mqtt->connected()) {
+    mqtt->publish((const char*)topic, (const char*)value);
+    Serial.print(F("Publish ")); Serial.print(FPSTR(topic)); Serial.print(F(": ")); Serial.println(value);
   } else { Serial.println(F("Request for MQTT Publish, but not connected to Broker")); }
 }
 
@@ -110,13 +117,13 @@ void MQTT::Subscribe(String topic, MqttSubscriptionType_t identifier) {
   sub.identifier = identifier;
   sub.active = true;
   this->subscriptions->push_back(sub);
-  if (mqtt.connected()) {mqtt.subscribe(sub.subscription.c_str()); Serial.print(F("MQTT Subscribe at: ")); Serial.println(FPSTR(sub.subscription.c_str()));}
+  if (mqtt->connected()) {mqtt->subscribe(sub.subscription.c_str()); Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(sub.subscription.c_str()));}
 }
 
 void MQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
   for ( uint8_t i=0; i< this->subscriptions->size(); i++) {
-    if (mqtt.connected() && this->subscriptions->at(i).active == true && this->subscriptions->at(i).identifier == identifier) { 
-      mqtt.unsubscribe(this->subscriptions->at(i).subscription.c_str()); 
+    if (mqtt->connected() && this->subscriptions->at(i).active == true && this->subscriptions->at(i).identifier == identifier) { 
+      mqtt->unsubscribe(this->subscriptions->at(i).subscription.c_str()); 
     }
     if (this->subscriptions->at(i).identifier == identifier) { 
       this->subscriptions->at(i).active = false;
@@ -125,13 +132,14 @@ void MQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
 }
 
 void MQTT::loop() {
-  if (!mqtt.connected() && WiFi.status() == WL_CONNECTED) { 
+  if (!mqtt->connected() && WiFi.status() == WL_CONNECTED) { 
       if (millis() - mqttreconnect_lasttry > 10000) {
+        espClient = WiFiClient();
         this->reconnect(); 
         this->mqttreconnect_lasttry = millis();
     }
   } else if (WiFi.status() == WL_CONNECTED) { 
-    mqtt.loop();
+    mqtt->loop();
   }
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -143,4 +151,3 @@ void MQTT::loop() {
     oled->SetWiFiConnected(false);
   }
 }
-

@@ -1,8 +1,9 @@
 #include "sensor.h"
 
-sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycle(10) {
+sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycle(10), level(0), raw(0) {
   SPIFFS.begin();
-  LoadJsonConfig();  
+  LoadJsonConfig(); 
+this->measurecycle=5; //test only   
 }
 
 void sensor::init() {
@@ -35,14 +36,16 @@ void sensor::SetLvl(uint8_t lvl) {
 }
 
 void sensor::loop_analog() {
-  this->raw = this->level = 0;
+  this->raw = 0;
+  this->level = 0;
   
-  this->raw   = analogRead(A0);
-  this->level = map(raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
+  this->raw = analogRead(A0);
+  this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
 }
 
 void sensor::loop_hcsr04() {
-  this->raw = this->level = 0;
+  this->raw = 0;
+  this->level = 0;
   
   digitalWrite(this->pinTrigger, LOW);
   delayMicroseconds(2);
@@ -51,8 +54,8 @@ void sensor::loop_hcsr04() {
   delayMicroseconds(10);
   digitalWrite(this->pinTrigger, LOW);
 
-  this->raw = pulseIn(this->pinEcho, HIGH, MAX_DIST); //Distance in CM's, use /148 for inches.
-  this->raw = (this->raw / 2) / 29.1;
+  this->raw = pulseIn(this->pinEcho, HIGH, MAX_DIST); 
+  this->raw = (this->raw / 2) / 29.1; //Distance in CM's, use /148 for inches.
 
   if (this->raw == 0){//Reached timeout
     Serial.println("Out of range");
@@ -66,7 +69,7 @@ void sensor::loop_hcsr04() {
 void sensor::loop() {
   if (millis() - this->previousMillis > this->measurecycle*1000) {
     this->previousMillis = millis();
-    
+   
     if (this->Type == ANALOG) {loop_analog();}
     if (this->Type == HCSR04) {loop_hcsr04();}
 
@@ -74,10 +77,9 @@ void sensor::loop() {
       if (this->level < this->threshold_min) { VStruct->SetOn(Config->Get3WegePort()); }
       if (this->level > this->threshold_max) { VStruct->SetOff(Config->Get3WegePort()); }
     }
-    
     if (this->Type != NONE && this->Type != EXTERN && mqtt) {
-      if (this->raw > 0 )   { mqtt->Publish("raw", this->raw); }
-      if (this->level > 0 ) { mqtt->Publish("level", this->level); }
+      if (this->raw > 0 )   { mqtt->Publish_Int((const char*)"raw", (int*)this->raw); }
+ //     if (this->level > 0 ) { mqtt->Publish_Int("level", this->level); }
     }
     
     if (this->Type != NONE && this->Type != EXTERN) {
@@ -278,4 +280,3 @@ void sensor::GetWebContent(String* html) {
   html->concat("</form>\n\n");
   html->concat("<div id='ErrorText' class='errortext'></div>\n");
 }
-

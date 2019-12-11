@@ -44,8 +44,8 @@ class valve {
     HWdev_t*  myHWdev = NULL;      //Pointer auf das Device
     valveHardware* valveHWClass = NULL; // Pointer auf die Klasse um auf die generischen Funktionen zugreifen zu können
     
-    uint8_t   port1 = NULL; //0 - 220
-    uint8_t   port2 = NULL; //0 - 220 , für bistabile Ventile
+    uint8_t   port1; //0 - 220
+    uint8_t   port2; //0 - 220 , für bistabile Ventile
     uint32_t  startmillis   = 0;
     uint32_t  lengthmillis  = 0;
 

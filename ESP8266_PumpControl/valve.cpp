@@ -61,7 +61,7 @@ bool valve::HandleSwitch (bool state, int duration) {
 
   if(mqtt) {
     snprintf (buffer, sizeof(buffer), "%s/state", this->subtopic.c_str());
-    mqtt->Publish(buffer, state);
+    mqtt->Publish_Bool(buffer, state);
   }
 
   return true;

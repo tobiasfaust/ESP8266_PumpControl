@@ -47,12 +47,12 @@ class sensor {
     
     uint8_t   pinTrigger;
     uint8_t   pinEcho;
-    int       raw;
+    uint16_t  raw;
     uint8_t   level;
     uint16_t  MAX_DIST;
     sensorType_t   Type;
-    uint8_t   measureDistMin;
-    uint8_t   measureDistMax;
+    uint16_t  measureDistMin;
+    uint16_t  measureDistMax;
     uint16_t  measurecycle;
     uint8_t   threshold_min;
     uint8_t   threshold_max;
