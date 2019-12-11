@@ -34,8 +34,8 @@ class sensor {
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
-    const int& GetRaw() const {return raw;}
-    const uint8_t& GetLvl() const {return level; }
+    const uint16_t& GetRaw() const {return raw;}
+    const uint8_t&  GetLvl() const {return level; }
     const sensorType_t& GetType() const {return Type; }
     const uint8_t& GetThresholdMin()const {return threshold_min;}
     const uint8_t& GetThresholdMax()const {return threshold_max;}
@@ -63,4 +63,3 @@ class sensor {
 };
 
 #endif
-
