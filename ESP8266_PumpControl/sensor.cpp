@@ -3,7 +3,6 @@
 sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycle(10), level(0), raw(0) {
   SPIFFS.begin();
   LoadJsonConfig(); 
-this->measurecycle=5; //test only   
 }
 
 void sensor::init() {

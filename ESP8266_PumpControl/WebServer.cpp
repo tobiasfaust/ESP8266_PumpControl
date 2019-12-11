@@ -92,13 +92,18 @@ void WebServer::handleBaseConfig() {
 
 void WebServer::handleVentilConfig() {
   String html;
+  server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server->sendHeader("Pragma", "no-cache");
+  server->sendHeader("Expires", "-1");
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "text/html", "");
   this->getPageHeader(&html, VENTILE);
-  server->send(200, "text/html", html.c_str());
+  server->sendContent(html.c_str());
   html = "";
   VStruct->GetWebContent(server);
   this->getPageFooter(&html);
   server->sendContent(html.c_str());
+  server->sendContent("");
 }
 
 void WebServer::handleSensorConfig() {
@@ -111,13 +116,18 @@ void WebServer::handleSensorConfig() {
 
 void WebServer::handleRelations() {
   String html;
+  server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server->sendHeader("Pragma", "no-cache");
+  server->sendHeader("Expires", "-1");
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "text/html", "");
   this->getPageHeader(&html, RELATIONS);
-  server->send(200, "text/html", html.c_str());
+  server->sendContent(html.c_str());
   ValveRel->GetWebContent(server);
   html = "";
   this->getPageFooter(&html);
   server->sendContent(html.c_str());
+  server->sendContent("");
 }
 
 

@@ -85,7 +85,7 @@ void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   else if (strstr(topic, "/raw") ||  strstr(topic, "/level")) { /*SensorMeldungen*/ }
   else { VStruct->ReceiveMQTT(topic, msg.c_str()); }
 
-  Serial.print("(MQTTCallback) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
+  //Serial.print("(MQTTCallback) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
 }
 
 void loop() {
