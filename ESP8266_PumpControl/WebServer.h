@@ -16,12 +16,13 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
+//#include "uptime_formatter.h"
+#include "uptime.h"
 
 #include "BaseConfig.h"
 #include "JavaScript.h"
 #include "JsAjax.h"
 #include "CSS.h"
-#include "uptime.h"
 #include "sensor.h"
 #include "valveStructure.h"
 #include "valveRelation.h"
@@ -47,8 +48,7 @@ class WebServer {
     MDNSResponder mdns;
     ESP8266WebServer* server;
     ESP8266HTTPUpdateServer httpUpdater;
-    uptime* UpTime = NULL;
-
+    
     void      handleNotFound();
     void      handleReboot();
     void      handleCSS();

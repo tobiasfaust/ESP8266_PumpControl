@@ -31,7 +31,7 @@ WebServer::WebServer() : DoReboot(false) {
   
   Serial.println(F("WebServer started..."));
 
-  UpTime = new uptime();
+  //UpTime = new uptime();
 }
 
 void WebServer::loop() {
@@ -253,7 +253,8 @@ void WebServer::getPage_Status(String* html) {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   uint8_t count = 0;
-
+  uptime::calculateUptime();
+  
   html->concat("<table class='editorDemoTable'>\n");
   html->concat("<thead>\n");
   html->concat("<tr>\n");
@@ -298,7 +299,7 @@ void WebServer::getPage_Status(String* html) {
 
   html->concat("<tr>\n");
   html->concat("<td>Uptime:</td>\n");
-  sprintf(buffer, "<td>%s</td>\n", "---"); //UpTime->getFormatUptime());
+  sprintf(buffer, "<td>%d Days, %d Hours, %d Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
   html->concat(buffer);
   html->concat("</tr>\n");
 
