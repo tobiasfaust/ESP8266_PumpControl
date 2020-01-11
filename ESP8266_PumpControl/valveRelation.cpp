@@ -14,7 +14,7 @@ void valveRelation::AddRelation(bool enabled, String SubTopic, uint8_t Port) {
   rel.ActorPort = Port;
   _relationen->push_back(rel);
 
-  mqtt->Subscribe(SubTopic, MQTT::RELATION);
+  if (enabled) { mqtt->Subscribe(SubTopic, MQTT::RELATION); }
 }
 
 void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubTopic) {

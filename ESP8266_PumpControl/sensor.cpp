@@ -78,7 +78,7 @@ void sensor::loop() {
     }
     if (this->Type != NONE && this->Type != EXTERN && mqtt) {
       if (this->raw > 0 )   { mqtt->Publish_Int((const char*)"raw", (int*)this->raw); }
- //     if (this->level > 0 ) { mqtt->Publish_Int("level", this->level); }
+      if (this->level > 0 ) { mqtt->Publish_Int((const char*)"level", (int*)this->level); }
     }
     
     if (this->Type != NONE && this->Type != EXTERN) {

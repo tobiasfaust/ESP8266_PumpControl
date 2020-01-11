@@ -185,10 +185,10 @@ void valveStructure::LoadJsonConfig() {
           if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.AddPort2(ValveHW, json[buffer].as<int>());}
             
           sprintf(buffer, "imp_%d_0", i); //impulsbreite für Port 1
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0 && json[buffer].as<int>() < 1000) { myValve.port1ms = json[buffer].as<int>();}
+          if (json.containsKey(buffer)) { myValve.port1ms = max(10, min(json[buffer].as<int>(), 999));}
           
           sprintf(buffer, "imp_%d_1", i); //impulsbreite für Port 2
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0 && json[buffer].as<int>() < 1000) { myValve.port2ms = json[buffer].as<int>();}
+          if (json.containsKey(buffer)) { myValve.port2ms = max(10, min(json[buffer].as<int>(), 999));}
 
           Valves->push_back(myValve);
         }

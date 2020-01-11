@@ -7,6 +7,10 @@
   #include "WProgram.h"
 #endif
 
+#if defined(ESP8266) || defined(ESP32)
+  #define min(x,y) _min(x,y);
+#endif
+
 #include <FS.h> 
 #include "ArduinoJson.h"
 #include "oled.h"
