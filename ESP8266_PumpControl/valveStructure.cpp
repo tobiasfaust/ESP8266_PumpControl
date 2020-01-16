@@ -33,10 +33,8 @@ void valveStructure::OnForTimer(String SubTopic, int duration) {
 void valveStructure::SetOff(String SubTopic) {
   bool ret = false;
   for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).enabled && Valves->at(i).subtopic == SubTopic) { 
-      if (Valves->at(i).active) { Valves->at(i).SetOff(); }
-      ValveRel->DelSubscriberPort(Valves->at(i).GetPort1()); 
-      if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+    if (Valves->at(i).subtopic == SubTopic) { 
+      this->SetOff(Valves->at(i).GetPort1()); //Valves->at(i).SetOff();
     }
   }
 }
@@ -44,19 +42,27 @@ void valveStructure::SetOff(String SubTopic) {
 void valveStructure::SetOn(String SubTopic) {
   bool ret = false;
   for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).enabled && Valves->at(i).subtopic == SubTopic) { 
-      if (!Valves->at(i).active) { Valves->at(i).SetOn(); }
-      if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+    if (Valves->at(i).subtopic == SubTopic) { 
+      this->SetOn(Valves->at(i).GetPort1()); //Valves->at(i).SetOn();
     }
   }
 }
 
 void valveStructure::SetOn(uint8_t Port) {
-  if (GetValveItem(Port)) { GetValveItem(Port)->SetOn();}
+  valve* v = GetValveItem(Port);
+  if (v) { 
+    v->SetOn();
+    if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+  }
 }
 
 void valveStructure::SetOff(uint8_t Port) {
-  if (GetValveItem(Port)) { GetValveItem(Port)->SetOff(); }
+  valve* v = GetValveItem(Port);
+  if (v) { 
+    v->SetOff(); 
+    ValveRel->DelSubscriberPort(Port); 
+    if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+  }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
@@ -86,8 +92,8 @@ void valveStructure::ReceiveMQTT(const char* topic, const char* value) {
   String SubTopic(topic), BaseTopic(topic);
   SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
   BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
-  Serial.print("SubTopic: "); Serial.println(SubTopic);
-  Serial.print("BaseTopic: "); Serial.println(BaseTopic);
+  //Serial.print("SubTopic: "); Serial.println(SubTopic);
+  //Serial.print("BaseTopic: "); Serial.println(BaseTopic);
   if (strcmp(topic+mqtt->GetRoot().length(), "/test/on-for-timer")==0) { Valves->at(0).OnForTimer(duration); }
 
   if (strstr(topic, "on-for-timer")) { OnForTimer(SubTopic, duration); }

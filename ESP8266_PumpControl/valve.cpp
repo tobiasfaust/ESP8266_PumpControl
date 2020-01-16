@@ -47,6 +47,8 @@ bool valve::HandleSwitch (bool state, int duration) {
   if (ValveType == NORMAL) {
     valveHWClass->SetPort(myHWdev, port1, state);
   } else if (ValveType == BISTABIL) {
+    sprintf(buffer, "Schalte Bistabiles Ventil %s: Port %d/%d, ms: %d/%d", (state?"An":"Aus"), port1, port2, port1ms, port2ms);
+    Serial.println(buffer);
     valveHWClass->SetPort(myHWdev, port1, port2, state, (state?port1ms:port2ms));
   }
 
