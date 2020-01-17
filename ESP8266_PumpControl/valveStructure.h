@@ -38,12 +38,14 @@ class valveStructure {
     void      GetWebContent(String* html);
     void      GetWebContent(ESP8266WebServer* server);
     void      getWebJsParameter(String* html);
-    void      ReceiveMQTT(const char* topic, const char* value);
+    void      ReceiveMQTT(String topic, int value);
   
   private:
     void      addValve(uint8_t Port, String SubTopic);
     valve*    GetValveItem(uint8_t Port);
-      
+    valve*    GetValveItem(String SubTopic);
+    void      handleDeps(String topic, int value); //prueft die Relationen
+    
     valveHardware* ValveHW = NULL;
     std::vector<valve> *Valves = NULL;
     

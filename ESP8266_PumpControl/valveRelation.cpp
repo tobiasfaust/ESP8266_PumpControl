@@ -7,19 +7,19 @@ valveRelation::valveRelation() {
   LoadJsonConfig();
 }
 
-void valveRelation::AddRelation(bool enabled, String SubTopic, uint8_t Port) {
+void valveRelation::AddRelation(bool enabled, String TriggerTopic, uint8_t Port) {
   relation_t rel;
   rel.enabled = enabled;
-  rel.TriggerSubTopic = SubTopic;
+  rel.TriggerTopic = TriggerTopic;
   rel.ActorPort = Port;
   _relationen->push_back(rel);
 
-  if (enabled) { mqtt->Subscribe(SubTopic, MQTT::RELATION); }
+  if (enabled) { mqtt->Subscribe(TriggerTopic, MQTT::RELATION); }
 }
 
-void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubTopic) {
+void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String TriggerTopic) {
   for (uint8_t i=0; i<_relationen->size(); i++) {
-    if (_relationen->at(i).TriggerSubTopic == SubTopic && _relationen->at(i).enabled) {
+    if (_relationen->at(i).TriggerTopic == TriggerTopic && _relationen->at(i).enabled) {
       bool stillpresent=false;
       for (uint8_t j=0; j<Ports->size(); j++) {
         if (Ports->at(j) == _relationen->at(i).ActorPort) {stillpresent=true;}
@@ -29,26 +29,32 @@ void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String SubT
   }
 }
 
-void valveRelation::AddSubscriberPort(uint8_t Port, String TriggerSubTopic) {
+void valveRelation::AddSubscriber(uint8_t ActorPort, String TriggerTopic) {
   relation_t s;
   s.enabled = true;
-  s.TriggerSubTopic = TriggerSubTopic;
-  s.ActorPort = Port;
+  s.TriggerTopic = TriggerTopic;
+  s.ActorPort = ActorPort;
   _subscriber->push_back(s); 
 }
 
-void valveRelation::DelSubscriberPort(uint8_t Port) {
+void valveRelation::DelSubscriber(String TriggerTopic) {
+  //lösche TriggerTopic auf dem ActorPort
 // --> hier tritt eine out-of-range exception auf
-/*  for (auto i=_subscriber->begin(); i!=_subscriber->end(); ++i) {
-     uint8_t p = std::distance(_subscriber->begin(), i);
-     if (_subscriber->at(p).ActorPort == Port) { _subscriber->erase(i); Serial.print("Del Subscriber: "); Serial.println(Port);}
+  std::vector<relation_t> t;
+  for (uint8_t i=0; i<_subscriber->size(); i++) {
+    if (_subscriber->at(i).TriggerTopic != TriggerTopic) { t.push_back(_subscriber->at(i)); }
   }
-*/}
+  _subscriber->clear();
+  
+  for (uint8_t i=0; i<t.size(); i++) {
+    _subscriber->push_back(t.at(i));
+  }
+}
 
-uint8_t valveRelation::CountActiveSubscribers(String SubTopic) {
+uint8_t valveRelation::CountActiveSubscribers(uint8_t ActorPort) {
   uint8_t count=0;
   for (uint8_t i=0; i<_subscriber->size(); i++) {
-    if (_subscriber->at(i).TriggerSubTopic == SubTopic) {count++;}
+    if (_subscriber->at(i).ActorPort == ActorPort) {count++;}
   }
   return count;
 }
@@ -170,7 +176,7 @@ void valveRelation::GetWebContent(ESP8266WebServer* server) {
     html.concat("    </div>\n");
     html.concat("  </td>\n");
 
-    sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>\n", i, i, _relationen->at(i).TriggerSubTopic.c_str());
+    sprintf(buffer, "  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>\n", i, i, _relationen->at(i).TriggerTopic.c_str());
     html.concat(buffer);
 
     sprintf(buffer, "  <td><input id='ConfiguredPorts_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>\n", i, i, _relationen->at(i).ActorPort);

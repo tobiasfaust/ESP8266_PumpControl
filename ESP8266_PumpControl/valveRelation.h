@@ -18,17 +18,17 @@ class valveRelation {
 
   typedef struct {
     bool enabled;
-    String TriggerSubTopic = "";
+    String TriggerTopic = "";
     uint8_t ActorPort; 
   } relation_t;
   
   public:
     valveRelation();
-    void      AddRelation(bool enabled, String SubTopic, uint8_t Port);
-    void      GetPortDependencies(std::vector<uint8_t>* Ports, String SubTopic);
-    void      AddSubscriberPort(uint8_t Port, String TriggerSubTopic);
-    void      DelSubscriberPort(uint8_t Port);
-    uint8_t   CountActiveSubscribers(String SubTopic);
+    void      AddRelation(bool enabled, String TriggerTopic, uint8_t Port);
+    void      GetPortDependencies(std::vector<uint8_t>* Ports, String TriggerTopic);
+    void      AddSubscriber(uint8_t Port, String TriggerTopic);
+    void      DelSubscriber(String TriggerTopic);
+    uint8_t   CountActiveSubscribers(uint8_t ActorPort);
     
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();

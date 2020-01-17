@@ -82,10 +82,10 @@ void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str())>0) { 
     LevelSensor->SetLvl(atoi(msg.c_str())); 
   }
-  else if (strstr(topic, "/raw") ||  strstr(topic, "/level")) { /*SensorMeldungen*/ }
-  else { VStruct->ReceiveMQTT(topic, msg.c_str()); }
-
-  //Serial.print("(MQTTCallback) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
+  else if (strstr(topic, "/raw") ||  strstr(topic, "/level")) { 
+    /*SensorMeldungen - ignore!*/ 
+  }
+  else { VStruct->ReceiveMQTT((String)topic, atoi(msg.c_str())); }
 }
 
 void loop() {

@@ -19,33 +19,17 @@ void valveStructure::addValve(uint8_t Port, String SubTopic) {
 }
 
 void valveStructure::OnForTimer(String SubTopic, int duration) {
-  bool ret = false;
-  for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).enabled && duration > 0 && Valves->at(i).subtopic == SubTopic) { 
-      ret = Valves->at(i).OnForTimer(duration);
-      if (ret) {
-        if (mqtt) {mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
-      }
-    }
+  if (GetValveItem(SubTopic)->OnForTimer(duration)) {
+    if (mqtt) {mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
   }
 }
 
 void valveStructure::SetOff(String SubTopic) {
-  bool ret = false;
-  for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).subtopic == SubTopic) { 
-      this->SetOff(Valves->at(i).GetPort1()); //Valves->at(i).SetOff();
-    }
-  }
+  this->SetOff(GetValveItem(SubTopic)->GetPort1());
 }
 
 void valveStructure::SetOn(String SubTopic) {
-  bool ret = false;
-  for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).subtopic == SubTopic) { 
-      this->SetOn(Valves->at(i).GetPort1()); //Valves->at(i).SetOn();
-    }
-  }
+  this->SetOn(GetValveItem(SubTopic)->GetPort1());
 }
 
 void valveStructure::SetOn(uint8_t Port) {
@@ -60,7 +44,7 @@ void valveStructure::SetOff(uint8_t Port) {
   valve* v = GetValveItem(Port);
   if (v) { 
     v->SetOff(); 
-    ValveRel->DelSubscriberPort(Port); 
+    //ValveRel->DelSubscriberPort(Port); 
     if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
   }
 }
@@ -85,30 +69,40 @@ void valveStructure::loop() {
   }
 }
 
-void valveStructure::ReceiveMQTT(const char* topic, const char* value) {
+void valveStructure::ReceiveMQTT(String topic, int value) {
   char buffer[50] = {0};
   memset(buffer, 0, sizeof(buffer));
-  int duration = atoi(value);
-  String SubTopic(topic), BaseTopic(topic);
+  String SubTopic(topic); // nur das konfigurierte Subtopic, zb. "valve1"
+  //String BaseTopic(topic); // das komplette topic ohne Kommando, zb. "PumpControlDev/Valve1"
   SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
-  BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
-  //Serial.print("SubTopic: "); Serial.println(SubTopic);
-  //Serial.print("BaseTopic: "); Serial.println(BaseTopic);
-  if (strcmp(topic+mqtt->GetRoot().length(), "/test/on-for-timer")==0) { Valves->at(0).OnForTimer(duration); }
+  //BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
+  if (topic == "/test/on-for-timer") { Valves->at(0).OnForTimer(value); }
 
-  if (strstr(topic, "on-for-timer")) { OnForTimer(SubTopic, duration); }
-  if (strstr(topic, "state") && duration==0) { SetOff(SubTopic); }
+  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("on-for-timer")) { OnForTimer(SubTopic, value); }
+  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("state") && value==0) { SetOff(SubTopic); }
 
+  if (topic.endsWith("state")) { this->handleDeps(topic, value); } 
+}
+
+void valveStructure::handleDeps(String topic, int value) {
+  // topic: PumpControlDev/Valve1/state
   // Check auf Ventile, die auf Relationen ansprechen sollen
-// ToDo: spricht auch auf Sensormeldungen an,
+  String BaseTopic(topic); // das komplette topic ohne Kommando, zb. "PumpControlDev/Valve1"
+  BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
+  
   std::vector<uint8_t> Ports;
   ValveRel->GetPortDependencies(&Ports, BaseTopic);
   for (uint8_t i=0; i<Ports.size(); i++) {
-    if (duration > 0 && strstr(topic, "on-for-timer")) {
-      OnForTimer(GetValveItem(Ports.at(i))->subtopic, duration);
-      ValveRel->AddSubscriberPort(GetValveItem(Ports.at(i))->GetPort1(), BaseTopic);
-    } else if (duration == 0) {
-      ValveRel->DelSubscriberPort(GetValveItem(Ports.at(i))->GetPort1());
+    if (value == 1 && topic.endsWith("state")) {
+      //Serial.print("Call SetOn for Port "); Serial.println(Ports.at(i));
+      this->SetOn(Ports.at(i));
+      ValveRel->AddSubscriber(Ports.at(i), BaseTopic);
+    } else if (value == 0 && topic.endsWith("state")) {
+      ValveRel->DelSubscriber(BaseTopic);
+      if(ValveRel->CountActiveSubscribers(Ports.at(i)) == 0) {
+        //Serial.print("Call SetOff for Port "); Serial.println(Ports.at(i));
+        this->SetOff(Ports.at(i));
+      }
     }
   }
 }
@@ -116,6 +110,13 @@ void valveStructure::ReceiveMQTT(const char* topic, const char* value) {
 valve* valveStructure::GetValveItem(uint8_t Port) {
   for (uint8_t i=0; i<Valves->size(); i++) {
     if (Valves->at(i).GetPort1() == Port) {return &Valves->at(i);}
+  }
+  return NULL;
+}
+
+valve* valveStructure::GetValveItem(String SubTopic) {
+  for (uint8_t i=0; i<Valves->size(); i++) {
+    if (Valves->at(i).subtopic == SubTopic) { return &Valves->at(i);}
   }
   return NULL;
 }
