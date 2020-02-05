@@ -34,19 +34,12 @@ void valveStructure::SetOn(String SubTopic) {
 
 void valveStructure::SetOn(uint8_t Port) {
   valve* v = GetValveItem(Port);
-  if (v) { 
-    v->SetOn();
-    if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
-  }
+  if (v && v->SetOn() && mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
 }
 
 void valveStructure::SetOff(uint8_t Port) {
   valve* v = GetValveItem(Port);
-  if (v) { 
-    v->SetOff(); 
-    //ValveRel->DelSubscriberPort(Port); 
-    if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
-  }
+  if (v && v->SetOff()&& mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
@@ -73,9 +66,8 @@ void valveStructure::ReceiveMQTT(String topic, int value) {
   char buffer[50] = {0};
   memset(buffer, 0, sizeof(buffer));
   String SubTopic(topic); // nur das konfigurierte Subtopic, zb. "valve1"
-  //String BaseTopic(topic); // das komplette topic ohne Kommando, zb. "PumpControlDev/Valve1"
   SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
-  //BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
+  
   if (topic == "/test/on-for-timer") { Valves->at(0).OnForTimer(value); }
 
   if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("on-for-timer")) { OnForTimer(SubTopic, value); }
@@ -94,15 +86,14 @@ void valveStructure::handleDeps(String topic, int value) {
   ValveRel->GetPortDependencies(&Ports, BaseTopic);
   for (uint8_t i=0; i<Ports.size(); i++) {
     if (value == 1 && topic.endsWith("state")) {
-      //Serial.print("Call SetOn for Port "); Serial.println(Ports.at(i));
-      this->SetOn(Ports.at(i));
-      ValveRel->AddSubscriber(Ports.at(i), BaseTopic);
+      if (!ValveRel->CheckEnabledByBypass(Ports.at(i), BaseTopic) || !Config->Enabled3Wege() || 
+         (ValveRel->CheckEnabledByBypass(Ports.at(i), BaseTopic) && Config->Enabled3Wege() && this->GetState(Config->Get3WegePort()))) { 
+        this->SetOn(Ports.at(i));
+        ValveRel->AddSubscriber(Ports.at(i), BaseTopic);
+      }
     } else if (value == 0 && topic.endsWith("state")) {
       ValveRel->DelSubscriber(BaseTopic);
-      if(ValveRel->CountActiveSubscribers(Ports.at(i)) == 0) {
-        //Serial.print("Call SetOff for Port "); Serial.println(Ports.at(i));
-        this->SetOff(Ports.at(i));
-      }
+      if(ValveRel->CountActiveSubscribers(Ports.at(i)) == 0) { this->SetOff(Ports.at(i)); }
     }
   }
 }

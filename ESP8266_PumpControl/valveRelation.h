@@ -20,12 +20,19 @@ class valveRelation {
     bool enabled;
     String TriggerTopic = "";
     uint8_t ActorPort; 
+    bool EnableByBypass;
   } relation_t;
+  
+  typedef struct {
+    String TriggerTopic = "";
+    uint8_t ActorPort; 
+  } subscriber_t;
   
   public:
     valveRelation();
-    void      AddRelation(bool enabled, String TriggerTopic, uint8_t Port);
+    void      AddRelation(bool enabled, String TriggerTopic, uint8_t Port, bool EnableByBypass);
     void      GetPortDependencies(std::vector<uint8_t>* Ports, String TriggerTopic);
+    bool      CheckEnabledByBypass(uint8_t ActorPort, String TriggerTopic);
     void      AddSubscriber(uint8_t Port, String TriggerTopic);
     void      DelSubscriber(String TriggerTopic);
     uint8_t   CountActiveSubscribers(uint8_t ActorPort);
@@ -36,7 +43,7 @@ class valveRelation {
     
   private:
     std::vector<relation_t>* _relationen  = NULL;
-    std::vector<relation_t>* _subscriber  = NULL;
+    std::vector<subscriber_t>* _subscriber  = NULL;
 };
 
 #endif

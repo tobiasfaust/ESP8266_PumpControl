@@ -76,21 +76,15 @@ String MQTT::GetRoot() {
 }
 
 void MQTT::Publish_Bool(const char* subtopic, bool b) {
-  //Serial.print("(Publish 1) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
-  //char b1[2];
-  //memset(&b1[0], 0, sizeof(b1));
-  //if(b) {strcpy(b1, "1");} else {strcpy(b1, "0");}
   char* s = "0"; 
   if(b) {s = "1";};
   Publish_String(subtopic, s);
 }
 
 void MQTT::Publish_Int(const char* subtopic, int* number ) {
-  //Serial.print("(Publish 2) FreeHeapSize: "); Serial.println(ESP.getFreeHeap());
   char buffer[10] = {0};
   memset(&buffer[0], 0, sizeof(buffer));
   snprintf(buffer, sizeof(buffer), "%d", number);
-  //itoa(*number, buffer, 10);
   Publish_String(subtopic, buffer);
 }
 
@@ -99,7 +93,7 @@ void MQTT::Publish_String(const char* subtopic, char* value ) {
   memset(&topic[0], 0, sizeof(topic));
   snprintf (topic, sizeof(topic), "%s/%s", this->mqtt_root.c_str(), subtopic);
   if (mqtt->connected()) {
-    mqtt->publish((const char*)topic, (const char*)value);
+    mqtt->publish((const char*)topic, (const char*)value, true);
     Serial.print(F("Publish ")); Serial.print(FPSTR(topic)); Serial.print(F(": ")); Serial.println(value);
   } else { Serial.println(F("Request for MQTT Publish, but not connected to Broker")); }
 }
