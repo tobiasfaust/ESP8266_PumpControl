@@ -20,7 +20,6 @@ void BaseConfig::StoreJsonConfig(String* json) {
       configFile.close();
   
       LoadJsonConfig();
-    }
   }
 }
 
