@@ -37,8 +37,8 @@ int  mqtt_port  = 1883;
 char mqtt_root[40] = "PumpControl";
 uint8_t pin_hcsr04_trigger = 12;
 uint8_t pin_hcsr04_echo = 13;
-uint8_t pin_sda = 4;
-uint8_t pin_scl = 0;
+uint8_t pin_sda = 5;
+uint8_t pin_scl = 4;
 uint8_t i2caddress_oled = 60; //0x3C;
 
 //SensorConfig

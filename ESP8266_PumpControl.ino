@@ -1,97 +1,97 @@
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
-#include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
-#include <WiFiClient.h> 
+#pragma once
 
-//needed for library
+/*#include <Wire.h>
+#include "PCF8574.h"
+#include "Grove_Motor_Driver_TB6612FNG.h"
+#include "SSD1306Wire.h"
+#include <ArduinoJson.h>
+#include <i2cdetect.h>
 #include <DNSServer.h>
+#include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <ESP8266mDNS.h>
-#include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include <PubSubClient.h>
-#include <Wire.h>
-#include "Arduino.h"
-#include "PCF8574.h"  
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
+#include "uptime.h"
+#include "i2cdetect.h"
+*/
 
-#include "PumpControl.h"
+#include <vector>
+#include "BaseConfig.h"
+#include "valveStructure.h"
+#include "MQTT.h"
+#include "WebServer.h"
+#include "sensor.h"
+#include "oled.h"
 
-MDNSResponder mdns;
-ESP8266WebServer server(80);
-ESP8266HTTPUpdateServer httpUpdater;
-WiFiClient espClient;
-PubSubClient client(espClient);
-  
+i2cdetect* I2Cdetect = NULL;
+BaseConfig* Config = NULL;
+valveRelation* ValveRel = NULL;  
+valveStructure* VStruct = NULL;
+MQTT* mqtt = NULL;
+sensor* LevelSensor = NULL;
+OLED* oled = NULL;
+WebServer* webserver = NULL;
+
+//test
+//valveRelation* ValveRel = NULL;
+
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
-  Serial.println();
+  Serial.println("");
+  Serial.println("ready");
+
+// Flash Write Issue
+// https://github.com/esp8266/Arduino/issues/4061#issuecomment-428007580
 
   //clean FS, for testing
   //SPIFFS.format();
-  //SPIFFS.remove("/PinConfig.json");
-  //SPIFFS.remove("/SensorConfig.json");
-  //SPIFFS.remove("/VentilConfig.json");
-  //SPIFFS.remove("/AutoConfig.json");
-  
-  CallWiFiManager();
-  ReadConfigParam();
 
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(MQTT_callback);
-  
-  if (!MDNS.begin("esp82660"))   {  Serial.println("Error setting up MDNS responder!");  }
-  else                          {  Serial.println("mDNS responder started");  }
+  oled = new OLED();
+  Config = new BaseConfig();
 
-  server.onNotFound(handleNotFound);
-  server.on("/", handleRoot);
-  server.on("/PinConfig", handlePinConfig);
-  server.on("/SensorConfig", handleSensorConfig);
-  server.on("/VentilConfig", handleVentilConfig);
-  server.on("/AutoConfig", handleAutoConfig);
+  Serial.print(F("Starting WIRE at (SDA, SCL)): "));Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
+  Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
+    
+  mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
+  mqtt->setCallback(myMQTTCallBack);
   
-  server.on("/style.css", HTTP_GET, handleCSS);
-  server.on("/javascript.js", HTTP_GET, handleJS);
-  server.on("/parameter.js", HTTP_GET, handleJSParam);
+  I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSCL());
+  LevelSensor = new sensor();
   
-  server.on("/StorePinConfig", HTTP_POST, handleStorePinConfig);
-  server.on("/StoreSensorConfig", HTTP_POST, handleStoreSensorConfig);
-  server.on("/StoreVentilConfig", HTTP_POST, handleStoreVentilConfig);
-  server.on("/StoreAutoConfig", HTTP_POST, handleStoreAutoConfig);
-  server.on("/reboot", HTTP_GET, handleReboot);
+  ValveRel = new valveRelation();
+  VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
+  webserver = new WebServer(); 
+ 
+  //VStruct->OnForTimer("Valve1", 10);
 
-  // start a server
-  httpUpdater.setup(&server);
-  server.begin();
-  Serial.println("Server started");
+  delay(1000);
+  //VStruct->ReceiveMQTT("pumpHost/TestValve1/on-for-timer", "10");
+  //VStruct->ReceiveMQTT("testhost/TestValve1/on-for-timer", "10");
   
-  Wire.begin(pin_sda, pin_scl);
-  i2cdetect();
+}
 
-  hcsr04_setup();
-  oled_setup();
-  PCF8574_setup();
+void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
+  String msg;
+  Serial.print("Message arrived [");Serial.print(topic);Serial.print("] ");
+  
+  for (int i = 0; i < length; i++) { msg.concat((char)payload[i]); }
+  Serial.print("Message: ");Serial.println(msg.c_str());
+
+  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str())>0) { 
+    LevelSensor->SetLvl(atoi(msg.c_str())); 
+  }
+  else if (strstr(topic, "/raw") ||  strstr(topic, "/level")) { 
+    /*SensorMeldungen - ignore!*/ 
+  }
+  else { VStruct->ReceiveMQTT((String)topic, atoi(msg.c_str())); }
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  server.handleClient();
-  if (!client.connected()) { 
-      if (millis() - mqttreconnect_lasttry > 10000) {
-        MQTT_reconnect(); 
-        mqttreconnect_lasttry = millis();
-    }
-  }
-  client.loop();
-  
-  if (millis() - previousMillis > hc_sr04_interval*1000) {
-    previousMillis = millis();   // aktuelle Zeit abspeichern
-    hcsr04_loop();
-    oled_loop();
-  }
-
-  PCF8574_loop();
+  VStruct->loop();
+  mqtt->loop();
+  LevelSensor->loop();
+  webserver->loop();
 }
-
-
-
