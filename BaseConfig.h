@@ -29,7 +29,9 @@ class BaseConfig {
     const uint8_t& GetI2cOLED()     const {return i2caddress_oled;}
     const bool&    EnabledOled()    const {return enable_oled;}
     const String&  GetMqttServer()  const {return mqtt_server;}
-    const uint16_t& GetMqttPort()    const {return mqtt_port;}
+    const uint16_t& GetMqttPort()   const {return mqtt_port;}
+    const String&  GetMqttUsername()const {return mqtt_username;}
+    const String&  GetMqttPassword()const {return mqtt_password;}
     const String&  GetMqttRoot()    const {return mqtt_root;}
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
     const bool&    Enabled3Wege()   const {return enable_3wege;}
@@ -37,6 +39,8 @@ class BaseConfig {
     
   private:
     String    mqtt_server;
+    String    mqtt_username;
+    String    mqtt_password;
     uint16_t  mqtt_port;
     String    mqtt_root;
     uint8_t   pin_sda;

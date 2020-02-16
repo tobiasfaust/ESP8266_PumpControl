@@ -40,7 +40,7 @@ void MQTT::reconnect() {
   snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
   Serial.print("Attempting MQTT connection as ");Serial.println(topic);
   
-  if (mqtt->connect(topic)) {
+  if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str())) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
     // Once connected, publish an announcement...

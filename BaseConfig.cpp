@@ -45,6 +45,8 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("mqttroot"))         { this->mqtt_root = json["mqttroot"].as<String>();}
         if (json.containsKey("mqttserver"))       { this->mqtt_server = json["mqttserver"].as<String>();}
         if (json.containsKey("mqttport"))         { this->mqtt_port = atoi(json["mqttport"]);}
+        if (json.containsKey("mqttuser"))         { this->mqtt_username = json["mqttuser"].as<String>();}
+        if (json.containsKey("mqttpass"))         { this->mqtt_password = json["mqttpass"].as<String>();}
         if (json.containsKey("pinsda"))           { this->pin_sda = atoi(json["pinsda"]) - 200;}
         if (json.containsKey("pinscl"))           { this->pin_scl = atoi(json["pinscl"]) - 200;}
         if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
@@ -112,6 +114,18 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("<tr>\n");
   html->concat("<td>MQTT Server Port</td>\n");
   sprintf(buffer, "<td><input maxlength='5' name='mqttport' type='text' value='%d'/></td>\n", this->mqtt_port);
+  html->concat(buffer);
+  html->concat("</tr>\n");
+
+  html->concat("<tr>\n");
+  html->concat("<td>MQTT Authentification: Username (optional)</td>\n");
+  sprintf(buffer, "<td><input size='30' name='mqttuser' type='text' value='%s'/></td>\n", this->mqtt_username.c_str());
+  html->concat(buffer);
+  html->concat("</tr>\n");
+
+  html->concat("<tr>\n");
+  html->concat("<td>MQTT Authentification: Password (optional)</td>\n");
+  sprintf(buffer, "<td><input size='30' name='mqttpass' type='text' value='%s'/></td>\n", this->mqtt_password.c_str());
   html->concat(buffer);
   html->concat("</tr>\n");
 

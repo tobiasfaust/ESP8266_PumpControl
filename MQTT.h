@@ -12,8 +12,10 @@
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <vector>
 #include "oled.h"
+#include "BaseConfig.h"
 
 extern OLED* oled;
+extern BaseConfig* Config;
 
 #if defined(ESP8266) || defined(ESP32)
   #include <functional>
