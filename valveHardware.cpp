@@ -150,9 +150,9 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
   } else if (dev->HWType == GPIO) {
     digitalWrite(PortMap1.internalPort,  state);
     if (Port2) {
-      analogWrite(PortMap2.internalPort, 255);
+      digitalWrite(PortMap2.internalPort, HIGH);
       delay(duration);
-      analogWrite(PortMap2.internalPort, 0);
+      digitalWrite(PortMap2.internalPort, LOW);
     }
   }
   
