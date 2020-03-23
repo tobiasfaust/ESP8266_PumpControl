@@ -19,27 +19,30 @@ void valveStructure::addValve(uint8_t Port, String SubTopic) {
 }
 
 void valveStructure::OnForTimer(String SubTopic, int duration) {
-  if (GetValveItem(SubTopic)->OnForTimer(duration)) {
+  valve* v = this->GetValveItem(SubTopic);
+  if (v && v->OnForTimer(duration)) {
     if (mqtt) {mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
   }
 }
 
 void valveStructure::SetOff(String SubTopic) {
-  this->SetOff(GetValveItem(SubTopic)->GetPort1());
+  valve* v = this->GetValveItem(SubTopic);
+  if (v) { this->SetOff(GetValveItem(SubTopic)->GetPort1()); }
 }
 
 void valveStructure::SetOn(String SubTopic) {
-  this->SetOn(GetValveItem(SubTopic)->GetPort1());
+  valve* v = this->GetValveItem(SubTopic);
+  if (v) { this->SetOn(GetValveItem(SubTopic)->GetPort1()); }
 }
 
 void valveStructure::SetOn(uint8_t Port) {
-  valve* v = GetValveItem(Port);
+  valve* v = this->GetValveItem(Port);
   if (v && v->SetOn() && mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
 }
 
 void valveStructure::SetOff(uint8_t Port) {
-  valve* v = GetValveItem(Port);
-  if (v && v->SetOff()&& mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+  valve* v = this->GetValveItem(Port);
+  if (v && v->SetOff() && mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
@@ -67,12 +70,9 @@ void valveStructure::ReceiveMQTT(String topic, int value) {
   memset(buffer, 0, sizeof(buffer));
   String SubTopic(topic); // nur das konfigurierte Subtopic, zb. "valve1"
   SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
-  
   if (topic == "/test/on-for-timer") { Valves->at(0).OnForTimer(value); }
-
-  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("on-for-timer")) { OnForTimer(SubTopic, value); }
-  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("state") && value==0) { SetOff(SubTopic); }
-
+  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("on-for-timer")) { this->OnForTimer(SubTopic, value); }
+  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("state") && value==0) { this->SetOff(SubTopic); }
   if (topic.endsWith("state")) { this->handleDeps(topic, value); } 
 }
 

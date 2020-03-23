@@ -19,6 +19,7 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
     delay(5000);
   }
   Serial.print("WiFi connected with local IP: ");
+  
   if (oled && oled->GetEnabled()) {
     oled->SetIP(WiFi.localIP().toString());
     oled->SetRSSI(WiFi.RSSI());
@@ -43,6 +44,8 @@ void MQTT::reconnect() {
   if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str())) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
+    this->Publish_IP();
+        
     // Once connected, publish an announcement...
     //client.publish("outTopic", "hello world");
     // ... and resubscribe
@@ -96,6 +99,13 @@ void MQTT::Publish_String(const char* subtopic, char* value ) {
     mqtt->publish((const char*)topic, (const char*)value, true);
     Serial.print(F("Publish ")); Serial.print(FPSTR(topic)); Serial.print(F(": ")); Serial.println(value);
   } else { Serial.println(F("Request for MQTT Publish, but not connected to Broker")); }
+}
+
+void MQTT::Publish_IP() {
+  char buffer[15] = {0};
+  memset(&buffer[0], 0, sizeof(buffer));
+  snprintf(buffer, sizeof(buffer), "%s", WiFi.localIP().toString().c_str());
+  Publish_String("IP", buffer);
 }
 
 void MQTT::setCallback(CALLBACK_FUNCTION) {
