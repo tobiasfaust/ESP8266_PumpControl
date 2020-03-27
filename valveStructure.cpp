@@ -115,7 +115,7 @@ valve* valveStructure::GetValveItem(String SubTopic) {
 uint8_t valveStructure::CountActiveThreads() {
   uint8_t count = 0;
   for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).active) {count++;}
+    if (Valves->at(i).active && (Valves->at(i).GetPort1() != Config->Get3WegePort() || !Config->Enabled3Wege() )) {count++;}
   }
   return count;
 }

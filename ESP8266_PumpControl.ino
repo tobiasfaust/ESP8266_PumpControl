@@ -34,9 +34,6 @@ sensor* LevelSensor = NULL;
 OLED* oled = NULL;
 WebServer* webserver = NULL;
 
-//test
-//valveRelation* ValveRel = NULL;
-
 void setup() {
   Serial.begin(115200);
   Serial.println("");
@@ -64,12 +61,7 @@ void setup() {
   VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
   webserver = new WebServer(); 
  
-  //VStruct->OnForTimer("Valve1", 10);
-
-  delay(1000);
-  //VStruct->ReceiveMQTT("pumpHost/TestValve1/on-for-timer", "10");
-  //VStruct->ReceiveMQTT("testhost/TestValve1/on-for-timer", "10");
-  
+  //VStruct->OnForTimer("Valve1", 10); // Test
 }
 
 void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
