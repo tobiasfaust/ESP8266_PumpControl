@@ -72,6 +72,8 @@ void valveStructure::ReceiveMQTT(String topic, int value) {
   SubTopic = SubTopic.substring(SubTopic.lastIndexOf("/", SubTopic.lastIndexOf("/")-1)+1, SubTopic.lastIndexOf("/"));
   if (topic == "/test/on-for-timer") { Valves->at(0).OnForTimer(value); }
   if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("on-for-timer")) { this->OnForTimer(SubTopic, value); }
+  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("set/state") && value==1) { this->SetOn(SubTopic); }
+  if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("set/state") && value==0) { this->SetOff(SubTopic); }
   if (topic.startsWith(mqtt->GetRoot()) && topic.endsWith("state") && value==0) { this->SetOff(SubTopic); }
   if (topic.endsWith("state")) { this->handleDeps(topic, value); } 
 }
