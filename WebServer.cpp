@@ -212,10 +212,16 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("<body>\n");
   html->concat("<table>\n");
   html->concat("  <tr>\n");
-  html->concat("   <td colspan='13'>\n");
-  html->concat("     <h2>Konfiguration</h2>\n");
+  html->concat("   <td colspan='8'>\n");
+  html->concat("<h2>Konfiguration</h2>");
+  html->concat("   </td>\n");
+
+  sprintf(buffer, "     <h6>Release: %s of %s %s </h6>\n", Release, __DATE__, __TIME__);
+  html->concat("   <td colspan='5'>\n");
+  html->concat(buffer);
   html->concat("   </td>\n");
   html->concat(" </tr>\n");
+
   html->concat(" <tr>\n");
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");

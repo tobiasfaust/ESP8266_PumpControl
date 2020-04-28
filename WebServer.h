@@ -18,6 +18,7 @@
 #include <ESP8266mDNS.h>
 //#include "uptime_formatter.h"
 #include "uptime.h"
+#include "_Release.h"
 
 #include "BaseConfig.h"
 #include "JavaScript.h"
@@ -36,7 +37,7 @@ extern i2cdetect* I2Cdetect;
 class WebServer {
 
   enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, RELATIONS};
-
+  
   public:
     WebServer();
 
