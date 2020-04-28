@@ -1,0 +1,156 @@
+    <div class="hbox">
+        <div class="vbox">
+          <div class="large darker thin cell">letztmalig:</div>
+          <div class="hbox"> 
+            <div class="fixedlabel darker left left-align" 
+              data-type="label">On/Off:
+            </div>
+            <div data-type="label" data-device="par_PumpControl_dev"
+               data-get="par_PumpControl_Ventil_dev"
+               class="timestamp darker right">
+            </div>
+          </div>
+          <div class="hbox"> 
+            <div class="fixedlabel darker left left-align" 
+              data-type="label">Sensor:
+            </div>
+            <div data-type="label" data-device="par_BF_dev"
+               data-get="moisture"
+               class="timestamp darker right">
+            </div>
+          </div>
+        </div>
+        <div class="vbox">
+          <div class="large darker thin cell">Status</div>
+          <div data-type="switch"
+               data-device="par_PumpControl_dev"
+               data-get="par_PumpControl_Ventil_dev"
+               data-set-on="[par_DOIF_Bew:0-duration]"
+               data-set-off="off"
+               data-set="par_on-for-timer"
+               data-icon="oa-sani_sprinkling"
+               class="top-narrow">
+          </div>
+        </div>
+        <div class="vbox">
+          <div class="large darker thin">aktuelle Feuchte</div>
+          <div data-type="label" data-device="par_BF_dev"
+               data-get="moisture"
+               class="bigger thin orange">
+          </div>
+        </div>
+        <div class="vbox">
+          <div class="large darker thin">Nährstoffgehalt</div>
+          <div data-type="label" data-device="par_BF_dev"
+               data-get="fertility"
+               class="bigger thin orange">
+          </div>
+        </div>        
+        <div class="vbox">
+          <div class="large darker thin cell" >Automatik:</div>
+          <div data-type="checkbox" data-device="par_DOIF_Bew"
+               data-get="mode"
+               data-set="par_DOIF_enableAttr"
+               data-get-on="enabled" data-get-off="disabled"
+               data-set-on="enable" data-set-off="disable"
+               class="">
+          </div>
+        </div>
+        <div data-type="symbol" data-device="par_BF_dev" data-get="batteryLevel"
+             data-states='["0","15","25","50","75"]'
+             data-icons='["oa-measure_battery_0","oa-measure_battery_25","oa-measure_battery_50","oa-measure_battery_75","oa-measure_battery_100"]'
+            data-colors='["#ad3333","#ad3333","SeaGreen","SeaGreen","SeaGreen"]'>
+        </div>
+        <div data-type="popup" 
+             data-height="450px" 
+             data-width="600px"
+             data-mode="fade">            
+          <div data-type="push" 
+               data-icon="oa-edit_settings"
+               data-background-icon="">
+          </div>
+          <div class="dialog">
+            <header>Settings</header>
+            <div class="vbox round padding bg-gray gray top-space left-space squareborder-orange col-95">
+              <div class="hbox col-100">
+                <div class="left-align col-1-1 vbox">
+                  <div class="big">Bewässern um (0=Off)</div>
+                  <div data-type="datetimepicker"
+                         data-device="par_DOIF_Bew"
+                         data-get="1-time"
+                         data-set="1-time"
+                         data-set-value="$v"
+                         data-format="H:i"
+                         data-step="15"
+                         data-datepicker="false"
+                        class="bigger thin orange">
+                  </div>
+                </div>
+                <div class="right-align col-1-1 vbox">
+                  <div class="big">oder Zeitraum bis (0=Off)</div>
+                  <div data-type="datetimepicker"
+                         data-device="par_DOIF_Bew"
+                         data-get="2-time"
+                         data-set="2-time"
+                         data-set-value="$v"
+                         data-format="H:i"
+                         data-step="15"
+                         data-datepicker="false"
+                        class="bigger thin orange">
+                  </div>
+                </div> 
+              </div>
+              <div class="hbox top-space centered col-100">
+                <div class="left-align col-2-3 big">Sollfeuchte</div>  
+                <div data-type="spinner"
+                   data-device="par_DOIF_Bew"
+                   data-get="2-treshold-moisture"
+                   data-set="2-treshold-moisture"
+                   data-min="0"
+                   data-max="100"
+                   data-gradient-color='["blue","red"]'
+                   class="bigger thin orange valueonly">
+                </div>
+              </div>
+              <div class="hbox top-space centered col-100">
+                <div class="left-align col-2-3 big">bei erwartetem Niederschlag weniger als (in mm)</div>  
+                <div data-type="spinner"
+                   data-device="par_DOIF_Bew"
+                   data-get="2-treshold-rain"
+                   data-set="2-treshold-rain"
+                   data-min="0"
+                   data-max="10"
+                   data-step="0.1"
+                   data-gradient-color='["blue","red"]'
+                   class="bigger thin orange valueonly">
+              </div>
+              </div>
+            </div>
+            <div class="hbox round padding bg-gray gray left-space top-space-5 squareborder-orange col-95">
+              <div class="left-align col-2-3 big">Mindestfeuchte</div>  
+              <div data-type="spinner"
+                   data-device="par_DOIF_Bew"
+                   data-get="1-treshold-moisture"
+                   data-set="1-treshold-moisture"
+                   data-min="0"
+                   data-max="100"
+                   data-gradient-color='["blue","red"]'
+                   class="bigger thin orange valueonly">
+              </div>
+            </div>
+            <div class="hbox round padding bg-gray gray left-space top-space-5 squareborder-orange col-95">
+              <div class="left-align col-2-3 big">Bewässerungsdauer in sek</div>  
+              <div data-type="spinner"
+                   data-device="par_DOIF_Bew"
+                   data-get="0-duration"
+                   data-set="0-duration"
+                   data-min="0"
+                   data-max="3600"
+                   data-step="60"
+                   data-gradient-color='["blue","red"]'
+                   class="bigger thin orange valueonly">
+              </div>
+            </div>
+          </div>
+        </div>            
+      </div>
