@@ -216,7 +216,7 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("<h2>Konfiguration</h2>");
   html->concat("   </td>\n");
 
-  sprintf(buffer, "     <h6>Release: %s of %s %s </h6>\n", Release, __DATE__, __TIME__);
+  sprintf(buffer, "     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Release, __DATE__, __TIME__);
   html->concat("   <td colspan='5'>\n");
   html->concat(buffer);
   html->concat("   </td>\n");

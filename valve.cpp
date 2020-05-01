@@ -18,7 +18,7 @@ void valve::AddPort1(valveHardware* Device, uint8_t Port1) {
 
 void valve::AddPort2(valveHardware* Device, uint8_t Port2) {
   myHWdev = Device->RegisterPort(Port2);
-  port2 = Port2;  
+  port2 = Port2;
 }
 
 bool valve::OnForTimer(int duration) {

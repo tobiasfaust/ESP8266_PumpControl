@@ -10,7 +10,7 @@
 #include <vector>
 #include <Wire.h>
 #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
-#include "Grove_Motor_Driver_TB6612FNG.h" // https://github.com/Seeed-Studio/Grove_Motor_Driver_TB6612FNG
+#include "TB6612.h"
 
 enum HWType_t {GPIO, PCF, TB6612};
 
@@ -31,8 +31,6 @@ class valveHardware {
     uint8_t Port;
     uint8_t internalPort;
   } PortMap_t;
-
-  #define TB6612MotorChanType(x) ((x)?MOTOR_CHA:MOTOR_CHB) //Konvertierung (int)internalPort -> (TB6612FNG)MotorChannel_type
 
   public:
     valveHardware(uint8_t sda, uint8_t scl);

@@ -3,8 +3,8 @@ const char JAVASCRIPT[] PROGMEM = R"=====(
 //############ DO NOT CHANGE BELOW ###################
 // alle GPIOs des ESP8266
 const gpio = [  {port: 216, name:'D0'},
-                {port: 205, name:'D1/SDA'},
-                {port: 204, name:'D2/SCL'},
+                {port: 205, name:'D1/SCL'},
+                {port: 204, name:'D2/SDA'},
                 {port: 200, name:'D3'},
                 {port: 202, name:'D4'},
                 {port: 214, name:'D5'},
