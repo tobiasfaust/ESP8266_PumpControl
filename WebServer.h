@@ -1,6 +1,10 @@
 // https://github.com/esp8266/Arduino/issues/3205
 // https://github.com/Hieromon/PageBuilder
 // https://www.mediaevent.de/tutorial/sonderzeichen.html
+//
+// https://byte-style.de/2018/01/automatische-updates-fuer-microcontroller-mit-gitlab-und-platformio/
+// https://community.blynk.cc/t/self-updating-from-web-server-http-ota-firmware-for-esp8266-and-esp32/18544
+// https://forum.fhem.de/index.php?topic=50628.0
 
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
@@ -16,7 +20,6 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
-//#include "uptime_formatter.h"
 #include "uptime.h"
 #include "_Release.h"
 
@@ -49,7 +52,8 @@ class WebServer {
     MDNSResponder mdns;
     ESP8266WebServer* server;
     ESP8266HTTPUpdateServer httpUpdater;
-    
+
+    void      setClock();
     void      handleNotFound();
     void      handleReboot();
     void      handleCSS();
