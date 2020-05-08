@@ -1,8 +1,9 @@
 #pragma once
+/* ESP8266 Board Library 2.6.3  */
 
 /*#include <Wire.h>
 #include "PCF8574.h"
-#include "Grove_Motor_Driver_TB6612FNG.h"
+#include "WEMOS_Motor.h"
 #include "SSD1306Wire.h"
 #include <ArduinoJson.h>
 #include <i2cdetect.h>
@@ -86,4 +87,5 @@ void loop() {
   mqtt->loop();
   LevelSensor->loop();
   webserver->loop();
+  Config->loop();
 }
