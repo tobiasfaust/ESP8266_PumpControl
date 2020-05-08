@@ -14,6 +14,7 @@
 #include <FS.h> 
 #include "ArduinoJson.h"
 #include "oled.h"
+#include "updater.h"
 
 extern OLED* oled;
 
@@ -24,6 +25,7 @@ class BaseConfig {
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(String* html);
+    void      loop();
     const uint8_t& GetPinSDA()      const {return pin_sda;}
     const uint8_t& GetPinSCL()      const {return pin_scl;}
     const uint8_t& GetI2cOLED()     const {return i2caddress_oled;}
@@ -36,6 +38,9 @@ class BaseConfig {
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
     const bool&    Enabled3Wege()   const {return enable_3wege;}
     const uint8_t& GetMaxParallel() const {return max_parallel;}
+    String    GetReleaseName();
+    void      InstallRelease(String ReleaseName);
+    void      RefreshReleases();
     
   private:
     String    mqtt_server;
@@ -46,10 +51,15 @@ class BaseConfig {
     uint8_t   pin_sda;
     uint8_t   pin_scl;
     bool      enable_oled;
+    bool      enable_autoupdate;
+    String    autoupdate_url;
+    stage_t   autoupdate_stage;
     uint8_t   i2caddress_oled;
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;
+
+    updater*  ESPUpdate;
 };
 
 #endif

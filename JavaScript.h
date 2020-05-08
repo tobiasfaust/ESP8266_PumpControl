@@ -207,7 +207,7 @@ function validate_identifiers(tableID) {
 }
 
 function ShowError(t){
-  if(t) { t += '<br>Breche Speichervorgang ab. Es wurde nichts gespeichert!' }
+  if(t && t.length>0) { t += '<br>Breche Speichervorgang ab. Es wurde nichts gespeichert!' }
   document.getElementById('ErrorText').innerHTML = t;
 }
 

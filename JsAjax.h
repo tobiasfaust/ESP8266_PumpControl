@@ -32,9 +32,24 @@ function ChangeValve(id) {
   ajax_send(btn, JSON.stringify(data));
 }
 
+function InstallRelease() {
+  rel = document.getElementById('releases').value;
+  var data = {}; 
+  data['action'] = "InstallRelease";
+  data['newState'] = rel;
+  ajax_send(null, JSON.stringify(data));
+}
+
+function RefreshReleases() {
+  var data = {}; 
+  data['action'] = "RefreshReleases";
+  data['newState'] = "";
+  ajax_send(null, JSON.stringify(data));
+}
+
 function ajax_send(btn, json) {
   var http = null;
-  ShowError();
+  ShowError("");
   if (window.XMLHttpRequest)  { http =new XMLHttpRequest(); }
   else                        { http =new ActiveXObject("Microsoft.XMLHTTP"); }
   
@@ -56,7 +71,7 @@ function ajax_send(btn, json) {
   http.onreadystatechange = function() {//Call a function when the state changes.
       if(http.readyState == 4 && http.status == 200) {
           var jsonReturn = JSON.parse(http.responseText);
-          if (btn) {
+          if (btn.type == "button") {
             switch (jsonReturn.NewState) {
               case 'On':
                 btn.value = 'Set Off';
@@ -65,7 +80,7 @@ function ajax_send(btn, json) {
                 btn.value = 'Set On';
              }
            }
-           if(jsonReturn.error) { ShowError(jsonReturn.error); }
+           if (jsonReturn.accepted == 0 && jsonReturn.error) { ShowError(jsonReturn.error); }
       } 
     }
   http.send(params);

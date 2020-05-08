@@ -31,12 +31,11 @@ WebServer::WebServer() : DoReboot(false) {
   
   Serial.println(F("WebServer started..."));
 
-  //UpTime = new uptime();
+  this->setClock();
 }
 
 void WebServer::loop() {
   server->handleClient();
-  //UpTime->loop(); -> verursacht ESP Absturz
   if (this->DoReboot) {ESP.restart();}
 }
 
@@ -79,6 +78,25 @@ void WebServer::handleReboot() {
   server->sendHeader("Location","/");
   server->send(303); 
   this->DoReboot = true;  
+}
+
+void WebServer::setClock() {
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");  // UTC
+
+  Serial.print(F("Waiting for NTP time sync: "));
+  time_t now = time(nullptr);
+  while (now < 8 * 3600 * 2) {
+    yield();
+    delay(500);
+    Serial.print(F("."));
+    now = time(nullptr);
+  }
+
+  Serial.println(F(""));
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  Serial.print(F("Current time: "));
+  Serial.print(asctime(&timeinfo));
 }
 
 void WebServer::handleBaseConfig() {
@@ -163,7 +181,7 @@ void WebServer::handleAjax() {
     String action, newState; 
     uint8_t port;
         
-    if (jsonGet.containsKey("action")) {action = jsonGet["action"].as<String>();}
+    if (jsonGet.containsKey("action"))   {action = jsonGet["action"].as<String>();}
     if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
     if (jsonGet.containsKey("port"))     { port = atoi(jsonGet["port"]); }
 
@@ -184,6 +202,17 @@ void WebServer::handleAjax() {
         jsonReturn["accepted"] = 1;
       }
     }
+
+    if (action && newState && strcmp(action.c_str(), "InstallRelease")==0) {
+      Config->InstallRelease(newState);  
+      jsonReturn["accepted"] = 1;  
+    }
+
+    if (action && strcmp(action.c_str(), "RefreshReleases")==0) {
+      Config->RefreshReleases();  
+      jsonReturn["accepted"] = 1;  
+    }
+    
   } else { RaiseError = true; }
 
   if (RaiseError) {
@@ -216,7 +245,7 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("<h2>Konfiguration</h2>");
   html->concat("   </td>\n");
 
-  sprintf(buffer, "     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Release, __DATE__, __TIME__);
+  sprintf(buffer, "     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
   html->concat("   <td colspan='5'>\n");
   html->concat(buffer);
   html->concat("   </td>\n");

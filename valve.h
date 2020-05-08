@@ -18,7 +18,6 @@ class valve {
   
   public:
     valve();
-    //~valve();
     
     void      loop();
     void      init(valveHardware* Device, uint8_t Port, String SubTopic);

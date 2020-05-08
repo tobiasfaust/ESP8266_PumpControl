@@ -2,6 +2,7 @@
 
 BaseConfig::BaseConfig() {
   SPIFFS.begin();
+  ESPUpdate = new updater;
   LoadJsonConfig();
 }
 
@@ -51,7 +52,16 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("pinscl"))           { this->pin_scl = atoi(json["pinscl"]) - 200;}
         if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
         if (json.containsKey("sel_3wege"))        { if (strcmp(json["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
-        
+        if (json.containsKey("sel_update"))       { if (strcmp(json["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}
+                                                    ESPUpdate->setAutoMode(this->enable_autoupdate);
+                                                  }
+        if (json.containsKey("autoupdate_url"))   { this->autoupdate_url = json["autoupdate_url"].as<String>(); 
+                                                    ESPUpdate->setIndexJson(this->autoupdate_url);}
+        if (json.containsKey("autoupdate_stage")) { if (json["autoupdate_stage"] == "PROD") { this->autoupdate_stage = (stage_t)PROD; }
+                                                    if (json["autoupdate_stage"] == "PRE")  { this->autoupdate_stage = (stage_t)PRE; }
+                                                    if (json["autoupdate_stage"] == "DEV")  { this->autoupdate_stage = (stage_t)DEV; }
+                                                    ESPUpdate->setStage(this->autoupdate_stage);
+                                                  }
         if (json.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(json["i2coled"], NULL, 16);} // hex convert to dec        
         if (json.containsKey("ventil3wege_port")) { this->ventil3wege_port = atoi(json["ventil3wege_port"]);}
         
@@ -66,7 +76,7 @@ void BaseConfig::LoadJsonConfig() {
   }
 
   if (loadDefaultConfig) {
-    this->mqtt_server = "192.178.10.1";
+    this->mqtt_server = "192.178.168.1";
     this->mqtt_port  = 1883;
     this->mqtt_root = "PumpControl";
     this->pin_sda = 5;
@@ -76,6 +86,8 @@ void BaseConfig::LoadJsonConfig() {
     this->enable_3wege = false;
     this->ventil3wege_port = 0;
     this->max_parallel = 0;
+    this->enable_autoupdate = true;
+    this->autoupdate_url="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/releases.json";
     
     loadDefaultConfig = false; //set back
   }
@@ -83,6 +95,22 @@ void BaseConfig::LoadJsonConfig() {
   if (this->enable_oled) {oled->init(this->pin_sda, this->pin_scl, this->i2caddress_oled);}
   oled->Enable(this->enable_oled);
 
+}
+
+String BaseConfig::GetReleaseName() {
+  return ESPUpdate->GetReleaseName();
+}
+
+void BaseConfig::InstallRelease(String ReleaseName) {
+  ESPUpdate->InstallRelease(ReleaseName);
+}
+
+void BaseConfig::RefreshReleases() {
+  ESPUpdate->RefreshReleases();
+}
+
+void BaseConfig::loop() {
+  ESPUpdate->loop();  
 }
 
 void BaseConfig::GetWebContent(String* html) {
@@ -168,14 +196,14 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("  <td colspan='2'>\n");
   
   html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel0' name='sel_3wege' value='none' %s onclick=\"radioselection([''],['3wege_0'])\"/>", (this->enable_3wege)?"":"checked");
+  sprintf(buffer, "<input type='radio' id='sel_3wege_0' name='sel_3wege' value='none' %s onclick=\"radioselection([''],['3wege_0'])\"/>", (this->enable_3wege)?"":"checked");
   html->concat(buffer);
-  html->concat("<label for='sel0'>kein Trinkwasser Bypass</label></div>\n");
+  html->concat("<label for='sel_3wege_0'>kein Trinkwasser Bypass</label></div>\n");
   
   html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel1' name='sel_3wege' value='3wege' %s onclick=\"radioselection(['3wege_0'],[''])\"/>", (this->enable_3wege)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='sel_3wege_1' name='sel_3wege' value='3wege' %s onclick=\"radioselection(['3wege_0'],[''])\"/>", (this->enable_3wege)?"checked":"");
   html->concat(buffer);
-  html->concat("<label for='sel1'>mit Trinkwasser ByPass Ventil</label></div>\n");
+  html->concat("<label for='sel_3wege_1'>mit Trinkwasser ByPass Ventil</label></div>\n");
     
   html->concat("  </td>\n");
   html->concat("</tr>\n");
@@ -186,6 +214,61 @@ void BaseConfig::GetWebContent(String* html) {
   sprintf(buffer, "<td><input min='0' max='254' id='ConfiguredPorts_0' name='ventil3wege_port' type='number' value='%d'/></td>\n", this->ventil3wege_port);
   html->concat(buffer);
   html->concat("</tr>\n");
+
+  html->concat("<tr>\n");
+  html->concat("  <td colspan='2'>\n");
+  html->concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='sel_update_0' name='sel_update' value='auto' %s onclick=\"radioselection(['update_0'],['update_1'])\"/>", (this->enable_autoupdate)?"checked":"");
+  html->concat(buffer);
+  html->concat("<label for='sel_update_0'>Automatisches Update</label></div>\n");
+  html->concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='sel_update_1' name='sel_update' value='manu' %s onclick=\"radioselection(['update_1'],['update_0'])\"/>", (this->enable_autoupdate)?"":"checked");
+  html->concat(buffer);
+  html->concat("<label for='sel_update_1'>Manuelles Update</label></div>\n");
+  html->concat("  </td>\n");
+  html->concat("</tr>\n");
+
+  html->concat("<tr>\n");
+  html->concat("<td>Update URL</td>\n");
+  sprintf(buffer, "<td><input size='30' name='autoupdate_url' type='text' value='%s'/></td>\n", this->autoupdate_url.c_str());
+  html->concat(buffer);
+  html->concat("</tr>\n");
+
+  sprintf(buffer, "<tr class='%s' id='update_0'>\n", (this->enable_autoupdate?"":"hide"));
+  html->concat(buffer);
+  html->concat("<td>Auswahl der Stage</td>\n");
+  html->concat("<td>\n");
+  html->concat("  <select id='autoupdate_stage' name='autoupdate_stage'>\n");
+  sprintf(buffer, "  <option value='%s' %s>%s</option>\n", "PROD", (this->autoupdate_stage==PROD?"selected":""), "Production");
+  html->concat(buffer);
+  sprintf(buffer, "  <option value='%s' %s>%s</option>\n", "PRE", (this->autoupdate_stage==PRE?"selected":""), "PreLive/QS");
+  html->concat(buffer);
+  sprintf(buffer, "  <option value='%s' %s>%s</option>\n", "DEV", (this->autoupdate_stage==DEV?"selected":""), "Development");
+  html->concat(buffer);
+  html->concat("  </select>\n");
+  html->concat("</td>\n");
+  html->concat("</tr>\n");
+  
+  sprintf(buffer, "<tr class='%s' id='update_1'>\n", (this->enable_autoupdate?"hide":""));
+  html->concat(buffer);
+  html->concat("<td>verfügbare Releases\n");
+  html->concat("<span onclick='RefreshReleases()'>&#8634;</span>");
+  html->concat("</td><td>\n");
+  
+  html->concat("  <select id='releases' name='releases'>\n");
+  std::vector<release_t>* rel = ESPUpdate->GetReleases();
+  for (uint8_t i=0; i < rel->size(); i++) {
+    sprintf(buffer, "<option value='%s' %s>%s</option>\n", rel->at(i).name.c_str(), (rel->at(i).name==ESPUpdate->GetCurrentRelease()->name?"disabled":""), rel->at(i).name.c_str());
+    html->concat(buffer);
+  }
+  html->concat("  </select>\n");
+  html->concat("<input type='button' class='button' onclick='InstallRelease()' value='Install' />");
+  html->concat("</td>\n");
+  html->concat("</tr>\n");
+ 
+  html->concat("  </td>\n");
+  html->concat("</tr>\n");
+  
   html->concat("</tbody>\n");
   html->concat("</table>\n");
 
