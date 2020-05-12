@@ -1,1 +1,1 @@
-#define Release "2.4.2-dev"
+#define Release "2.4.2-Dev"
