@@ -48,7 +48,7 @@ release_t* updater::GetCurrentRelease() {
 }
 
 String updater::GetReleaseName() {
-  return (this->currentRelease.version + "(" + this->Stage2String(this->currentRelease.stage)+ ")");
+  return (this->currentRelease.version + " (" + this->Stage2String(this->currentRelease.stage)+ ")");
 }
 
 std::vector<release_t>* updater::GetReleases() {
