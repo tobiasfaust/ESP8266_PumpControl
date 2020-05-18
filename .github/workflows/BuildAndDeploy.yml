@@ -1,0 +1,73 @@
+# https://github.com/marketplace/actions/test-compile-for-arduino
+# https://github.com/marketplace/actions/test-compile-for-arduino#multiple-boards-with-parameter-using-the-script-directly
+
+name: Build&Deploy
+on:
+  [push, pull_request]
+  
+jobs:
+  build:
+    name: ${{ matrix.arduino-boards-fqbn }} - test compiling examples
+    runs-on: ubuntu-latest
+    env:
+      REQUIRED_LIBRARIES: WiFiManager,PubSubClient,ESP8266 and ESP32 OLED driver for SSD1306 displays,Uptime Library
+   
+    strategy:
+      matrix:
+        arduino-boards-fqbn:
+#          - arduino:avr:uno
+          - esp8266:esp8266:huzzah:eesz=4M3M,xtal=80
+
+        include:
+#          - arduino-boards-fqbn: arduino:avr:uno
+#            #sketch-names: WhistleSwitch.ino,SimpleFrequencyDetector.ino # Comma separated list of sketch names (no path required) or patterns to use in build
+
+          - arduino-boards-fqbn: esp8266:esp8266:huzzah:eesz=4M3M,xtal=80
+            platform-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json  
+            examples-build-properties:
+              All:
+                -DDEBUG    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+        
+      - name: Checkout Wemos MotorDriver Library
+        uses: actions/checkout@v2
+        with:
+          repository: wemos/WEMOS_Motor_Shield_Arduino_Library
+          ref: master
+          path: WEMOS_Motor_Shield_Custom_Library
+
+      - name: Checkout I2CDetect Library
+        uses: actions/checkout@v2
+        with:
+          repository: tobiasfaust/i2cdetect
+          ref: master
+          path: i2cDetect_Custom_Library
+
+      - name: Checkout PCF8574_library 
+        uses: actions/checkout@v2
+        with:
+          repository: xreef/PCF8574_library
+          ref: master
+          path: PCF8574_Custom_Library
+
+      - name: Checkout ArduinoJson library 
+        uses: actions/checkout@v2
+        with:
+          repository: bblanchon/ArduinoJson
+          ref: 5.x
+          path: ArduinoJson_Custom_Library
+
+      - name: Compile all examples using the bash script arduino-test-compile.sh
+        env:
+          # Passing parameters to the script by setting the appropriate ENV_* variables.
+          ENV_ARDUINO_BOARD_FQBN: ${{ matrix.arduino-boards-fqbn }}
+          ENV_PLATFORM_URL: ${{ matrix.platform-url }}
+          ENV_REQUIRED_LIBRARIES: ${{ env.REQUIRED_LIBRARIES }}
+          ENV_EXAMPLES_EXCLUDE: ${{ matrix.examples-exclude }}
+          ENV_EXAMPLES_BUILD_PROPERTIES: ${{ toJson(matrix.examples-build-properties) }}
+        run: |
+          wget --quiet https://raw.githubusercontent.com/ArminJo/arduino-test-compile/master/arduino-test-compile.sh
+          chmod +x arduino-test-compile.sh
+          ./arduino-test-compile.sh
