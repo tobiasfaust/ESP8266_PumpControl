@@ -24,6 +24,7 @@ jobs:
 
           - arduino-boards-fqbn: esp8266:esp8266:huzzah:eesz=4M3M,xtal=80
             platform-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json  
+            examples-exclude: Release, v1/ESP8266_PumpControl
             sketch-names: ESP8266_PumpControl.ino
 #            examples-build-properties:
 #              All:
