@@ -16,7 +16,7 @@ jobs:
       matrix:
         arduino-boards-fqbn:
 #          - arduino:avr:uno
-          - esp8266:esp8266:huzzah:eesz=4M3M,xtal=80
+          - esp8266:esp8266:d1_mini
 
         include:
 #          - arduino-boards-fqbn: arduino:avr:uno
