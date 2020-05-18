@@ -25,9 +25,10 @@ jobs:
           - arduino-boards-fqbn: esp8266:esp8266:huzzah:eesz=4M3M,xtal=80
             platform-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json  
             sketch-names: ESP8266_PumpControl.ino
-            examples-build-properties:
-              All:
-                -DDEBUG    
+#            examples-build-properties:
+#              All:
+#                -DDEBUG    
+
     steps:
       - name: Checkout
         uses: actions/checkout@master
