@@ -1,17 +1,30 @@
 # https://github.com/marketplace/actions/test-compile-for-arduino
 # https://github.com/marketplace/actions/test-compile-for-arduino#multiple-boards-with-parameter-using-the-script-directly
+# https://github.com/actions/upload-release-asset/issues/17
 
 name: Build&Deploy
 on:
-  [push, pull_request]
-  
+  push:
+    branches:
+      - master
+      - prelive
+      - development
+  pull_request:
+    branches:
+      - master
+      - prelive
+      - development
+
 jobs:
   build:
-    name: ${{ matrix.arduino-boards-fqbn }} - test compiling examples
+    name: BuildAndDeploy-${{ matrix.arduino-boards-fqbn }}
     runs-on: ubuntu-latest
     env:
       REQUIRED_LIBRARIES: WiFiManager,PubSubClient,ESP8266 and ESP32 OLED driver for SSD1306 displays,Uptime Library
-   
+      REPOSITORY: ${{ github.event.repository.name }}
+      sketch-name: ESP8266_PumpControl.ino
+      #FULLREPO: ${{ github.repository }} # tobiasfaust/test
+
     strategy:
       matrix:
         arduino-boards-fqbn:
@@ -24,15 +37,15 @@ jobs:
 
           - arduino-boards-fqbn: esp8266:esp8266:d1_mini
             platform-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json  
-            sketch-names: ESP8266_PumpControl.ino
+            architecture: ESP8266  
 #            examples-build-properties:
 #              All:
 #                -DDEBUG    
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@master
-        
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
       - name: Checkout Wemos MotorDriver Library
         uses: actions/checkout@v2
         with:
@@ -68,9 +81,46 @@ jobs:
           ENV_PLATFORM_URL: ${{ matrix.platform-url }}
           ENV_REQUIRED_LIBRARIES: ${{ env.REQUIRED_LIBRARIES }}
           ENV_EXAMPLES_EXCLUDE: ${{ matrix.examples-exclude }}
-          ENV_SKETCH_NAMES: ${{ matrix.sketch-names }}
+          ENV_SKETCH_NAMES: ${{ env.sketch-name }}
           ENV_EXAMPLES_BUILD_PROPERTIES: ${{ toJson(matrix.examples-build-properties) }}
         run: |
           wget --quiet https://raw.githubusercontent.com/ArminJo/arduino-test-compile/master/arduino-test-compile.sh
           chmod +x arduino-test-compile.sh
           ./arduino-test-compile.sh
+
+        # https://github.com/actions/starter-workflows/issues/68#issuecomment-617683761
+      - if: ${{ endsWith(github.ref, 'master') }}
+        name: Set Environment Variable "PRODUCTION" 
+        run: echo ::set-env name=ENV_STAGE::PROD
+      - if: ${{ endsWith(github.ref, 'prelive') }}
+        name: Set Environment Variable "PreLive" 
+        run: echo ::set-env name=ENV_STAGE::PRE
+      - if: ${{ endsWith(github.ref, 'development') }}
+        name: Set Environment Variable "Development" 
+        run: echo ::set-env name=ENV_STAGE::DEV
+
+      # Script um JSON Datei anzupassen
+      - name: Schreibe Json File
+        env:
+          ENV_ARCH: ${{ matrix.architecture }}
+          ENV_REPOSITORYNAME: ${{ github.repository }}
+          ENV_BINARYPATH: "${{ format('/home/runner/{0}', env.REPOSITORY) }}"
+          ENV_DESTPATH: "release"
+          ENV_SUBVERSION: ${{ github.run_number }}
+          ENV_RELEASEFILE: "${{ format('/home/runner/{0}/_Release.h', env.REPOSITORY) }}"
+          #if: github.ref == 'refs/heads/integration'
+        run: |
+          mkdir release 
+          chmod +x .github/workflows/generateJSON.sh
+          .github/workflows/generateJSON.sh
+
+      - uses: jakejarvis/s3-sync-action@master
+        with:
+          args: '--acl public-read --follow-symlinks'
+        env:
+          AWS_S3_BUCKET: 'tfa-releases'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'eu-central-1'   # optional: defaults to us-east-1
+          SOURCE_DIR: 'release'      # optional: defaults to entire repository
+          DEST_DIR: ${{ env.REPOSITORY }}
