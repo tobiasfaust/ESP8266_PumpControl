@@ -87,7 +87,7 @@ void BaseConfig::LoadJsonConfig() {
     this->ventil3wege_port = 0;
     this->max_parallel = 0;
     this->enable_autoupdate = true;
-    this->autoupdate_url="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/releases.json";
+    this->autoupdate_url="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/ESP8266_PumpControl/releases.json";
     
     loadDefaultConfig = false; //set back
   }
