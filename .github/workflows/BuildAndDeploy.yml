@@ -103,7 +103,7 @@ jobs:
       - name: Schreibe Json File
         env:
           ENV_ARCH: ${{ matrix.architecture }}
-          ENV_REPOSITORYNAME: ${{ github.repository }}
+          ENV_REPOSITORYNAME: ${{ env.REPOSITORY }}
           ENV_BINARYPATH: "${{ format('/home/runner/{0}', env.REPOSITORY) }}"
           ENV_DESTPATH: "release"
           ENV_SUBVERSION: ${{ github.run_number }}
