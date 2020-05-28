@@ -1,6 +1,6 @@
 #include "updater.h"
 
-updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(60) {
+updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600) {
   this->releases = new std::vector<release_t>;
   client = new WiFiClient;
   
@@ -77,7 +77,6 @@ release_t updater::getLatestRelease() {
 }
 
 void updater::Update() {
-  Serial.println("Update Check");
   this->downloadJson();
   // check auf neues Release wenn AutoModus und kein Fehlercode gesetzt
   if (this->automode) {
