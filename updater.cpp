@@ -68,11 +68,8 @@ release_t updater::getLatestRelease() {
          (this->stage == (stage_t)PRE and (this->releases->at(i).stage == (stage_t)PROD || this->releases->at(i).stage == (stage_t)PRE)) ||
          (this->stage == (stage_t)DEV)
        ) {
-      //Serial.printf("ReleaseNumber %d (cur) %d (new) \n", this->currentRelease.number, this->releases->at(i).number);
-      //Serial.printf("Max Subversion: %d \n", max(this->currentRelease.number, this->releases->at(i).number));
       if (max(this->currentRelease.number, this->releases->at(i).number) > this->currentRelease.number)  { 
         newRelease = this->releases->at(i); 
-        //Serial.printf("neue MaxVersion gesetzt: %d\n", newRelease.number);
       }
     }
   }
@@ -80,13 +77,12 @@ release_t updater::getLatestRelease() {
 }
 
 void updater::Update() {
-  Serial.println("Starte UpdateCheck");
+  Serial.println("Update Check");
   this->downloadJson();
   // check auf neues Release wenn AutoModus und kein Fehlercode gesetzt
   if (this->automode) {
     release_t r = this->getLatestRelease();
     if (r.number > this->currentRelease.number) {
-      //Serial.printf("New Release found: %d -> %d \n", this->currentRelease.number, r.number);
       this->InstallRelease(r.number);
     }
   } else { Serial.println("No AutoMode"); }
@@ -265,9 +261,8 @@ void updater::printRelease(release_t* r) {
 }
 
 void updater::loop() {
-  if (WiFi.status() == WL_CONNECTED) { 
-    // (this->DoUpdate && millis()>5000) || 
-    if (((millis() - this->lastupdate) > this->interval * 1000) || millis() < this->lastupdate)  {
+  if (WiFi.status() == WL_CONNECTED) {  
+    if ((this->DoUpdate && millis()>5000) || ((millis() - this->lastupdate) > this->interval * 1000) || millis() < this->lastupdate)  {
       // nach dem Boot + 5sek oder täglich oder nach millis() restart
       this->DoUpdate = false;
       this->lastupdate = millis();

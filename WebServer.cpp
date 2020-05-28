@@ -31,8 +31,6 @@ WebServer::WebServer() : DoReboot(false) {
   server->on("/ajax", [this]() {this->handleAjax(); });
   
   Serial.println(F("WebServer started..."));
-
-  this->setClock();
 }
 
 void WebServer::loop() {
@@ -84,25 +82,6 @@ void WebServer::handleReboot() {
 void WebServer::handleReset() {
   SPIFFS.format();
   this->handleReboot();
-}
-
-void WebServer::setClock() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");  // UTC
-
-  Serial.print(F("Waiting for NTP time sync: "));
-  time_t now = time(nullptr);
-  while (now < 8 * 3600 * 2) {
-    yield();
-    delay(500);
-    Serial.print(F("."));
-    now = time(nullptr);
-  }
-
-  Serial.println(F(""));
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  Serial.print(F("Current time: "));
-  Serial.print(asctime(&timeinfo));
 }
 
 void WebServer::handleBaseConfig() {
