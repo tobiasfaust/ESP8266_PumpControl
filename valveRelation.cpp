@@ -150,8 +150,8 @@ void valveRelation::LoadJsonConfig() {
 
   if (loadDefaultConfig) {
     Serial.println("lade Relations DefaultConfig");
-    AddRelation(true, "testhost/TestValve1", 203, false);
-    AddRelation(true, "testhost/TestValve2", 203, false);
+    AddRelation(false, "testhost/TestValve1", 203, false);
+    AddRelation(false, "testhost/TestValve2", 203, false);
   }
 }
 
