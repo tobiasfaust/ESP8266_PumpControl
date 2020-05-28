@@ -1,6 +1,6 @@
 #include "updater.h"
 
-updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(86400) {
+updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(60) {
   this->releases = new std::vector<release_t>;
   client = new WiFiClient;
   
@@ -17,7 +17,8 @@ void updater::setStage(stage_t s) {
 }
 
 void updater::setAutoMode(bool a) {
-  this->automode = a;  
+  this->automode = a; 
+  Serial.printf("Automode now %s \n", this->automode?"on":"off");
 }
 
 void updater::setInterval(uint32_t seconds) {
@@ -232,8 +233,8 @@ void updater::InstallRelease(uint32_t ReleaseNumber) {
   }
   this->StoreJsonConfig(&this->currentRelease);
 
-//  Serial.printf("Install Release: %s (Number: %d)\n", this->currentRelease.name.c_str(), this->currentRelease.number);
-//  Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
+  Serial.printf("Install Release: %s (Number: %d)\n", this->currentRelease.name.c_str(), this->currentRelease.number);
+  Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
   ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
   
   t_httpUpdate_return ret = ESPhttpUpdate.update(*client, this->currentRelease.downloadURL);

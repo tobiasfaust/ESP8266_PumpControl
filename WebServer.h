@@ -56,6 +56,7 @@ class WebServer {
     void      setClock();
     void      handleNotFound();
     void      handleReboot();
+    void      handleReset();
     void      handleCSS();
     void      handleJS();
     void      handleJsAjax();

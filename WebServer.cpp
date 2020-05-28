@@ -26,7 +26,8 @@ WebServer::WebServer() : DoReboot(false) {
   server->on("/StoreVentilConfig", HTTP_POST, [this]() { this->ReceiveJSONConfiguration(VENTILE); });
   server->on("/StoreRelations", HTTP_POST, [this]()    { this->ReceiveJSONConfiguration(RELATIONS); });
   server->on("/reboot", HTTP_GET, [this]()             { this->handleReboot(); });
-
+  server->on("/reset", HTTP_GET, [this]()              { this->handleReset(); });
+  
   server->on("/ajax", [this]() {this->handleAjax(); });
   
   Serial.println(F("WebServer started..."));
@@ -78,6 +79,11 @@ void WebServer::handleReboot() {
   server->sendHeader("Location","/");
   server->send(303); 
   this->DoReboot = true;  
+}
+
+void WebServer::handleReset() {
+  SPIFFS.format();
+  this->handleReboot();
 }
 
 void WebServer::setClock() {
@@ -374,15 +380,20 @@ void WebServer::getPage_Status(String* html) {
   }
 
   html->concat("<tr>\n");
-  html->concat("<td>Firmware Update</td>\n");
-  html->concat("<td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
+  html->concat("  <td>Firmware Update</td>\n");
+  html->concat("  <td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
   html->concat("</tr>\n");
 
   html->concat("<tr>\n");
-  html->concat("<td>Device Reboot</td>\n");
-  html->concat("<td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
+  html->concat("  <td>Device Reboot</td>\n");
+  html->concat("  <td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
   html->concat("</tr>\n");
 
+  html->concat("<tr>\n");
+  html->concat("  <td>Werkszustand herstellen (ohne WiFi)</td>\n");
+  html->concat("  <td><form action='reset'><input class='button' type='submit' value='Reset' /></form></td>\n");
+  html->concat("</tr>\n");
+  
   html->concat("</tbody>\n");
   html->concat("</table>\n");     
 }
