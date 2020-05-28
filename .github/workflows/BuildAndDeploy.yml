@@ -9,10 +9,6 @@ on:
       - master
       - prelive
       - development
-  pull_request:
-    branches:
-      - development
-      - prelive
 
 jobs:
   build:
