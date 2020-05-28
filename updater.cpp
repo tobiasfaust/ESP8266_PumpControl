@@ -20,7 +20,7 @@ void updater::setAutoMode(bool a) {
   this->automode = a;  
 }
 
-void updater::setInterval(int seconds) {
+void updater::setInterval(uint32_t seconds) {
   this->interval = seconds;  
 }
 
@@ -48,7 +48,7 @@ release_t* updater::GetCurrentRelease() {
 }
 
 String updater::GetReleaseName() {
-  return (this->currentRelease.version + " (" + this->Stage2String(this->currentRelease.stage)+ ")");
+  return (this->currentRelease.version + " - " + this->currentRelease.subversion + " (" + this->Stage2String(this->currentRelease.stage)+ ")");
 }
 
 std::vector<release_t>* updater::GetReleases() {
@@ -67,7 +67,12 @@ release_t updater::getLatestRelease() {
          (this->stage == (stage_t)PRE and (this->releases->at(i).stage == (stage_t)PROD || this->releases->at(i).stage == (stage_t)PRE)) ||
          (this->stage == (stage_t)DEV)
        ) {
-      if (max(this->currentRelease.number, this->releases->at(i).number) > this->currentRelease.number)  { newRelease = this->releases->at(i); }
+      //Serial.printf("ReleaseNumber %d (cur) %d (new) \n", this->currentRelease.number, this->releases->at(i).number);
+      //Serial.printf("Max Subversion: %d \n", max(this->currentRelease.number, this->releases->at(i).number));
+      if (max(this->currentRelease.number, this->releases->at(i).number) > this->currentRelease.number)  { 
+        newRelease = this->releases->at(i); 
+        //Serial.printf("neue MaxVersion gesetzt: %d\n", newRelease.number);
+      }
     }
   }
   return newRelease;
@@ -79,7 +84,8 @@ void updater::Update() {
   if (this->automode) {
     release_t r = this->getLatestRelease();
     if (r.number > this->currentRelease.number) {
-      InstallRelease(r.name);
+      //Serial.printf("New Release found: %d -> %d \n", this->currentRelease.number, r.number);
+      this->InstallRelease(r.number);
     }
   } else { Serial.println("No AutoMode"); }
 }
@@ -134,10 +140,12 @@ void updater::parseJson(String* json) {
       release_t r;
       if (o.containsKey("name"))           { r.name    = o["name"].as<String>();}
       if (o.containsKey("version"))        { r.version = o["version"].as<String>();}
-      if (o.containsKey("number"))         { r.number  = o["number"].as<int>();}
+      if (o.containsKey("number"))         { r.number  = o["number"].as<uint32_t>();}
+      if (o.containsKey("subversion"))     { r.subversion  = o["subversion"].as<uint32_t>();}
       if (o.containsKey("stage"))          { r.stage   = this->String2Stage(o["stage"].as<String>());}
       if (o.containsKey("download-url"))   { r.downloadURL = o["download-url"].as<String>();}
-      this->releases->push_back(r);   
+      this->releases->push_back(r);  
+      //this->printRelease(&r); 
     }
   } else {
     Serial.println("Cannot parse json");
@@ -149,6 +157,7 @@ void updater::StoreJsonConfig(release_t* r) {
   JsonObject& json = jsonBuffer.createObject();
   json["name"]          = r->name.c_str();
   json["version"]       = r->version.c_str();
+  json["subversion"]    = r->subversion;
   json["number"]        = r->number;
   json["stage"]         = this->Stage2String(r->stage);
   json["download-url"]  = r->downloadURL.c_str();
@@ -184,7 +193,8 @@ void updater::LoadJsonConfig() {
         release_t r;
         if (json.containsKey("name"))          { r.name       = json["name"].as<String>();}
         if (json.containsKey("version"))       { r.version    = json["version"].as<String>();}
-        if (json.containsKey("number"))        { r.number     = json["number"].as<int>();}
+        if (json.containsKey("subversion"))    { r.subversion = json["subversion"].as<uint32_t>();}
+        if (json.containsKey("number"))        { r.number     = json["number"].as<uint32_t>();}
         if (json.containsKey("stage"))         { r.stage      = this->String2Stage(json["stage"].as<String>());}
         if (json.containsKey("download-url"))  { r.downloadURL= json["download-url"].as<String>();}
         this->currentRelease = r;
@@ -200,8 +210,9 @@ void updater::LoadJsonConfig() {
 
   if (loadDefaultConfig) {
     release_t r;
-    r.name = "manual";
+    r.name = "Manual";
     r.version = Release;
+    r.subversion = 0;
     r.number = 0;
     r.stage = (stage_t)PROD;
     r.downloadURL = "";
@@ -210,19 +221,19 @@ void updater::LoadJsonConfig() {
   }
 }
 
-void updater::InstallRelease(String ReleaseName) {
-  release_t oldRelease = this->currentRelease;
-  Serial.printf("Install Release: %s\n", ReleaseName.c_str());
+void updater::InstallRelease(uint32_t ReleaseNumber) {
+  release_t oldRelease = this->currentRelease; // save in case of installation failure
   
   for (uint8_t i=0; i < this->releases->size(); i++) {
-    if (this->releases->at(i).name == ReleaseName) {
+    if (this->releases->at(i).number == ReleaseNumber) {
       this->currentRelease = this->releases->at(i);
       break; 
     }
   }
   this->StoreJsonConfig(&this->currentRelease);
-  
-  Serial.printf("Install Binary: %s\n", this->currentRelease.downloadURL.c_str());
+
+//  Serial.printf("Install Release: %s (Number: %d)\n", this->currentRelease.name.c_str(), this->currentRelease.number);
+//  Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
   ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
   
   t_httpUpdate_return ret = ESPhttpUpdate.update(*client, this->currentRelease.downloadURL);
@@ -244,9 +255,13 @@ void updater::InstallRelease(String ReleaseName) {
     case HTTP_UPDATE_OK:
       Serial.println("HTTP_UPDATE_OK");
       break;
-  } 
+  }
 }
-    
+
+void updater::printRelease(release_t* r) {
+  Serial.printf("ReleaseName %s, Version: %s, Subversion: %d, Number: %d, Stage: %s, \n URL: %s\n", r->name.c_str(), r->version.c_str(), r->subversion, r->number, this->Stage2String(r->stage).c_str(), r->downloadURL.c_str());
+}
+
 void updater::loop() {
   if (WiFi.status() == WL_CONNECTED) { 
     if ((this->DoUpdate && millis()>5000) || ((millis() - this->lastupdate) > this->interval * 1000) || millis() < this->lastupdate)  {

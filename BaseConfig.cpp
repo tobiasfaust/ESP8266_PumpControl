@@ -101,8 +101,8 @@ String BaseConfig::GetReleaseName() {
   return ESPUpdate->GetReleaseName();
 }
 
-void BaseConfig::InstallRelease(String ReleaseName) {
-  ESPUpdate->InstallRelease(ReleaseName);
+void BaseConfig::InstallRelease(uint32_t ReleaseNumber) {
+  ESPUpdate->InstallRelease(ReleaseNumber);
 }
 
 void BaseConfig::RefreshReleases() {
@@ -258,7 +258,7 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("  <select id='releases' name='releases'>\n");
   std::vector<release_t>* rel = ESPUpdate->GetReleases();
   for (uint8_t i=0; i < rel->size(); i++) {
-    sprintf(buffer, "<option value='%s' %s>%s</option>\n", rel->at(i).name.c_str(), (rel->at(i).name==ESPUpdate->GetCurrentRelease()->name?"disabled":""), rel->at(i).name.c_str());
+    sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
     html->concat(buffer);
   }
   html->concat("  </select>\n");

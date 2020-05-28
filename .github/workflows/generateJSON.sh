@@ -59,7 +59,7 @@ VERSION1=`echo $VERSION | cut -d '.' -f1`   # 2
 VERSION2=`echo $VERSION | cut -d '.' -f2`   # 4
 VERSION3=`echo $VERSION | cut -d '.' -f3`   # 2
 
-let NUMBER=$(printf "1%03d%03d%03d%03d" $VERSION1 $VERSION2 $VERSION3 $SUBVERSION)
+let NUMBER=$(printf "%d%d%d%d" $VERSION1 $VERSION2 $VERSION3 $SUBVERSION)
 
 for FILE in `ls $BINARYPATH/*.bin` 
 do
