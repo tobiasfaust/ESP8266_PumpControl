@@ -252,7 +252,7 @@ void BaseConfig::GetWebContent(String* html) {
   sprintf(buffer, "<tr class='%s' id='update_1'>\n", (this->enable_autoupdate?"hide":""));
   html->concat(buffer);
   html->concat("<td>verfügbare Releases\n");
-  html->concat("<span onclick='RefreshReleases()'>&#8634;</span>");
+  html->concat("<a href='#' onclick='RefreshReleases()' title='Die JSON Liste neu laden'>&#8634;</a>");
   html->concat("</td><td>\n");
   
   html->concat("  <select id='releases' name='releases'>\n");
