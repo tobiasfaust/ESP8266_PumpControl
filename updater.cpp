@@ -80,6 +80,7 @@ release_t updater::getLatestRelease() {
 }
 
 void updater::Update() {
+  Serial.println("Starte UpdateCheck");
   this->downloadJson();
   // check auf neues Release wenn AutoModus und kein Fehlercode gesetzt
   if (this->automode) {
@@ -265,7 +266,8 @@ void updater::printRelease(release_t* r) {
 
 void updater::loop() {
   if (WiFi.status() == WL_CONNECTED) { 
-    if ((this->DoUpdate && millis()>5000) || ((millis() - this->lastupdate) > this->interval * 1000) || millis() < this->lastupdate)  {
+    // (this->DoUpdate && millis()>5000) || 
+    if (((millis() - this->lastupdate) > this->interval * 1000) || millis() < this->lastupdate)  {
       // nach dem Boot + 5sek oder täglich oder nach millis() restart
       this->DoUpdate = false;
       this->lastupdate = millis();
