@@ -57,7 +57,7 @@ jobs:
     env:
       REQUIRED_LIBRARIES: WiFiManager,PubSubClient,ESP8266 and ESP32 OLED driver for SSD1306 displays,Uptime Library
       REPOSITORY: ${{ github.event.repository.name }}
-      sketch-name: test.ino
+      sketch-name: ESP8266_PumpControl.ino
       #FULLREPO: ${{ github.repository }} # tobiasfaust/test
 
     strategy:
