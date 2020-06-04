@@ -39,7 +39,7 @@ class BaseConfig {
     const bool&    Enabled3Wege()   const {return enable_3wege;}
     const uint8_t& GetMaxParallel() const {return max_parallel;}
     String    GetReleaseName();
-    void      InstallRelease(String ReleaseName);
+    void      InstallRelease(uint32_t ReleaseNumber);
     void      RefreshReleases();
     
   private:

@@ -26,12 +26,11 @@ WebServer::WebServer() : DoReboot(false) {
   server->on("/StoreVentilConfig", HTTP_POST, [this]() { this->ReceiveJSONConfiguration(VENTILE); });
   server->on("/StoreRelations", HTTP_POST, [this]()    { this->ReceiveJSONConfiguration(RELATIONS); });
   server->on("/reboot", HTTP_GET, [this]()             { this->handleReboot(); });
-
+  server->on("/reset", HTTP_GET, [this]()              { this->handleReset(); });
+  
   server->on("/ajax", [this]() {this->handleAjax(); });
   
   Serial.println(F("WebServer started..."));
-
-  this->setClock();
 }
 
 void WebServer::loop() {
@@ -80,23 +79,9 @@ void WebServer::handleReboot() {
   this->DoReboot = true;  
 }
 
-void WebServer::setClock() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");  // UTC
-
-  Serial.print(F("Waiting for NTP time sync: "));
-  time_t now = time(nullptr);
-  while (now < 8 * 3600 * 2) {
-    yield();
-    delay(500);
-    Serial.print(F("."));
-    now = time(nullptr);
-  }
-
-  Serial.println(F(""));
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  Serial.print(F("Current time: "));
-  Serial.print(asctime(&timeinfo));
+void WebServer::handleReset() {
+  SPIFFS.format();
+  this->handleReboot();
 }
 
 void WebServer::handleBaseConfig() {
@@ -204,7 +189,7 @@ void WebServer::handleAjax() {
     }
 
     if (action && newState && strcmp(action.c_str(), "InstallRelease")==0) {
-      Config->InstallRelease(newState);  
+      Config->InstallRelease(atoi(newState.c_str()));  
       jsonReturn["accepted"] = 1;  
     }
 
@@ -241,12 +226,17 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("<body>\n");
   html->concat("<table>\n");
   html->concat("  <tr>\n");
-  html->concat("   <td colspan='8'>\n");
-  html->concat("<h2>Konfiguration</h2>");
+  html->concat("   <td colspan='4'>\n");
+  html->concat("     <h2>Konfiguration</h2>\n");
   html->concat("   </td>\n");
 
-  sprintf(buffer, "     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
+  html->concat("   <td colspan='4' style='color:#CCCCCC;'>\n");
+  sprintf(buffer, "   <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
+  html->concat(buffer);
+  html->concat("   </td>\n");
+
   html->concat("   <td colspan='5'>\n");
+  sprintf(buffer, "     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
   html->concat(buffer);
   html->concat("   </td>\n");
   html->concat(" </tr>\n");
@@ -272,15 +262,13 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
   html->concat(" </tr>\n");
   html->concat("  <tr>\n");
-  html->concat("   <td colspan='11'>\n");
+  html->concat("   <td colspan='13'>\n");
   html->concat("   <p />\n");
 }
 
 void WebServer::getPageFooter(String* html) {
-  /*html->concat("  </td></tr>\n");
   html->concat("</table>\n");
   html->concat("</body>\n");
-*/
   html->concat("</html>\n");
 }
 
@@ -371,15 +359,20 @@ void WebServer::getPage_Status(String* html) {
   }
 
   html->concat("<tr>\n");
-  html->concat("<td>Firmware Update</td>\n");
-  html->concat("<td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
+  html->concat("  <td>Firmware Update</td>\n");
+  html->concat("  <td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
   html->concat("</tr>\n");
 
   html->concat("<tr>\n");
-  html->concat("<td>Device Reboot</td>\n");
-  html->concat("<td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
+  html->concat("  <td>Device Reboot</td>\n");
+  html->concat("  <td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
   html->concat("</tr>\n");
 
+  html->concat("<tr>\n");
+  html->concat("  <td>Werkszustand herstellen (ohne WiFi)</td>\n");
+  html->concat("  <td><form action='reset'><input class='button' type='submit' value='Reset' /></form></td>\n");
+  html->concat("</tr>\n");
+  
   html->concat("</tbody>\n");
   html->concat("</table>\n");     
 }

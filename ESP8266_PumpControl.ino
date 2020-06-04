@@ -1,4 +1,5 @@
 #pragma once
+
 /* ESP8266 Board Library 2.6.3  */
 
 /*#include <Wire.h>
@@ -42,9 +43,6 @@ void setup() {
 
 // Flash Write Issue
 // https://github.com/esp8266/Arduino/issues/4061#issuecomment-428007580
-
-  //clean FS, for testing
-  //SPIFFS.format();
 
   oled = new OLED();
   Config = new BaseConfig();

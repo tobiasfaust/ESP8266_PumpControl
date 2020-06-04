@@ -53,9 +53,9 @@ class WebServer {
     ESP8266WebServer* server;
     ESP8266HTTPUpdateServer httpUpdater;
 
-    void      setClock();
     void      handleNotFound();
     void      handleReboot();
+    void      handleReset();
     void      handleCSS();
     void      handleJS();
     void      handleJsAjax();

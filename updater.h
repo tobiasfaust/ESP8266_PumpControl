@@ -22,7 +22,8 @@
   typedef struct {
     String name;
     String version;
-    int number;
+    uint32_t subversion;
+    uint32_t number;
     stage_t stage;
     String downloadURL;
   } release_t;
@@ -34,15 +35,17 @@ class updater {
     void        setIndexJson(String url);
     void        setStage(stage_t s);
     void        setAutoMode(bool a);
-    void        setInterval(int seconds);
+    void        setInterval(uint32_t seconds);
     void        loop();
     release_t*  GetCurrentRelease();
     String      GetReleaseName();
     const int&  GetInterval()     const {return interval;}
     std::vector<release_t>* GetReleases();
-    void        InstallRelease(String ReleaseName);
+    void        InstallRelease(uint32_t ReleaseNumber);
     void        RefreshReleases();
     String      GetUpdateErrorString();
+    stage_t     String2Stage(String s);
+    String      Stage2String(stage_t s);
 
   private:
     //BearSSL::WiFiClientSecure* client;
@@ -56,17 +59,16 @@ class updater {
     void        LoadJsonConfig();
     void        StoreJsonConfig(release_t* r);
     release_t   getLatestRelease();
-    stage_t     String2Stage(String s);
-    String      Stage2String(stage_t s);
+    void        printRelease(release_t* r);
     
     String      json_url;
     stage_t     stage;
     release_t   currentRelease;
     bool        automode;
     bool        updateError;
-    int         interval;
+    uint32_t    interval;
     bool        DoUpdate = false;
-    long        lastupdate;
+    uint32_t    lastupdate;
 
     std::vector<release_t>* releases = NULL;
 };

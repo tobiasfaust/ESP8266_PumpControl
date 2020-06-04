@@ -1,17 +1,75 @@
 # https://github.com/marketplace/actions/test-compile-for-arduino
 # https://github.com/marketplace/actions/test-compile-for-arduino#multiple-boards-with-parameter-using-the-script-directly
+# https://github.com/actions/upload-release-asset/issues/17
+# https://github.com/dh1tw/remoteAudio/blob/master/.github/workflows/build.yml 
 
 name: Build&Deploy
 on:
-  [push, pull_request]
-  
+  push:
+    branches:
+      - master
+      - prelive
+      - development
+
 jobs:
+  create_Release:
+    runs-on: ubuntu-latest
+    if: endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: set Environment Variables
+      id: set_env_var
+      run: |
+         VERSION=$(sed 's/[^0-9|.]//g' _Release.h)  # zb. 2.4.2
+         if [ ${{ github.ref }} == 'refs/heads/master' ]; then IS_PRE='false'; else IS_PRE='true'; fi
+         if [ ${{ github.ref }} == 'refs/heads/master' ]; then POSTFIX=''    ; else POSTFIX='PRE';    fi
+         RELEASEBODY=$(awk -v RS='Release ' '/'$VERSION':(.*)/ {print $0}' ChangeLog.h)
+         RELEASEBODY="${RELEASEBODY//'%'/'%25'}"
+         RELEASEBODY="${RELEASEBODY//$'\n'/'%0A'}"
+         RELEASEBODY="${RELEASEBODY//$'\r'/'%0D'}"       
+         echo "::set-output name=version::${VERSION}"
+         echo "::set-output name=IS_PRERELEASE::${IS_PRE}"
+         echo "::set-output name=RELEASENAME_POSTFIX::${POSTFIX}"
+         echo "::set-output name=RELEASEBODY::${RELEASEBODY}"
+         echo "::set-env name=body::${RELEASEBODY}"
+      env:
+        REPOSITORY: ${{ github.event.repository.name }}
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: v.${{ steps.set_env_var.outputs.version }}-${{ steps.set_env_var.outputs.RELEASENAME_POSTFIX }}-${{ github.run_id }}
+        release_name: Release ${{ steps.set_env_var.outputs.version }} ${{ steps.set_env_var.outputs.RELEASENAME_POSTFIX }}
+        body: |
+            ${{ steps.set_env_var.outputs.RELEASEBODY }}
+        draft: false
+        prerelease: ${{ steps.set_env_var.outputs.IS_PRERELEASE }}
+        
+    - name: Copy release URL into file
+      run: |
+        mkdir release
+        printf "%s" "${{ steps.create_release.outputs.upload_url }}" > release/url.txt
+    
+    - name: Stash file containing the release URL as an artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: release-url
+        path: ./release  
+    
   build:
-    name: ${{ matrix.arduino-boards-fqbn }} - test compiling examples
+    name: BuildAndDeploy-${{ matrix.arduino-boards-fqbn }}
     runs-on: ubuntu-latest
     env:
       REQUIRED_LIBRARIES: WiFiManager,PubSubClient,ESP8266 and ESP32 OLED driver for SSD1306 displays,Uptime Library
-   
+      REPOSITORY: ${{ github.event.repository.name }}
+      sketch-name: ESP8266_PumpControl.ino
+      #FULLREPO: ${{ github.repository }} # tobiasfaust/test
+
     strategy:
       matrix:
         arduino-boards-fqbn:
@@ -24,15 +82,16 @@ jobs:
 
           - arduino-boards-fqbn: esp8266:esp8266:d1_mini
             platform-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json  
-            sketch-names: ESP8266_PumpControl.ino
+            architecture: ESP8266
+            save_libs: libraries.zip # name must be unique, it makes sense to define it only once
 #            examples-build-properties:
 #              All:
 #                -DDEBUG    
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@master
-        
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
       - name: Checkout Wemos MotorDriver Library
         uses: actions/checkout@v2
         with:
@@ -68,9 +127,90 @@ jobs:
           ENV_PLATFORM_URL: ${{ matrix.platform-url }}
           ENV_REQUIRED_LIBRARIES: ${{ env.REQUIRED_LIBRARIES }}
           ENV_EXAMPLES_EXCLUDE: ${{ matrix.examples-exclude }}
-          ENV_SKETCH_NAMES: ${{ matrix.sketch-names }}
+          ENV_SKETCH_NAMES: ${{ env.sketch-name }}
           ENV_EXAMPLES_BUILD_PROPERTIES: ${{ toJson(matrix.examples-build-properties) }}
         run: |
           wget --quiet https://raw.githubusercontent.com/ArminJo/arduino-test-compile/master/arduino-test-compile.sh
           chmod +x arduino-test-compile.sh
           ./arduino-test-compile.sh
+
+      - if: endsWith(github.ref, 'master')
+        name: Set Environment Variable "PRODUCTION" 
+        run: echo ::set-env name=ENV_STAGE::PROD
+      - if: endsWith(github.ref, 'prelive')
+        name: Set Environment Variable "PreLive" 
+        run: echo ::set-env name=ENV_STAGE::PRE
+      - if: endsWith(github.ref, 'development')
+        name: Set Environment Variable "Development" 
+        run: echo ::set-env name=ENV_STAGE::DEV
+
+      # Script um JSON Datei zu erstellen
+      - name: Schreibe Json File
+        env:
+          ENV_ARCH: ${{ matrix.architecture }}
+          ENV_REPOSITORYNAME: ${{ env.REPOSITORY }}
+          ENV_BINARYPATH: "${{ format('/home/runner/{0}', env.REPOSITORY) }}"
+          ENV_DESTPATH: "release"
+          ENV_SUBVERSION: ${{ github.run_number }}
+          ENV_RELEASEFILE: "${{ format('/home/runner/{0}/_Release.h', env.REPOSITORY) }}"
+        run: |
+          mkdir release 
+          chmod +x .github/workflows/generateJSON.sh
+          .github/workflows/generateJSON.sh
+
+      - uses: jakejarvis/s3-sync-action@master
+        with:
+          args: '--acl public-read --follow-symlinks'
+        env:
+          AWS_S3_BUCKET: 'tfa-releases'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'eu-central-1'   # optional: defaults to us-east-1
+          SOURCE_DIR: 'release'      # optional: defaults to entire repository
+          DEST_DIR: ${{ env.REPOSITORY }}
+      
+      # Download the previously uploaded artifact which contains the release URL
+      - name: Retrieve stashed release URL
+        if: endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')
+        uses: actions/download-artifact@v1
+        with:
+         name: release-url
+      
+      - name: Read release URL
+        id: set_asset_env
+        if: endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')
+        run: |
+          echo ::set-env name=BOARD::${{ matrix.arduino-boards-fqbn }}
+          echo ::set-output name=URL::$(cat release-url/url.txt)
+          echo ::set-output name=BinaryName::$(cat release/*$BOARD*.json |  cut -d"\"" -f24 | cut -d "/" -f5)
+          echo ::set-output name=BinaryPath::release/$(cat release/*.json |  cut -d"\"" -f24 | cut -d "/" -f5)
+          
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        if: endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.set_asset_env.outputs.URL }}
+          asset_path: ${{ steps.set_asset_env.outputs.BinaryPath }}
+          asset_name: ${{ steps.set_asset_env.outputs.BinaryName }}
+          asset_content_type: application/x-binary      
+
+      - name: collect and zip libraries
+        if: (endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')) && endsWith(matrix.save_libs, 'zip')
+        run: |
+          rsync -arv --exclude='*git*' --exclude='*examples*' --exclude='*resources*' /home/runner/Arduino/libraries/ ./libraries
+          zip -r ${{ matrix.save_libs }} libraries/*
+        
+      - name: Upload Libraries to Release
+        id: upload-release-libs 
+        if: (endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')) && endsWith(matrix.save_libs, 'zip')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.set_asset_env.outputs.URL }}
+          asset_path: ./${{ matrix.save_libs }}
+          asset_name: ${{ matrix.save_libs }}
+          asset_content_type: application/zip     
