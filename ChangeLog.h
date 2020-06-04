@@ -1,6 +1,6 @@
 Release 2.4.3:
 	- Bugfixing Automatische Releaseverteilung
-    - Überarbeitung Github Workflow mit automatischer Releaseerstellung 
+	- Überarbeitung Github Workflow mit automatischer Releaseerstellung 
 
 Release 2.4.2:
 	- Bugfixing des TB6612 Handlings
