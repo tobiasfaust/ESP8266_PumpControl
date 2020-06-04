@@ -127,6 +127,12 @@ void updater::downloadJson() {
 
 void updater::parseJson(String* json) {
   this->releases->clear();
+
+  #if defined(ESP8266) 
+    String arch = "ESP8266";
+  #elif defined(ESP32)
+    String arch = "ESP32";
+  #endif
   
   DynamicJsonBuffer jsonBuffer;
   JsonArray& root = jsonBuffer.parseArray(*json);
@@ -141,7 +147,11 @@ void updater::parseJson(String* json) {
       if (o.containsKey("subversion"))     { r.subversion  = o["subversion"].as<uint32_t>();}
       if (o.containsKey("stage"))          { r.stage   = this->String2Stage(o["stage"].as<String>());}
       if (o.containsKey("download-url"))   { r.downloadURL = o["download-url"].as<String>();}
-      this->releases->push_back(r);  
+      
+      if (o.containsKey("arch") && o["arch"] == arch) {
+        this->releases->push_back(r);  
+      }
+      
       //this->printRelease(&r); 
     }
   } else {

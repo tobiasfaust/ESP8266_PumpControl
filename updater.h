@@ -44,6 +44,8 @@ class updater {
     void        InstallRelease(uint32_t ReleaseNumber);
     void        RefreshReleases();
     String      GetUpdateErrorString();
+    stage_t     String2Stage(String s);
+    String      Stage2String(stage_t s);
 
   private:
     //BearSSL::WiFiClientSecure* client;
@@ -57,8 +59,6 @@ class updater {
     void        LoadJsonConfig();
     void        StoreJsonConfig(release_t* r);
     release_t   getLatestRelease();
-    stage_t     String2Stage(String s);
-    String      Stage2String(stage_t s);
     void        printRelease(release_t* r);
     
     String      json_url;

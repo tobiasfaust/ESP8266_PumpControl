@@ -252,15 +252,39 @@ void BaseConfig::GetWebContent(String* html) {
   sprintf(buffer, "<tr class='%s' id='update_1'>\n", (this->enable_autoupdate?"hide":""));
   html->concat(buffer);
   html->concat("<td>verfügbare Releases\n");
-  html->concat("<span onclick='RefreshReleases()'>&#8634;</span>");
+  html->concat("<a href='#' onclick='RefreshReleases()' title='Die JSON Liste neu laden'>&#8634;</a>");
   html->concat("</td><td>\n");
   
   html->concat("  <select id='releases' name='releases'>\n");
   std::vector<release_t>* rel = ESPUpdate->GetReleases();
+  
+  html->concat("  <optgroup label='Produktiv'>\n");
   for (uint8_t i=0; i < rel->size(); i++) {
-    sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
-    html->concat(buffer);
+    if (ESPUpdate->Stage2String(rel->at(i).stage) == "PROD") {
+      sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
+      html->concat(buffer);
+    }
   }
+  html->concat("  </optgroup>\n");
+
+  html->concat("  <optgroup label='PreLive'>\n");
+  for (uint8_t i=0; i < rel->size(); i++) {
+    if (ESPUpdate->Stage2String(rel->at(i).stage) == "PRE") {
+      sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
+      html->concat(buffer);
+    }
+  }
+  html->concat("  </optgroup>\n");
+
+  html->concat("  <optgroup label='Development'>\n");
+  for (uint8_t i=0; i < rel->size(); i++) {
+    if (ESPUpdate->Stage2String(rel->at(i).stage) == "DEV") {
+      sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
+      html->concat(buffer);
+    }
+  }
+  html->concat("  </optgroup>\n");
+  
   html->concat("  </select>\n");
   html->concat("<input type='button' class='button' onclick='InstallRelease()' value='Install' />");
   html->concat("</td>\n");
