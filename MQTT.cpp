@@ -38,8 +38,12 @@ void MQTT::reconnect() {
   char topic[50];
   memset(&topic[0], 0, sizeof(topic));
   
-  snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
-  Serial.print("Attempting MQTT connection as ");Serial.println(topic);
+  if (Config->UseRandomMQTTClientID()) { 
+    snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
+  } else {
+    snprintf (topic, sizeof(topic), "%s-%08X", mqtt_root.c_str(), ESP.getFlashChipId());
+  }
+  Serial.printf("Attempting MQTT connection as %s \n", topic);
   
   if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str())) {
     Serial.println("connected... ");
@@ -136,6 +140,13 @@ void MQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
 }
 
 void MQTT::loop() {
+  if (this->mqtt_root != Config->GetMqttRoot()) {
+    Serial.printf("MQTT DeviceName has changed via Web Configuration from %s to %s \n", this->mqtt_root.c_str(), Config->GetMqttRoot().c_str());
+    Serial.println(F("Initiate Reconnect"));
+    this->mqtt_root = Config->GetMqttRoot();
+    if (mqtt->connected()) mqtt->disconnect();
+  }
+  
   if (!mqtt->connected() && WiFi.status() == WL_CONNECTED) { 
       if (millis() - mqttreconnect_lasttry > 10000) {
         espClient = WiFiClient();

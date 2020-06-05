@@ -35,6 +35,7 @@ class BaseConfig {
     const String&  GetMqttUsername()const {return mqtt_username;}
     const String&  GetMqttPassword()const {return mqtt_password;}
     const String&  GetMqttRoot()    const {return mqtt_root;}
+    const bool&    UseRandomMQTTClientID() const { return mqtt_UseRandomClientID; }
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
     const bool&    Enabled3Wege()   const {return enable_3wege;}
     const uint8_t& GetMaxParallel() const {return max_parallel;}
@@ -48,6 +49,7 @@ class BaseConfig {
     String    mqtt_password;
     uint16_t  mqtt_port;
     String    mqtt_root;
+    bool      mqtt_UseRandomClientID;
     uint8_t   pin_sda;
     uint8_t   pin_scl;
     bool      enable_oled;
