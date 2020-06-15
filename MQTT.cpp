@@ -36,19 +36,24 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
 
 void MQTT::reconnect() {
   char topic[50];
+  char LWT[50];
+  memset(&LWT[0], 0, sizeof(LWT));
   memset(&topic[0], 0, sizeof(topic));
   
   if (Config->UseRandomMQTTClientID()) { 
-    snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
+    snprintf (topic, sizeof(topic), "%s-%s", this->mqtt_root.c_str(), String(random(0xffff)).c_str());
   } else {
-    snprintf (topic, sizeof(topic), "%s-%08X", mqtt_root.c_str(), ESP.getFlashChipId());
+    snprintf (topic, sizeof(topic), "%s-%08X", this->mqtt_root.c_str(), ESP.getFlashChipId());
   }
+  snprintf(LWT, sizeof(LWT), "%s/state", this->mqtt_root.c_str());
+  
   Serial.printf("Attempting MQTT connection as %s \n", topic);
   
-  if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str())) {
+  if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str(), LWT, true, false, "Offline")) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
     this->Publish_IP();
+    this->Publish_String("state", "Online"); //LWT reset
         
     // Once connected, publish an announcement...
     //client.publish("outTopic", "hello world");
@@ -70,6 +75,10 @@ void MQTT::reconnect() {
     Serial.println(F(" try again in few seconds"));
     oled->SetMqttConnected(false);
   }
+}
+
+void MQTT::disconnect() {
+  mqtt->disconnect();
 }
 
 void MQTT::callback(char* topic, byte* payload, unsigned int length) {

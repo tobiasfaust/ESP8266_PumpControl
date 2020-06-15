@@ -1,6 +1,7 @@
 Release 2.4.4:  -
   - Feature: Issue #9: MQTT Client ID now configurable
   - MQTT now reconnect after DeviceName has been changed
+  - MQTT LastWillTopic as device status configured: state [Offline|Online]
 
 Release 2.4.3:
   - Bugfixing Automatische Releaseverteilung
