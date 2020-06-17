@@ -52,11 +52,12 @@ void MQTT::reconnect() {
   if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str(), LWT, true, false, "Offline")) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
+    
+    // Once connected, publish basics ...
     this->Publish_IP();
+    this->Publish_String("version", (char*)Config->GetReleaseName().c_str());
     this->Publish_String("state", "Online"); //LWT reset
         
-    // Once connected, publish an announcement...
-    //client.publish("outTopic", "hello world");
     // ... and resubscribe
     snprintf (topic, sizeof(topic), "%s/#", mqtt_root.c_str());
     mqtt->subscribe(topic);
