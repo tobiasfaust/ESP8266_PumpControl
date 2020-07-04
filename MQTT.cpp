@@ -36,18 +36,28 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
 
 void MQTT::reconnect() {
   char topic[50];
+  char LWT[50];
+  memset(&LWT[0], 0, sizeof(LWT));
   memset(&topic[0], 0, sizeof(topic));
   
-  snprintf (topic, sizeof(topic), "%s-%s", mqtt_root.c_str(), String(random(0xffff)).c_str());
-  Serial.print("Attempting MQTT connection as ");Serial.println(topic);
+  if (Config->UseRandomMQTTClientID()) { 
+    snprintf (topic, sizeof(topic), "%s-%s", this->mqtt_root.c_str(), String(random(0xffff)).c_str());
+  } else {
+    snprintf (topic, sizeof(topic), "%s-%08X", this->mqtt_root.c_str(), ESP.getFlashChipId());
+  }
+  snprintf(LWT, sizeof(LWT), "%s/state", this->mqtt_root.c_str());
   
-  if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str())) {
+  Serial.printf("Attempting MQTT connection as %s \n", topic);
+  
+  if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str(), LWT, true, false, "Offline")) {
     Serial.println("connected... ");
     oled->SetMqttConnected(true);
+    
+    // Once connected, publish basics ...
     this->Publish_IP();
+    this->Publish_String("version", (char*)Config->GetReleaseName().c_str());
+    this->Publish_String("state", "Online"); //LWT reset
         
-    // Once connected, publish an announcement...
-    //client.publish("outTopic", "hello world");
     // ... and resubscribe
     snprintf (topic, sizeof(topic), "%s/#", mqtt_root.c_str());
     mqtt->subscribe(topic);
@@ -66,6 +76,10 @@ void MQTT::reconnect() {
     Serial.println(F(" try again in few seconds"));
     oled->SetMqttConnected(false);
   }
+}
+
+void MQTT::disconnect() {
+  mqtt->disconnect();
 }
 
 void MQTT::callback(char* topic, byte* payload, unsigned int length) {
@@ -136,6 +150,13 @@ void MQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
 }
 
 void MQTT::loop() {
+  if (this->mqtt_root != Config->GetMqttRoot()) {
+    Serial.printf("MQTT DeviceName has changed via Web Configuration from %s to %s \n", this->mqtt_root.c_str(), Config->GetMqttRoot().c_str());
+    Serial.println(F("Initiate Reconnect"));
+    this->mqtt_root = Config->GetMqttRoot();
+    if (mqtt->connected()) mqtt->disconnect();
+  }
+  
   if (!mqtt->connected() && WiFi.status() == WL_CONNECTED) { 
       if (millis() - mqttreconnect_lasttry > 10000) {
         espClient = WiFiClient();

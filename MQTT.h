@@ -43,6 +43,7 @@ class MQTT {
     void    Publish_String(const char* subtopic, char* value);
     void    Publish_IP();
     void    setCallback(CALLBACK_FUNCTION);
+    void    disconnect();
     String  GetRoot();
     void    Subscribe(String topic, MqttSubscriptionType_t identifier);
     void    ClearSubscriptions(MqttSubscriptionType_t identifier);

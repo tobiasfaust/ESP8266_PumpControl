@@ -15,7 +15,7 @@ void tb6612::setOff(uint8_t port) {
   } else if (port==1) {
     M2->setmotor(_STOP);
   }
-  Serial.println("Motor Stop");
+  //Serial.println("Motor Stop");
 }
 
 void tb6612::setOn(uint8_t port, bool dir) {
@@ -24,6 +24,6 @@ void tb6612::setOn(uint8_t port, bool dir) {
   } else if (port==1) {
     M2->setmotor( (dir?_CW:_CCW));
   }
-  Serial.println("Motor On");
+  //Serial.println("Motor On");
 }
 
