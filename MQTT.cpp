@@ -8,6 +8,8 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   
   WiFiManager wifiManager;
   wifiManager.setTimeout(300);
+  wifi_station_set_hostname(mqtt_root.c_str());
+  
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
     Serial.println("failed to connect and hit timeout");
     if (oled->GetEnabled()) {
