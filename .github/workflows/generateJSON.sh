@@ -61,7 +61,7 @@ VERSION3=`echo $VERSION | cut -d '.' -f3`   # 2
 
 let NUMBER=$(printf "%d%d%d%d" $VERSION1 $VERSION2 $VERSION3 $SUBVERSION)
 
-for FILE in `ls $BINARYPATH/*.bin` 
+for FILE in `find $BINARYPATH/ -name *.bin` 
 do
 
   FILENAME=${FILE%.*}
