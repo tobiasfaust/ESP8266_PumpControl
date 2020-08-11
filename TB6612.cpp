@@ -26,4 +26,3 @@ void tb6612::setOn(uint8_t port, bool dir) {
   }
   //Serial.println("Motor On");
 }
-

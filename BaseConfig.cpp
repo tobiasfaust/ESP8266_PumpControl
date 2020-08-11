@@ -322,4 +322,3 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("</form>\n\n");
   html->concat("<div id='ErrorText' class='errortext'></div>\n");  
 }
-
