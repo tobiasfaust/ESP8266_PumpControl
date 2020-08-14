@@ -9,6 +9,7 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   this->mqtt = new PubSubClient();
   
   WiFiManager wifiManager;
+  wifiManager.setDebugOutput(false); // disable for testing
   wifiManager.setTimeout(300);
   wifi_station_set_hostname(mqtt_root.c_str());
   
