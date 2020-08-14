@@ -4,6 +4,8 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   this->mqtt_root = root;
   this->subscriptions = new std::vector<subscription_t>{};
   espClient = WiFiClient();
+  WiFi.mode(WIFI_STA);
+    
   this->mqtt = new PubSubClient();
   
   WiFiManager wifiManager;
@@ -20,6 +22,7 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
     ESP.reset();
     delay(5000);
   }
+  
   Serial.print("WiFi connected with local IP: ");
   
   if (oled && oled->GetEnabled()) {
@@ -29,6 +32,7 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
     oled->SetWiFiConnected(true);
   }
   Serial.println(WiFi.localIP());
+  //WiFi.printDiag(Serial);
 
   Serial.print("Starting MQTT (");Serial.print(server); Serial.print(":");Serial.print(port);Serial.println(")");
   mqtt->setClient(espClient);

@@ -1,6 +1,7 @@
 Release 2.4.5:
   - deletion of WiFi credentials now possible
   - ESP Hostname now the configured Devicename
+  - WIFI Mode forces to STATION-Mode, some devices has been ran in unsecured STA+AP Mode
   
 Release 2.4.4:
   - Feature: Issue #9: MQTT Client ID now configurable
