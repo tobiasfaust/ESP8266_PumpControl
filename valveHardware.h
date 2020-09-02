@@ -36,8 +36,10 @@ class valveHardware {
     valveHardware(uint8_t sda, uint8_t scl);
     
     HWdev_t* RegisterPort(uint8_t Port);
-    void    SetPort(HWdev_t* dev, uint8_t Port, bool state);
-    void    SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, uint16_t duration);
+    HWdev_t* RegisterPort(uint8_t Port, bool reverse);
+    
+    void    SetPort(HWdev_t* dev, uint8_t Port, bool state, bool reverse);
+    void    SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, bool reverse, uint16_t duration);
     bool    IsValidPort(uint8_t Port);
     uint8_t GetI2CAddress(uint8_t Port);
     
@@ -63,4 +65,3 @@ class valveHardware {
 };
 
 #endif
-

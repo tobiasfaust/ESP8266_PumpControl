@@ -35,9 +35,11 @@ class valve {
     
     bool      enabled;  //grundsätzlich aktiviert in WebUI
     bool      active;  // Ventil ist gerade aktiv/geöffnet
+    bool      reverse; // Ventil schliesst auf ON, oeffnet auf OFF
     uint16_t  port1ms; // millisekunden bei Type "b" für Port1: 10-999
     uint16_t  port2ms; // millisekunden bei Type "b" für Port2: 10-999
     String    subtopic; //ohne on-for-timer
+    uint16_t  autooff; // anzahl sek wenn das Ventil nach einem ON automatisch spaetestens schliessen soll -> Sicherheitsabschaltung
     
   private:
     HWdev_t*  myHWdev = NULL;      //Pointer auf das Device
