@@ -64,5 +64,5 @@ class MQTT {
     unsigned long mqttreconnect_lasttry = 0;
   
 };
-
 #endif
+
