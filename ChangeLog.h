@@ -1,9 +1,19 @@
-Release 2.4.4:  -
+Release 2.4.5:
+  - Feature: deletion of WiFi credentials now possible
+  - Feature: ESP Hostname now the configured Devicename
+  - Bug: WIFI Mode forces to STATION-Mode, some devices has been ran in unsecured STA+AP Mode
+  - Bug: security issue: dont show debug output of WiFi Connection (password has been shown)
+  - Feature: valve reverse mode: enable if your valve act on LOW instead of ON
+  - Feature: AutoOff: possibility to setup a security AutoOff 
+  - Bug: count of Threads now push out if an on-for-timer has been expired
+  
+Release 2.4.4:
   - Feature: Issue #9: MQTT Client ID now configurable
   - MQTT now reconnect after DeviceName has been changed
   - MQTT LastWillTopic as device status configured by topic "/state [Offline|Online]"
   - Publish Release and Version after MQTT Connect by topic "/version"
   - Bugfix: Nullpointer to Hardwaredevice if multiple hardware devices are defined
+
 Release 2.4.3:
   - Bugfixing Automatische Releaseverteilung
   - Überarbeitung Github Workflow mit automatischer Releaseerstellung 

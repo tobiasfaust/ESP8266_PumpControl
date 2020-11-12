@@ -14,6 +14,10 @@
 #include "oled.h"
 #include "BaseConfig.h"
 
+extern "C" {
+  #include "user_interface.h"
+}
+
 extern OLED* oled;
 extern BaseConfig* Config;
 
@@ -60,5 +64,5 @@ class MQTT {
     unsigned long mqttreconnect_lasttry = 0;
   
 };
-
 #endif
+

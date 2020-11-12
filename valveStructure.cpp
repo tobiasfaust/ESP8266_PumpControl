@@ -42,7 +42,8 @@ void valveStructure::SetOn(uint8_t Port) {
 
 void valveStructure::SetOff(uint8_t Port) {
   valve* v = this->GetValveItem(Port);
-  if (v && v->SetOff() && mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+  if (v) { v->SetOff(); }
+  if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
@@ -190,6 +191,12 @@ void valveStructure::LoadJsonConfig() {
           sprintf(buffer, "imp_%d_1", i); //impulsbreite für Port 2
           if (json.containsKey(buffer)) { myValve.port2ms = max(10, min(json[buffer].as<int>(), 999));}
 
+          sprintf(buffer, "reverse_%d", i);
+          if (json[buffer] && json[buffer] == 1) {myValve.reverse = true;} else {myValve.reverse = false;}
+
+          sprintf(buffer, "autooff_%d", i);
+          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.autooff = json[buffer].as<int>(); }
+          
           Valves->push_back(myValve);
         }
         
@@ -228,6 +235,8 @@ void valveStructure::GetWebContent(ESP8266WebServer* server) {
   html.concat("<td style='width: 250px;'>MQTT SubTopic</td>\n");
   html.concat("<td style='width: 210 px;'>Port</td>\n");
   html.concat("<td style='width: 80px;'>Type</td>\n");
+  html.concat("<td style='width: 80px;'>Reverse</td>\n");
+  html.concat("<td style='width: 80px;'>AutoOff</td>\n");
   html.concat("<td style='width: 25px;'>Delete</td>\n");
   html.concat("<td style='width: 25px;'>Action</td>\n");
   html.concat("</tr>\n");
@@ -289,6 +298,23 @@ void valveStructure::GetWebContent(ESP8266WebServer* server) {
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
     html.concat(buffer);
     sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
+    html.concat(buffer);
+    html.concat("  </td>\n");
+
+    html.concat("  <td>\n");
+    html.concat("    <div class='onoffswitch'>\n");
+    sprintf(buffer, "      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).reverse?"checked":""));
+    html.concat(buffer);
+    sprintf(buffer, "      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
+    html.concat(buffer);
+    html.concat("        <span class='onoffswitch-inner'></span>\n");
+    html.concat("        <span class='onoffswitch-switch'></span>\n");
+    html.concat("      </label>\n");
+    html.concat("    </div>\n");
+    html.concat("  </td>\n");
+
+    html.concat("  <td>\n");
+    sprintf(buffer, "      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).autooff);
     html.concat(buffer);
     html.concat("  </td>\n");
     

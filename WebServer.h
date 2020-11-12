@@ -56,6 +56,7 @@ class WebServer {
     void      handleNotFound();
     void      handleReboot();
     void      handleReset();
+    void      handleWiFiReset();
     void      handleCSS();
     void      handleJS();
     void      handleJsAjax();
@@ -75,4 +76,3 @@ class WebServer {
 };
 
 #endif
-
