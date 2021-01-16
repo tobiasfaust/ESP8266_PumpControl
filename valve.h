@@ -25,15 +25,16 @@ class valve {
     bool      OnForTimer(int duration);
     bool      SetOn();
     bool      SetOff();
-    int       ActiveTimeLeft(); 
+    int         ActiveTimeLeft(); 
     void      AddPort1(valveHardware* Device, uint8_t Port1);
     void      AddPort2(valveHardware* Device, uint8_t Port2);
     void      SetValveType(String type);
+    void      SetActive(bool active);
     String    GetValveType();
     uint8_t   GetPort1();
     uint8_t   GetPort2();
+    const bool&  GetActive()    const {return enabled;}
     
-    bool      enabled;  //grundsätzlich aktiviert in WebUI
     bool      active;  // Ventil ist gerade aktiv/geöffnet
     bool      reverse; // Ventil schliesst auf ON, oeffnet auf OFF
     uint16_t  port1ms; // millisekunden bei Type "b" für Port1: 10-999
@@ -49,6 +50,7 @@ class valve {
     uint8_t   port2; //0 - 220 , für bistabile Ventile
     uint32_t  startmillis   = 0;
     uint32_t  lengthmillis  = 0;
+    bool      enabled;  //grundsätzlich aktiviert in WebUI
 
     vType_t   ValveType;
 

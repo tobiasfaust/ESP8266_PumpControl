@@ -1,17 +1,27 @@
 #include "MQTT.h"
 
-MQTT::MQTT(const char* server, uint16_t port, String root) {  
+MQTT::MQTT(const char* server, uint16_t port, String root) { 
+ Serial.println("wifi start 1");
   this->mqtt_root = root;
   this->subscriptions = new std::vector<subscription_t>{};
+  Serial.println("wifi start 2");
   espClient = WiFiClient();
+  Serial.println("wifi start 3");
   WiFi.mode(WIFI_STA);
-    
+  Serial.println("wifi start 4");  
   this->mqtt = new PubSubClient();
-  
+  Serial.println("wifi start 5");
   WiFiManager wifiManager;
-  wifiManager.setDebugOutput(false); // disable for testing
+  Serial.println("wifi start 6");
+  
+  if (Config->GetDebugLevel() >=4) wifiManager.setDebugOutput(true); 
+    else wifiManager.setDebugOutput(false); 
+
+  Serial.println("wifi start 7");
   wifiManager.setTimeout(300);
+  Serial.println("wifi start ");
   wifi_station_set_hostname(mqtt_root.c_str());
+  Serial.println("wifi start 8");
   
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
     Serial.println("failed to connect and hit timeout");
@@ -182,4 +192,21 @@ void MQTT::loop() {
   } else {
     oled->SetWiFiConnected(false);
   }
+
+  if (Config->GetKeepAlive() > 0 && millis() - this->last_keepalive > (Config->GetKeepAlive() * 1000))  {
+    this->last_keepalive = millis();
+    this->Publish_Bool("alive", true);
+    
+    if (Config->GetDebugLevel() >=4) {
+      char buffer[100] = {0};
+      memset(buffer, 0, sizeof(buffer));
+      
+      snprintf(buffer, sizeof(buffer), "%d", ESP.getFreeHeap());
+      this->Publish_String("memory", buffer);
+
+      snprintf(buffer, sizeof(buffer), "%d", WiFi.RSSI());
+      this->Publish_String("rssi", buffer);
+    }
+  }
+  
 }

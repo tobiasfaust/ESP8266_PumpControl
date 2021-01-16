@@ -1,3 +1,9 @@
+Release 2.5.0:
+  - Feature: Add OneWire DS2408 hardware support
+  - Feature: Add a keepalive message via MQTT, configurable at BasisConfig: 
+  - Feature: Add configurable DebugMode at BaseConfig
+  - Feature: push out memory and rssi values via mqtt together with keepalive message if Debugmode >= 4
+  
 Release 2.4.5:
   - Feature: deletion of WiFi credentials now possible
   - Feature: ESP Hostname now the configured Devicename

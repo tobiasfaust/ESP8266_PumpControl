@@ -49,9 +49,13 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("mqttuser"))         { this->mqtt_username = json["mqttuser"].as<String>();}
         if (json.containsKey("mqttpass"))         { this->mqtt_password = json["mqttpass"].as<String>();}
         if (json.containsKey("sel_UseRandomClientID")){ if (strcmp(json["sel_UseRandomClientID"], "none")==0) { this->mqtt_UseRandomClientID=false;} else {this->mqtt_UseRandomClientID=true;}} else {this->mqtt_UseRandomClientID = true;}
+        if (json.containsKey("keepalive"))          { this->keepalive = _max(atoi(json["keepalive"]), 10);} else {this->keepalive = 0; }
+        if (json.containsKey("debuglevel"))        { this->debuglevel = _max(atoi(json["debuglevel"]), 0);} else {this->debuglevel = 0; }
         if (json.containsKey("pinsda"))           { this->pin_sda = atoi(json["pinsda"]) - 200;}
         if (json.containsKey("pinscl"))           { this->pin_scl = atoi(json["pinscl"]) - 200;}
+        if (json.containsKey("pin1wire"))           { this->pin_1wire = atoi(json["pin1wire"]) - 200;}
         if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
+        if (json.containsKey("sel_1wire"))       { if (strcmp(json["sel_1wire"], "none")==0) { this->enable_1wire=false;} else {this->enable_1wire=true;}}
         if (json.containsKey("sel_3wege"))        { if (strcmp(json["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
         if (json.containsKey("sel_update"))       { if (strcmp(json["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}
                                                     ESPUpdate->setAutoMode(this->enable_autoupdate);
@@ -81,9 +85,13 @@ void BaseConfig::LoadJsonConfig() {
     this->mqtt_port  = 1883;
     this->mqtt_root = "PumpControl";
     this->mqtt_UseRandomClientID = true;
+    this->keepalive = 0;
+    this->debuglevel = 0;
     this->pin_sda = 5;
     this->pin_scl = 4;
+    this->pin_1wire = 0;
     this->enable_oled = false;
+    this->enable_1wire = false;
     this->i2caddress_oled = 60; //0x3C;
     this->enable_3wege = false;
     this->ventil3wege_port = 0;
@@ -115,211 +123,269 @@ void BaseConfig::loop() {
   ESPUpdate->loop();  
 }
 
-void BaseConfig::GetWebContent(String* html) {
+void BaseConfig::GetWebContent(ESP8266WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
 
-  html->concat("<form id='DataForm'>\n");
-  html->concat("<table id='maintable' class='editorDemoTable'>\n");
-  html->concat("<thead>\n");
-  html->concat("<tr>\n");
-  html->concat("<td style='width: 250px;'>Name</td>\n");
-  html->concat("<td style='width: 200px;'>Wert</td>\n");
-  html->concat("</tr>\n");
-  html->concat("</thead>\n");
-  html->concat("<tbody>\n");
+  String html = "";
 
-  html->concat("<tr>\n");
-  html->concat("<td>Device Name</td>\n");
+  html.concat("<form id='DataForm'>\n");
+  html.concat("<table id='maintable' class='editorDemoTable'>\n");
+  html.concat("<thead>\n");
+  html.concat("<tr>\n");
+  html.concat("<td style='width: 250px;'>Name</td>\n");
+  html.concat("<td style='width: 200px;'>Wert</td>\n");
+  html.concat("</tr>\n");
+  html.concat("</thead>\n");
+  html.concat("<tbody>\n");
+
+  server->sendContent(html.c_str()); html = "";
+  
+  html.concat("<tr>\n");
+  html.concat("<td>Device Name</td>\n");
   sprintf(buffer, "<td><input size='30' maxlength='40' name='mqttroot' type='text' value='%s'/></td>\n", this->mqtt_root.c_str());
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
   
-  html->concat("<tr>\n");
-  html->concat("<td>MQTT Server IP</td>\n");
+  html.concat("<tr>\n");
+  html.concat("<td>MQTT Server IP</td>\n");
   sprintf(buffer, "<td><input size='30' name='mqttserver' type='text' value='%s'/></td>\n", this->mqtt_server.c_str());
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
   
-  html->concat("<tr>\n");
-  html->concat("<td>MQTT Server Port</td>\n");
+  html.concat("<tr>\n");
+  html.concat("<td>MQTT Server Port</td>\n");
   sprintf(buffer, "<td><input maxlength='5' name='mqttport' type='text' value='%d'/></td>\n", this->mqtt_port);
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("<td>MQTT Authentification: Username (optional)</td>\n");
+  html.concat("<tr>\n");
+  html.concat("<td>MQTT Authentification: Username (optional)</td>\n");
   sprintf(buffer, "<td><input size='30' name='mqttuser' type='text' value='%s'/></td>\n", this->mqtt_username.c_str());
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("<td>MQTT Authentification: Password (optional)</td>\n");
+  html.concat("<tr>\n");
+  html.concat("<td>MQTT Authentification: Password (optional)</td>\n");
   sprintf(buffer, "<td><input size='30' name='mqttpass' type='text' value='%s'/></td>\n", this->mqtt_password.c_str());
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("  <td colspan='2'>\n");
+  server->sendContent(html.c_str()); html = "";
   
-  html->concat("    <div class='inline'>");
+  html.concat("<tr>\n");
+  html.concat("  <td colspan='2'>\n");
+  
+  html.concat("    <div class='inline'>");
   sprintf(buffer, "<input type='radio' id='sel_URCID1' name='sel_UseRandomClientID' value='none' %s />", (this->mqtt_UseRandomClientID)?"":"checked");
-  html->concat(buffer);
-  html->concat("<label for='sel_URCID1'>benutze statische MQTT ClientID</label></div>\n");
+  html.concat(buffer);
+  html.concat("<label for='sel_URCID1'>benutze statische MQTT ClientID</label></div>\n");
   
-  html->concat("    <div class='inline'>");
+  html.concat("    <div class='inline'>");
   sprintf(buffer, "<input type='radio' id='sel_URCID2' name='sel_UseRandomClientID' value='yes' %s />", (this->mqtt_UseRandomClientID)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel_URCID2'>benutze dynamische MQTT ClientID</label></div>\n");
+  html.concat(buffer);
+  html.concat("<label for='sel_URCID2'>benutze dynamische MQTT ClientID</label></div>\n");
     
-  html->concat("  </td>\n");
-  html->concat("</tr>\n");
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
+
+  html.concat("<tr>\n");
+  html.concat("<td>Senden einer KeepAlive Message via MQTT (in sek > 10, 0=disabled)</td>\n");
+  sprintf(buffer, "<td><input min='10' max='65000' name='keepalive' type='number' value='%d'/></td>\n", this->keepalive);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  html.concat("<tr>\n");
+  html.concat("<td>DebugMode (0 [off] .. 5 [max]</td>\n");
+  sprintf(buffer, "<td><input min='0' max='5' name='debuglevel' type='number' value='%d'/></td>\n", this->debuglevel);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  server->sendContent(html.c_str()); html = "";
   
-  html->concat("<tr>\n");
-  html->concat("<td>Pin i2c SDA</td>\n");
+  html.concat("<tr>\n");
+  html.concat("<td>Pin i2c SDA</td>\n");
   sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_0' name='pinsda' type='number' value='%d'/></td>\n", this->pin_sda +200 );
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("<td>Pin i2c SCL</td>\n");
+  html.concat("<tr>\n");
+  html.concat("<td>Pin i2c SCL</td>\n");
   sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_1' name='pinscl' type='number' value='%d'/></td>\n", this->pin_scl +200 );
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("  <td colspan='2'>\n");
+  server->sendContent(html.c_str()); html = "";
   
-  html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel2' name='sel_oled' value='none' %s onclick=\"radioselection([''],['oled_0'])\"/>", (this->enable_oled)?"":"checked");
-  html->concat(buffer);
-  html->concat("<label for='sel2'>kein OLED</label></div>\n");
+  html.concat("<tr>\n");
+  html.concat("  <td colspan='2'>\n");
+
+  html.concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='ow1' name='sel_1wire' value='1wire' %s onclick=\"radioselection(['onewire_0'],[''])\"/>", (this->enable_1wire)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='ow1'>OneWire Aktiv</label></div>\n");
   
-  html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel3' name='sel_oled' value='oled' %s onclick=\"radioselection(['oled_0'],[''])\"/>", (this->enable_oled)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel3'>mit OLED</label></div>\n");
+  html.concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='ow2' name='sel_1wire' value='none' %s onclick=\"radioselection([''],['onewire_0'])\"/>", (this->enable_1wire)?"":"checked");
+  html.concat(buffer);
+  html.concat("<label for='ow2'>kein OneWire</label></div>\n");
     
-  html->concat("  </td>\n");
-  html->concat("</tr>\n");
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
+
+  sprintf(buffer, "<tr class='%s' id='onewire_0'>\n", (this->enable_1wire?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Welcher Pin nutzt 1Wire?</td>\n");
+  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_3' name='pin1wire' type='number' value='%d'/></td>\n", this->pin_1wire +200 );
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  server->sendContent(html.c_str()); html = "";
+  
+  html.concat("<tr>\n");
+  html.concat("  <td colspan='2'>\n");
+
+  html.concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='sel2' name='sel_oled' value='none' %s onclick=\"radioselection([''],['oled_0'])\"/>", (this->enable_oled)?"":"checked");
+  html.concat(buffer);
+  html.concat("<label for='sel2'>kein OLED</label></div>\n");
+  
+  html.concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='sel3' name='sel_oled' value='oled' %s onclick=\"radioselection(['oled_0'],[''])\"/>", (this->enable_oled)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='sel3'>mit OLED</label></div>\n");
+    
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
 
   sprintf(buffer, "<tr class='%s' id='oled_0'>\n", (this->enable_oled?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>i2c Adresse OLED 1306</td>\n");
+  html.concat(buffer);
+  html.concat("<td>i2c Adresse OLED 1306</td>\n");
   sprintf(buffer, "<td><input maxlength='2' name='i2coled' type='text' value='%02x'/></td>\n", this->i2caddress_oled);
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  server->sendContent(html.c_str()); html = "";
  
-  html->concat("<tr>\n");
-  html->concat("  <td colspan='2'>\n");
+  html.concat("<tr>\n");
+  html.concat("  <td colspan='2'>\n");
   
-  html->concat("    <div class='inline'>");
+  html.concat("    <div class='inline'>");
   sprintf(buffer, "<input type='radio' id='sel_3wege_0' name='sel_3wege' value='none' %s onclick=\"radioselection([''],['3wege_0'])\"/>", (this->enable_3wege)?"":"checked");
-  html->concat(buffer);
-  html->concat("<label for='sel_3wege_0'>kein Trinkwasser Bypass</label></div>\n");
+  html.concat(buffer);
+  html.concat("<label for='sel_3wege_0'>kein Trinkwasser Bypass</label></div>\n");
   
-  html->concat("    <div class='inline'>");
+  html.concat("    <div class='inline'>");
   sprintf(buffer, "<input type='radio' id='sel_3wege_1' name='sel_3wege' value='3wege' %s onclick=\"radioselection(['3wege_0'],[''])\"/>", (this->enable_3wege)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel_3wege_1'>mit Trinkwasser ByPass Ventil</label></div>\n");
+  html.concat(buffer);
+  html.concat("<label for='sel_3wege_1'>mit Trinkwasser ByPass Ventil</label></div>\n");
     
-  html->concat("  </td>\n");
-  html->concat("</tr>\n");
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
 
   sprintf(buffer, "<tr class='%s' id='3wege_0'>\n", (this->enable_3wege?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>3WegeVentil Trinkwasser Bypass</td>\n");
+  html.concat(buffer);
+  html.concat("<td>3WegeVentil Trinkwasser Bypass</td>\n");
   sprintf(buffer, "<td><input min='0' max='254' id='ConfiguredPorts_0' name='ventil3wege_port' type='number' value='%d'/></td>\n", this->ventil3wege_port);
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("  <td colspan='2'>\n");
-  html->concat("    <div class='inline'>");
+  server->sendContent(html.c_str()); html = "";
+ 
+  html.concat("<tr>\n");
+  html.concat("  <td colspan='2'>\n");
+  html.concat("    <div class='inline'>");
   sprintf(buffer, "<input type='radio' id='sel_update_0' name='sel_update' value='auto' %s onclick=\"radioselection(['update_0'],['update_1'])\"/>", (this->enable_autoupdate)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel_update_0'>Automatisches Update</label></div>\n");
-  html->concat("    <div class='inline'>");
+  html.concat(buffer);
+  html.concat("<label for='sel_update_0'>Automatisches Update</label></div>\n");
+  html.concat("    <div class='inline'>");
   sprintf(buffer, "<input type='radio' id='sel_update_1' name='sel_update' value='manu' %s onclick=\"radioselection(['update_1'],['update_0'])\"/>", (this->enable_autoupdate)?"":"checked");
-  html->concat(buffer);
-  html->concat("<label for='sel_update_1'>Manuelles Update</label></div>\n");
-  html->concat("  </td>\n");
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("<label for='sel_update_1'>Manuelles Update</label></div>\n");
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
 
-  html->concat("<tr>\n");
-  html->concat("<td>Update URL</td>\n");
+  server->sendContent(html.c_str()); html = "";
+  
+  html.concat("<tr>\n");
+  html.concat("<td>Update URL</td>\n");
   sprintf(buffer, "<td><input size='30' name='autoupdate_url' type='text' value='%s'/></td>\n", this->autoupdate_url.c_str());
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
   sprintf(buffer, "<tr class='%s' id='update_0'>\n", (this->enable_autoupdate?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Auswahl der Stage</td>\n");
-  html->concat("<td>\n");
-  html->concat("  <select id='autoupdate_stage' name='autoupdate_stage'>\n");
+  html.concat(buffer);
+  html.concat("<td>Auswahl der Stage</td>\n");
+  html.concat("<td>\n");
+  html.concat("  <select id='autoupdate_stage' name='autoupdate_stage'>\n");
   sprintf(buffer, "  <option value='%s' %s>%s</option>\n", "PROD", (this->autoupdate_stage==PROD?"selected":""), "Production");
-  html->concat(buffer);
+  html.concat(buffer);
   sprintf(buffer, "  <option value='%s' %s>%s</option>\n", "PRE", (this->autoupdate_stage==PRE?"selected":""), "PreLive/QS");
-  html->concat(buffer);
+  html.concat(buffer);
   sprintf(buffer, "  <option value='%s' %s>%s</option>\n", "DEV", (this->autoupdate_stage==DEV?"selected":""), "Development");
-  html->concat(buffer);
-  html->concat("  </select>\n");
-  html->concat("</td>\n");
-  html->concat("</tr>\n");
+  html.concat(buffer);
+  html.concat("  </select>\n");
+  html.concat("</td>\n");
+  html.concat("</tr>\n");
   
   sprintf(buffer, "<tr class='%s' id='update_1'>\n", (this->enable_autoupdate?"hide":""));
-  html->concat(buffer);
-  html->concat("<td>verfügbare Releases\n");
-  html->concat("<a href='#' onclick='RefreshReleases()' title='Die JSON Liste neu laden'>&#8634;</a>");
-  html->concat("</td><td>\n");
+  html.concat(buffer);
+  html.concat("<td>verfügbare Releases\n");
+  html.concat("<a href='#' onclick='RefreshReleases()' title='Die JSON Liste neu laden'>&#8634;</a>");
+  html.concat("</td><td>\n");
+
+  server->sendContent(html.c_str()); html = "";
   
-  html->concat("  <select id='releases' name='releases'>\n");
+  html.concat("  <select id='releases' name='releases'>\n");
   std::vector<release_t>* rel = ESPUpdate->GetReleases();
   
-  html->concat("  <optgroup label='Produktiv'>\n");
+  html.concat("  <optgroup label='Produktiv'>\n");
   for (uint8_t i=0; i < rel->size(); i++) {
     if (ESPUpdate->Stage2String(rel->at(i).stage) == "PROD") {
       sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
-      html->concat(buffer);
+      html.concat(buffer);
     }
   }
-  html->concat("  </optgroup>\n");
+  html.concat("  </optgroup>\n");
 
-  html->concat("  <optgroup label='PreLive'>\n");
+  html.concat("  <optgroup label='PreLive'>\n");
   for (uint8_t i=0; i < rel->size(); i++) {
     if (ESPUpdate->Stage2String(rel->at(i).stage) == "PRE") {
       sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
-      html->concat(buffer);
+      html.concat(buffer);
     }
   }
-  html->concat("  </optgroup>\n");
+  html.concat("  </optgroup>\n");
 
-  html->concat("  <optgroup label='Development'>\n");
+  html.concat("  <optgroup label='Development'>\n");
   for (uint8_t i=0; i < rel->size(); i++) {
     if (ESPUpdate->Stage2String(rel->at(i).stage) == "DEV") {
       sprintf(buffer, "<option value='%d' %s>%s (%d)</option>\n", rel->at(i).number, (rel->at(i).number==ESPUpdate->GetCurrentRelease()->number?"disabled":""), rel->at(i).name.c_str(), rel->at(i).subversion);
-      html->concat(buffer);
+      html.concat(buffer);
     }
   }
-  html->concat("  </optgroup>\n");
+  html.concat("  </optgroup>\n");
+
+  server->sendContent(html.c_str()); html = "";
   
-  html->concat("  </select>\n");
-  html->concat("<input type='button' class='button' onclick='InstallRelease()' value='Install' />");
-  html->concat("</td>\n");
-  html->concat("</tr>\n");
+  html.concat("  </select>\n");
+  html.concat("<input type='button' class='button' onclick='InstallRelease()' value='Install' />");
+  html.concat("</td>\n");
+  html.concat("</tr>\n");
  
-  html->concat("  </td>\n");
-  html->concat("</tr>\n");
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
   
-  html->concat("</tbody>\n");
-  html->concat("</table>\n");
+  html.concat("</tbody>\n");
+  html.concat("</table>\n");
 
 
-  html->concat("</form>\n\n<br />\n");
-  html->concat("<form id='jsonform' action='StoreBaseConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
-  html->concat("  <input type='text' id='json' name='json' />\n");
-  html->concat("  <input type='submit' value='Speichern' />\n");
-  html->concat("</form>\n\n");
-  html->concat("<div id='ErrorText' class='errortext'></div>\n");  
+  html.concat("</form>\n\n<br />\n");
+  html.concat("<form id='jsonform' action='StoreBaseConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  html.concat("  <input type='text' id='json' name='json' />\n");
+  html.concat("  <input type='submit' value='Speichern' />\n");
+  html.concat("</form>\n\n");
+  html.concat("<div id='ErrorText' class='errortext'></div>\n");  
+
+  server->sendContent(html.c_str()); html = "";
 }
-

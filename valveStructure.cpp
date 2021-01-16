@@ -1,12 +1,9 @@
 #include "valveStructure.h"
 
-extern MQTT* mqtt;
-extern valveRelation* ValveRel;
-extern i2cdetect* I2Cdetect;
-
 valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   pin_sda(sda), pin_scl(scl) {
-  ValveHW = new valveHardware(sda, scl);
+  ValveHW = new valveHardware(sda, scl, Config->GetDebugLevel());
+  if (Config->Enabled1Wire()) { ValveHW->add1WireDevice(Config->GetPin1Wire());}
   Valves  = new std::vector<valve>{};
   SPIFFS.begin();
   LoadJsonConfig();
@@ -52,12 +49,12 @@ bool valveStructure::GetState(uint8_t Port) {
 }
 
 bool valveStructure::GetEnabled(uint8_t Port) {
-  if (GetValveItem(Port)) { return GetValveItem(Port)->enabled;}
+  if (GetValveItem(Port)) { return GetValveItem(Port)->GetActive();}
   return NULL;
 }
 
 void valveStructure::SetEnable(uint8_t Port, bool state) {
-  if (GetValveItem(Port)) { GetValveItem(Port)->enabled = state; }
+  if (GetValveItem(Port)) { GetValveItem(Port)->SetActive(state); }
 }
 
 void valveStructure::loop() {
@@ -131,7 +128,7 @@ void valveStructure::StoreJsonConfig(String* json) {
   if (root.success()) {
     File configFile = SPIFFS.open("/VentilConfig.json", "w");
     if (!configFile) {
-      Serial.println("failed to open VentilConfig.json file for writing");
+      if (Config->GetDebugLevel() >=2) { Serial.println("failed to open VentilConfig.json file for writing"); }
     } else {
       root.printTo(Serial);
       root.printTo(configFile);
@@ -163,7 +160,7 @@ void valveStructure::LoadJsonConfig() {
         uint8_t count = 0;
         if (json.containsKey("count")) { count = json["count"].as<int>(); }
         if(count == 0) {
-          Serial.println("something went wrong with Ventilconfig, load default config");
+          if (Config->GetDebugLevel() >=2) { Serial.println("something went wrong with Ventilconfig, load default config"); }
           loadDefaultConfig = true;
         }
         
@@ -177,7 +174,7 @@ void valveStructure::LoadJsonConfig() {
           if (json.containsKey(buffer)) {myValve.SetValveType(json[buffer].as<String>()); }
           
           sprintf(buffer, "active_%d", i);
-          if (json[buffer] && json[buffer] == 1) {myValve.enabled = true;} else {myValve.enabled = false;}
+          if (json[buffer] && json[buffer] == 1) {myValve.SetActive(true);} else {myValve.SetActive(false);}
             
           sprintf(buffer, "mqtttopic_%d", i);
           if (json.containsKey(buffer)) {myValve.subtopic = json[buffer].as<String>();}
@@ -211,13 +208,17 @@ void valveStructure::LoadJsonConfig() {
   }
 
   if (loadDefaultConfig) {
-    Serial.println("lade Ventile DefaultConfig");
+    if (Config->GetDebugLevel() >=3) { Serial.println("lade Ventile DefaultConfig"); }
     valve myValve;
     myValve.init(ValveHW, 202, "Valve1");
     Valves->push_back(myValve);
     myValve.init(ValveHW, 203, "Valve2");
     Valves->push_back(myValve);
   }
+}
+
+void valveStructure::GetWebContent1Wire(ESP8266WebServer* server) {
+   if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(server); }
 }
 
 void valveStructure::GetWebContent(ESP8266WebServer* server) {
@@ -249,7 +250,7 @@ void valveStructure::GetWebContent(ESP8266WebServer* server) {
     html.concat(buffer);
     html.concat("  <td>\n");
     html.concat("    <div class='onoffswitch'>\n");
-    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).enabled?"checked":""));
+    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetActive()?"checked":""));
     html.concat(buffer);
     sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
     html.concat(buffer);
@@ -345,7 +346,7 @@ void valveStructure::getWebJsParameter(String* html) {
   
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-  sprintf(buffer, "const gpio_disabled = [%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200);
+  sprintf(buffer, "const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, Config->GetPin1Wire() + 200);
   html->concat(buffer);
 
   // anhand gefundener pcf Devices die verfügbaren Ports bereit stellen
@@ -353,7 +354,9 @@ void valveStructure::getWebJsParameter(String* html) {
   html->concat("const availablePorts = [");
   uint8_t count=0;
   for (uint8_t p=1; p<=254; p++) {
-    if (ValveHW->IsValidPort(p) && I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p)) && (!Config->EnabledOled() || Config->GetI2cOLED()!=ValveHW->GetI2CAddress(p))) {
+    if (ValveHW->IsValidPort(p) && (I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p)) || ValveHW->GetI2CAddress(p) == 0x01) && (!Config->EnabledOled() || Config->GetI2cOLED()!=ValveHW->GetI2CAddress(p))) {
+      // i2cDetect muss den ic2Port finden oder es ist 0x01 OneWire 
+      //ohne die OLED i2c Adresse
       sprintf(buffer, "%s%d", (count>0?",":"") , p);
       html->concat(buffer);
       count++;

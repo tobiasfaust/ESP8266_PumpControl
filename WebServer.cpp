@@ -14,6 +14,7 @@ WebServer::WebServer() : DoReboot(false) {
   server->on("/BaseConfig", [this]() {this->handleBaseConfig(); });
   server->on("/SensorConfig", [this]() {this->handleSensorConfig(); });
   server->on("/VentilConfig", [this]() {this->handleVentilConfig(); });
+  server->on("/1WireConfig", [this]() {this->handle1WireConfig(); });
   server->on("/Relations", [this]() {this->handleRelations(); });
   
   server->on("/style.css", HTTP_GET, [this]() {this->handleCSS(); });
@@ -94,11 +95,17 @@ void WebServer::handleWiFiReset() {
 
 void WebServer::handleBaseConfig() {
   String html;
+  server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server->sendHeader("Pragma", "no-cache");
+  server->sendHeader("Expires", "-1");
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "text/html", "");
   this->getPageHeader(&html, BASECONFIG);
-  Config->GetWebContent(&html);
+  server->sendContent(html.c_str()); html = "";
+  Config->GetWebContent(server);
   this->getPageFooter(&html);
-  server->setContentLength(html.length());
-  server->send(200, "text/html", html.c_str());   // Send HTTP status 200 (Ok) and send some text to the browser/client
+  server->sendContent(html.c_str()); 
+  server->sendContent("");
 }
 
 void WebServer::handleVentilConfig() {
@@ -109,9 +116,24 @@ void WebServer::handleVentilConfig() {
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   server->send(200, "text/html", "");
   this->getPageHeader(&html, VENTILE);
+  server->sendContent(html.c_str()); html = "";
+  VStruct->GetWebContent(server);
+  this->getPageFooter(&html);
+  server->sendContent(html.c_str());
+  server->sendContent("");
+}
+
+void WebServer::handle1WireConfig() {
+  String html;
+  server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server->sendHeader("Pragma", "no-cache");
+  server->sendHeader("Expires", "-1");
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "text/html", "");
+  this->getPageHeader(&html, ONEWIRE);
   server->sendContent(html.c_str());
   html = "";
-  VStruct->GetWebContent(server);
+  VStruct->GetWebContent1Wire(server);
   this->getPageFooter(&html);
   server->sendContent(html.c_str());
   server->sendContent("");
@@ -262,6 +284,13 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
   html->concat(buffer);
+  
+  if (Config->Enabled1Wire()) {
+      html->concat("   <td class='navi' style='width: 50px'></td>\n");
+      sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
+      html->concat(buffer);  
+  }
+  
   html->concat("   <td class='navi' style='width: 50px'></td>\n");
   sprintf(buffer, "   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
   html->concat(buffer);

@@ -5,7 +5,8 @@ valve::valve() : enabled(true), active(false), ValveType(NONE), autooff(0), reve
 
 void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
   this->valveHWClass = vHW;
-  this->myHWdev = valveHWClass->RegisterPort(Port);
+  bool ret = valveHWClass->RegisterPort(this->myHWdev, Port);
+  if (!ret) { Serial.printf("Cannot locate port %d, set port as disabled \n", Port); this->enabled = false; }
   this->ValveType = NORMAL;
   this->port1 = Port;
   this->subtopic = SubTopic;
@@ -13,13 +14,19 @@ void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
 
 void valve::AddPort1(valveHardware* Device, uint8_t Port1) {
   this->valveHWClass = Device;
-  this->myHWdev = Device->RegisterPort(Port1);
+  bool ret = Device->RegisterPort(this->myHWdev, Port1);
+  if (!ret) { Serial.printf("Cannot locate port %d, set port as disabled \n", Port1); this->enabled = false; }
   this->port1 = Port1;  
 }
 
 void valve::AddPort2(valveHardware* Device, uint8_t Port2) {
-  this->myHWdev = Device->RegisterPort(Port2);
+  bool ret = Device->RegisterPort(this->myHWdev, Port2);
+  if (!ret) { Serial.printf("Cannot locate port %d, set port as disabled \n", Port2); this->enabled = false; }
   this->port2 = Port2;
+}
+
+void valve::SetActive(bool active) {
+  this->enabled = active;
 }
 
 bool valve::OnForTimer(int duration) {

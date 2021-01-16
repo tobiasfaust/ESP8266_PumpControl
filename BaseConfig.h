@@ -12,6 +12,7 @@
 #endif
 
 #include <FS.h> 
+#include <ESP8266WebServer.h>
 #include "ArduinoJson.h"
 #include "oled.h"
 #include "updater.h"
@@ -24,12 +25,14 @@ class BaseConfig {
     BaseConfig();
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(String* html);
+    void      GetWebContent(ESP8266WebServer* server);
     void      loop();
     const uint8_t& GetPinSDA()      const {return pin_sda;}
     const uint8_t& GetPinSCL()      const {return pin_scl;}
+    const uint8_t& GetPin1Wire()      const {return pin_1wire;}
     const uint8_t& GetI2cOLED()     const {return i2caddress_oled;}
     const bool&    EnabledOled()    const {return enable_oled;}
+    const bool&    Enabled1Wire()    const {return enable_1wire;}
     const String&  GetMqttServer()  const {return mqtt_server;}
     const uint16_t& GetMqttPort()   const {return mqtt_port;}
     const String&  GetMqttUsername()const {return mqtt_username;}
@@ -39,6 +42,8 @@ class BaseConfig {
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
     const bool&    Enabled3Wege()   const {return enable_3wege;}
     const uint8_t& GetMaxParallel() const {return max_parallel;}
+    const uint16_t& GetKeepAlive()   const {return keepalive;}
+    const uint8_t& GetDebugLevel()   const {return debuglevel;}
     String    GetReleaseName();
     void      InstallRelease(uint32_t ReleaseNumber);
     void      RefreshReleases();
@@ -52,7 +57,9 @@ class BaseConfig {
     bool      mqtt_UseRandomClientID;
     uint8_t   pin_sda;
     uint8_t   pin_scl;
+    uint8_t   pin_1wire;
     bool      enable_oled;
+    bool      enable_1wire;
     bool      enable_autoupdate;
     String    autoupdate_url;
     stage_t   autoupdate_stage;
@@ -60,9 +67,10 @@ class BaseConfig {
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;
+    uint16_t  keepalive;
+    uint8_t   debuglevel;
 
     updater*  ESPUpdate;
 };
 
 #endif
-

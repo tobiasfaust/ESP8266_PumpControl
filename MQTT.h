@@ -62,6 +62,7 @@ class MQTT {
 
     String  mqtt_root = "";
     unsigned long mqttreconnect_lasttry = 0;
+    unsigned long last_keepalive = 0;
   
 };
 

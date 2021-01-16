@@ -25,7 +25,7 @@
 #include "MQTT.h"
 #include "WebServer.h"
 #include "sensor.h"
-#include "oled.h"
+#include "oled.h" 
 
 i2cdetect* I2Cdetect = NULL;
 BaseConfig* Config = NULL;
@@ -35,6 +35,16 @@ MQTT* mqtt = NULL;
 sensor* LevelSensor = NULL;
 OLED* oled = NULL;
 WebServer* webserver = NULL;
+
+/* debugmodes 
+ *  0 -> nothing
+ *  1 -> major and criticals
+ *  2 -> majors
+ *  3 -> standard
+ *  4 -> more details, plus: available RAM, RSSI via MQTT, WiFi Credentials via Serial
+ *  5 -> max details
+ */
+//#define debugmode 4  --> in der WebUI -> Basisconfig einstellbar
 
 void setup() {
   Serial.begin(115200);
@@ -49,15 +59,24 @@ void setup() {
 
   Serial.print(F("Starting WIRE at (SDA, SCL)): "));Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
   Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
-    
+
+  Serial.println("Starting Wifi and MQTT");
   mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
   mqtt->setCallback(myMQTTCallBack);
-  
+
+  Serial.println("Starting I2CDetect");
   I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSCL());
-  LevelSensor = new sensor();
   
+  Serial.println("Starting Sensor");
+  LevelSensor = new sensor();
+
+  Serial.println("Valve Relations");  
   ValveRel = new valveRelation();
+
+  Serial.println("Starting Valve Structure");  
   VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
+
+  Serial.println("Starting WebServer");
   webserver = new WebServer(); 
  
   //VStruct->OnForTimer("Valve1", 10); // Test
@@ -73,7 +92,7 @@ void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str())>0) { 
     LevelSensor->SetLvl(atoi(msg.c_str())); 
   }
-  else if (strstr(topic, "/raw") ||  strstr(topic, "/level")) { 
+  else if (strstr(topic, "/raw") ||  strstr(topic, "/level") ||  strstr(topic, "/mem") ||  strstr(topic, "/rssi")) { 
     /*SensorMeldungen - ignore!*/ 
   }
   else { VStruct->ReceiveMQTT((String)topic, atoi(msg.c_str())); }
