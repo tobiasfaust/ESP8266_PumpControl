@@ -49,6 +49,8 @@ bool ow2408::setPort(uint8_t port, bool state) {
 bool ow2408::handlePort(uint8_t port, bool state) {
   uint8_t DevPort = port % 8; // Device 0 = port 0-7; Device 1 = port 8-15
   uint8_t index = port / 8;
+  bool ret;
+  
   if ((index+1) > this->device_count) {
     if (debugmode >=2) { Serial.printf("requested OnWire index %d out of range\n", index); }
     return false; 
@@ -66,8 +68,10 @@ bool ow2408::handlePort(uint8_t port, bool state) {
     currentstate &= ~(1 << DevPort);
   }
 
-  ow->set_state(this->devices[index], currentstate);
+  ret = ow->set_state(this->devices[index], currentstate);
   if (debugmode >=5) { Serial.print(" STATE NEU ="); print_byte(currentstate); Serial.println(""); }
+
+  return ret;
   
 }
 

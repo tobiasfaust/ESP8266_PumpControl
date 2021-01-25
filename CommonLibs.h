@@ -4,6 +4,10 @@
   #include "WProgram.h"
 #endif
 
+//#if defined(ESP8266) || defined(ESP32)
+//  #define min(x,y) _min(x,y)
+//#endif
+
 #ifdef ESP8266
   extern "C" {
       #include "user_interface.h"
@@ -26,8 +30,4 @@
   using WM_WebServer = ESP8266WebServer;
 #elif ESP32
   using WM_WebServer = WebServer;
-#endif
-
-#if defined(ESP8266) || defined(ESP32)
-  #define min(x,y) _min(x,y)
 #endif

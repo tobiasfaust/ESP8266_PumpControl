@@ -34,20 +34,20 @@ class sensor {
     const uint8_t& GetThresholdMin()const {return threshold_min;}
     const uint8_t& GetThresholdMax()const {return threshold_max;}
     const String&  GetExternalSensor() const {return externalSensor;}
-    
+ 
   private:
     void      loop_analog();
     void      loop_hcsr04();
     
-    uint8_t   pinTrigger;
-    uint8_t   pinEcho;
-    uint16_t  raw;
-    uint8_t   level;
-    uint16_t  MAX_DIST;
     sensorType_t   Type;
     uint16_t  measureDistMin;
     uint16_t  measureDistMax;
     uint16_t  measurecycle;
+    uint8_t   level;
+    uint16_t  raw;
+    uint8_t   pinTrigger;
+    uint8_t   pinEcho;
+    uint16_t  MAX_DIST;
     uint8_t   threshold_min;
     uint8_t   threshold_max;
     String    externalSensor;

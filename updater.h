@@ -4,7 +4,7 @@
 #include "CommonLibs.h"
 #include <vector>
 #include "ArduinoJson.h"
-#include "_Release.h";
+#include "_Release.h"
 
 #ifdef ESP8266
    #include <ESP8266httpUpdate.h>
@@ -42,7 +42,7 @@ class updater {
     void        loop();
     release_t*  GetCurrentRelease();
     String      GetReleaseName();
-    const int&  GetInterval()     const {return interval;}
+    const uint32_t&  GetInterval()     const {return interval;}
     std::vector<release_t>* GetReleases();
     void        InstallRelease(uint32_t ReleaseNumber);
     void        RefreshReleases();
@@ -65,13 +65,13 @@ class updater {
     release_t   getLatestRelease();
     void        printRelease(release_t* r);
     
-    String      json_url;
-    stage_t     stage;
-    release_t   currentRelease;
+    bool        DoUpdate = false;
     bool        automode;
     bool        updateError;
     uint32_t    interval;
-    bool        DoUpdate = false;
+    String      json_url;
+    stage_t     stage;
+    release_t   currentRelease;
     uint32_t    lastupdate;
 
     std::vector<release_t>* releases = NULL;

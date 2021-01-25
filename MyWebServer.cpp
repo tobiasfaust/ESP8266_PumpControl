@@ -204,7 +204,10 @@ void MyWebServer::handleAjax() {
   memset(buffer, 0, sizeof(buffer));
   String ret;
   bool RaiseError = false;
-    
+
+  uint8_t port = 0;
+  String action, newState; 
+  
   DynamicJsonBuffer jsonBufferGet;
   JsonObject& jsonGet = jsonBufferGet.parseObject(server->arg("json"));
 
@@ -213,24 +216,22 @@ void MyWebServer::handleAjax() {
   
   Serial.print("Ajax Json Empfangen: "); jsonGet.printTo(Serial); Serial.println();
   if (jsonGet.success()) {
-    String action, newState; 
-    uint8_t port;
         
     if (jsonGet.containsKey("action"))   {action = jsonGet["action"].as<String>();}
     if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
     if (jsonGet.containsKey("port"))     { port = atoi(jsonGet["port"]); }
 
     if (action && strcmp(action.c_str(), "SetValve")==0) {
-      if (newState && port && !VStruct->GetEnabled(port)) { jsonReturn["accepted"] = 0; jsonReturn["error"] = "Requested Port not enabled. Please enable first!";}
-      else if (newState && port && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
-      else if (newState && port && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
+      if (newState && port && port > 0 && !VStruct->GetEnabled(port)) { jsonReturn["accepted"] = 0; jsonReturn["error"] = "Requested Port not enabled. Please enable first!";}
+      else if (newState && port && port > 0 && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
+      else if (newState && port && port > 0 && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
       else { RaiseError = true; }
 
-      if (port) {jsonReturn["NewState"] = (VStruct->GetState(port)?"On":"Off");}
+      if (port && port > 0) {jsonReturn["NewState"] = (VStruct->GetState(port)?"On":"Off");}
     }
 
     if (action && strcmp(action.c_str(), "EnableValve")==0) {
-      if (port && newState) {
+      if (port && port > 0 && newState) {
         uint8_t e = atoi(newState.c_str()); 
         VStruct->SetEnable(port, e);
         jsonReturn["NewState"] = (VStruct->GetEnabled(port)?"1":"0");
@@ -379,7 +380,7 @@ void MyWebServer::getPage_Status(String* html) {
 
   html->concat("<tr>\n");
   html->concat("<td>Uptime:</td>\n");
-  sprintf(buffer, "<td>%d Days, %d Hours, %d Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
+  sprintf(buffer, "<td>%lu Days, %lu Hours, %lu Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
   html->concat(buffer);
   html->concat("</tr>\n");
 

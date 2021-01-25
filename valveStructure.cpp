@@ -18,7 +18,7 @@ void valveStructure::addValve(uint8_t Port, String SubTopic) {
 void valveStructure::OnForTimer(String SubTopic, int duration) {
   valve* v = this->GetValveItem(SubTopic);
   if (v && v->OnForTimer(duration)) {
-    if (mqtt) {mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+    if (mqtt) {mqtt->Publish_Int("Threads", (int)this->CountActiveThreads()); }
   }
 }
 
@@ -34,22 +34,22 @@ void valveStructure::SetOn(String SubTopic) {
 
 void valveStructure::SetOn(uint8_t Port) {
   valve* v = this->GetValveItem(Port);
-  if (v && v->SetOn() && mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+  if (v && v->SetOn() && mqtt) { mqtt->Publish_Int("Threads", (int)this->CountActiveThreads()); }
 }
 
 void valveStructure::SetOff(uint8_t Port) {
   valve* v = this->GetValveItem(Port);
   if (v) { v->SetOff(); }
-  if (mqtt) { mqtt->Publish_Int("Threads", (int*)CountActiveThreads()); }
+  if (mqtt) { mqtt->Publish_Int("Threads", (int)this->CountActiveThreads()); }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
-  if (GetValveItem(Port)) { return GetValveItem(Port)->active; }
+  if (GetValveItem(Port)) { return GetValveItem(Port)->GetActive(); }
   return NULL;
 }
 
 bool valveStructure::GetEnabled(uint8_t Port) {
-  if (GetValveItem(Port)) { return GetValveItem(Port)->GetActive();}
+  if (GetValveItem(Port)) { return GetValveItem(Port)->GetEnabled();}
   return NULL;
 }
 
@@ -115,7 +115,7 @@ valve* valveStructure::GetValveItem(String SubTopic) {
 uint8_t valveStructure::CountActiveThreads() {
   uint8_t count = 0;
   for (uint8_t i=0; i<Valves->size(); i++) {
-    if (Valves->at(i).active && (Valves->at(i).GetPort1() != Config->Get3WegePort() || !Config->Enabled3Wege() )) {count++;}
+    if (Valves->at(i).GetActive() && (Valves->at(i).GetPort1() != Config->Get3WegePort() || !Config->Enabled3Wege() )) {count++;}
   }
   return count;
 }
@@ -189,10 +189,10 @@ void valveStructure::LoadJsonConfig() {
           if (json.containsKey(buffer)) { myValve.port2ms = max(10, min(json[buffer].as<int>(), 999));}
 
           sprintf(buffer, "reverse_%d", i);
-          if (json[buffer] && json[buffer] == 1) {myValve.reverse = true;} else {myValve.reverse = false;}
+          if (json[buffer] && json[buffer] == 1) {myValve.SetReverse(true);} else {myValve.SetReverse(false);}
 
           sprintf(buffer, "autooff_%d", i);
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.autooff = json[buffer].as<int>(); }
+          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.SetAutoOff(json[buffer].as<int>()); }
           
           Valves->push_back(myValve);
         }
@@ -250,7 +250,7 @@ void valveStructure::GetWebContent(WM_WebServer* server) {
     html.concat(buffer);
     html.concat("  <td>\n");
     html.concat("    <div class='onoffswitch'>\n");
-    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetActive()?"checked":""));
+    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetEnabled()?"checked":""));
     html.concat(buffer);
     sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
     html.concat(buffer);
@@ -304,7 +304,7 @@ void valveStructure::GetWebContent(WM_WebServer* server) {
 
     html.concat("  <td>\n");
     html.concat("    <div class='onoffswitch'>\n");
-    sprintf(buffer, "      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).reverse?"checked":""));
+    sprintf(buffer, "      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).GetReverse()?"checked":""));
     html.concat(buffer);
     sprintf(buffer, "      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
     html.concat(buffer);
@@ -315,14 +315,14 @@ void valveStructure::GetWebContent(WM_WebServer* server) {
     html.concat("  </td>\n");
 
     html.concat("  <td>\n");
-    sprintf(buffer, "      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).autooff);
+    sprintf(buffer, "      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).GetAutoOff());
     html.concat(buffer);
     html.concat("  </td>\n");
     
     html.concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
 
     html.concat("  <td>\n");
-    sprintf(buffer, "    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).active?"On":"Off"));
+    sprintf(buffer, "    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).GetActive()?"On":"Off"));
     html.concat(buffer);
     html.concat("  </td>\n");
 

@@ -1,6 +1,6 @@
 #pragma once
 
-/* ESP8266 Board Library 2.6.3  */
+/* getestet mit ESP8266 Board Library 2.6.3 | 2.7.1  */
 
 /*#include <Wire.h>
 #include "PCF8574.h"
