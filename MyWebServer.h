@@ -6,20 +6,11 @@
 // https://community.blynk.cc/t/self-updating-from-web-server-http-ota-firmware-for-esp8266-and-esp32/18544
 // https://forum.fhem.de/index.php?topic=50628.0
 
-#ifndef WEBSERVER_H
-#define WEBSERVER_H
+#ifndef MYWEBSERVER_H
+#define MYWEBSERVER_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#include <FS.h> 
+#include "CommonLibs.h"
 #include <ArduinoJson.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266HTTPUpdateServer.h>
-#include <ESP8266mDNS.h>
 #include "uptime.h"
 #include "_Release.h"
 
@@ -37,26 +28,42 @@ extern valveStructure* VStruct;
 extern valveRelation* ValveRel;
 extern i2cdetect* I2Cdetect;
 
-class WebServer {
+class MyWebServer {
 
   enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, ONEWIRE, RELATIONS};
   
   public:
-    WebServer();
+    MyWebServer();
 
     void      loop();
 
   private:
     
     bool      DoReboot;
-    MDNSResponder mdns;
-    ESP8266WebServer* server;
-    ESP8266HTTPUpdateServer httpUpdater;
 
+    #ifdef ESP8266
+      using WM_mdns = MDNSResponder;
+      //using WM_httpUpdater = ESP8266HTTPUpdateServer;
+      //WM_httpUpdater httpUpdater;
+      ESP8266HTTPUpdateServer httpUpdater;
+    #elif ESP32
+      using WM_mdns = MDNSResponder;
+      //using WM_httpUpdater = ESP8266HTTPUpdateServer;
+    #endif
+
+    WM_mdns mdns;
+    WM_WebServer* server;
+    //WM_httpUpdater httpUpdater;
+    
+    //MDNSResponder mdns;
+    //ESP8266WebServer* server;
+    //ESP8266HTTPUpdateServer httpUpdater;
+        
     void      handleNotFound();
     void      handleReboot();
     void      handleReset();
     void      handleWiFiReset();
+    void      handleFWUpdate();
     void      handleCSS();
     void      handleJS();
     void      handleJsAjax();
@@ -73,6 +80,7 @@ class WebServer {
     void      getPageFooter(String* html);
     
     void      getPage_Status(String* html);
+    void      getPage_FWUpdate(String* html);
   
 };
 

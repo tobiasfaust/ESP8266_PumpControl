@@ -155,7 +155,7 @@ void valveRelation::LoadJsonConfig() {
   }
 }
 
-void valveRelation::GetWebContent(ESP8266WebServer* server) {
+void valveRelation::GetWebContent(WM_WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   String html = "";
@@ -226,4 +226,3 @@ void valveRelation::GetWebContent(ESP8266WebServer* server) {
   html.concat("<div id='ErrorText' class='errortext'></div>\n");
   server->sendContent(html.c_str()); html = "";
 }
-

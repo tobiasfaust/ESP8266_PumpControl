@@ -6,7 +6,7 @@ sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycl
 }
 
 void sensor::init() {
-  setSensorType(ANALOG);
+  setSensorType(ONBOARD_ANALOG);
   this->MAX_DIST=500; // is maximum by default
 }
 
@@ -69,7 +69,7 @@ void sensor::loop() {
   if (millis() - this->previousMillis > this->measurecycle*1000) {
     this->previousMillis = millis();
    
-    if (this->Type == ANALOG) {loop_analog();}
+    if (this->Type == ONBOARD_ANALOG) {loop_analog();}
     if (this->Type == HCSR04) {loop_hcsr04();}
 
     if (this->Type != NONE && this->level !=0 && Config->Enabled3Wege()) {
@@ -159,123 +159,130 @@ void sensor::LoadJsonConfig() {
   }
 }
 
-void sensor::GetWebContent(String* html) {
-  char buffer[200] = {0};
+void sensor::GetWebContent(WM_WebServer* server) {
+  char buffer[250] = {0};
   memset(buffer, 0, sizeof(buffer));
+  String html = "";
 
-  html->concat("<form id='DataForm'>\n");
-  html->concat("<table id='maintable' class='editorDemoTable'>\n");
-  html->concat("<thead>\n");
-  html->concat("  <tr>\n");
-  html->concat("    <td style='width: 250px;'>Name</td>\n");
-  html->concat("    <td style='width: 200px;'>Wert</td>\n");
-  html->concat("  </tr>\n");
-  html->concat("</thead>\n");
-  html->concat("<tbody>\n");
+  html.concat("<form id='DataForm'>\n");
+  html.concat("<table id='maintable' class='editorDemoTable'>\n");
+  html.concat("<thead>\n");
+  html.concat("  <tr>\n");
+  html.concat("    <td style='width: 250px;'>Name</td>\n");
+  html.concat("    <td style='width: 200px;'>Wert</td>\n");
+  html.concat("  </tr>\n");
+  html.concat("</thead>\n");
+  html.concat("<tbody>\n");
 
-  html->concat("<tr>\n");
-  html->concat("  <td colspan='2'>\n");
+  html.concat("<tr>\n");
+  html.concat("  <td colspan='2'>\n");
   
-  html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==NONE)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel0'>keine Füllstandsmessung</label></div>\n");
+  html.concat("    <div class='inline'>");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==NONE)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='sel0'>keine Füllstandsmessung</label></div>\n");
   
-  html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_1','analog_2','extern_1'])\"/>", (this->Type==HCSR04)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
+  html.concat("    <div class='inline'>");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_1','analog_2','extern_1'])\"/>", (this->Type==HCSR04)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
   
-  html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==ANALOG)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel2'>Füllstandsmessung mit analogem Signal (an A0)</label></div>\n");
+  html.concat("    <div class='inline'>");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==ONBOARD_ANALOG)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='sel2'>Füllstandsmessung mit analogem Signal (an A0)</label></div>\n");
 
-  html->concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel3' name='selection' value='extern' %s onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_1','analog_2'])\"/>", (this->Type==EXTERN)?"checked":"");
-  html->concat(buffer);
-  html->concat("<label for='sel3'>Füllstandsmessung mit externem Signal per MQTT</label></div>\n");
+  html.concat("    <div class='inline'>");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel3' name='selection' value='extern' %s onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_1','analog_2'])\"/>", (this->Type==EXTERN)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='sel3'>Füllstandsmessung mit externem Signal per MQTT</label></div>\n");
   
-  html->concat("  </td>\n");
-  html->concat("</tr>\n");
+  html.concat("  </td>\n");
+  html.concat("</tr>\n");
 
-  sprintf(buffer, "<tr class='%s' id='all_1'>\n", (this->Type==NONE||this->Type==EXTERN?"hide":""));
-  html->concat(buffer);
-  html->concat("<td>Messintervall</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='measurecycle' type='number' value='%d'/></td>\n", this->measurecycle);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='hcsr04_1'>\n", (this->Type==HCSR04?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Abstand Sensor min (in cm)</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='hcsr04_2'>\n", (this->Type==HCSR04?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Abstand Sensor max (in cm)</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='measureDistMax' type='number' value='%d'/></td>\n", this->measureDistMax);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='hcsr04_3'>\n", (this->Type==HCSR04?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Pin HC-SR04 Trigger</td>\n");
-  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_1' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", this->pinTrigger + 200);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='hcsr04_4'>\n", (this->Type==HCSR04?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Pin HC-SR04 Echo</td>\n");
-  sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_2' name='pinhcsr04echo' type='number' value='%d'/></td>\n", this->pinEcho + 200);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='analog_1'>\n", (this->Type==ANALOG?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Kalibrierung: 0% entsricht RAW Wert</td>\n");
-  sprintf(buffer, "<td><input min='0' size='5' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='analog_2'>\n", (this->Type==ANALOG?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>Kalibrierung: 100% entsricht RAW Wert</td>\n");
-  sprintf(buffer, "<td><input min='0' max='1024' name='measureDistMax' type='number' value='%d'/></td>\n", this->measureDistMax);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-
-  sprintf(buffer, "<tr class='%s' id='extern_1'>\n", (this->Type==EXTERN?"":"hide"));
-  html->concat(buffer);
-  html->concat("<td>MQTT-Topic des externen Sensors (Füllstand in %)</td>\n");
-  sprintf(buffer, "<td><input size='30' name='externalSensor' type='text' value='%s'/></td>\n", this->externalSensor.c_str());
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  server->sendContent(html.c_str()); html = "";
   
-  sprintf(buffer, "<tr class='%s' id='all_2'>\n", (this->Type==NONE?"hide":""));
-  html->concat(buffer);
-  html->concat("<td >Sensor Treshold Min für 3WegeVentil</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", this->threshold_min);
-  html->concat(buffer);
-  html->concat("</tr>\n");
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='all_1'>\n", (this->Type==NONE||this->Type==EXTERN?"hide":""));
+  html.concat(buffer);
+  html.concat("<td>Messintervall</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='254' name='measurecycle' type='number' value='%d'/></td>\n", this->measurecycle);
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
-  sprintf(buffer, "<tr class='%s' id='all_3'>\n", (this->Type==NONE?"hide":""));
-  html->concat(buffer);
-  html->concat("<td>Sensor Treshold Max für 3WegeVentil</td>\n");
-  sprintf(buffer, "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", this->threshold_max);
-  html->concat(buffer);
-  html->concat("</tr>\n");
-  html->concat("<tr>\n");
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='hcsr04_1'>\n", (this->Type==HCSR04?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Abstand Sensor min (in cm)</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='254' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='hcsr04_2'>\n", (this->Type==HCSR04?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Abstand Sensor max (in cm)</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='254' name='measureDistMax' type='number' value='%d'/></td>\n", this->measureDistMax);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='hcsr04_3'>\n", (this->Type==HCSR04?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Pin HC-SR04 Trigger</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='15' id='GpioPin_1' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", this->pinTrigger + 200);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='hcsr04_4'>\n", (this->Type==HCSR04?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Pin HC-SR04 Echo</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='15' id='GpioPin_2' name='pinhcsr04echo' type='number' value='%d'/></td>\n", this->pinEcho + 200);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  server->sendContent(html.c_str()); html = "";
   
-  html->concat("</tbody>\n");
-  html->concat("</table>\n");
-  html->concat("</form>\n\n<br />\n");
-  html->concat("<form id='jsonform' action='StoreSensorConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
-  html->concat("  <input type='text' id='json' name='json' />\n");
-  html->concat("  <input type='submit' value='Speichern' />\n");
-  html->concat("</form>\n\n");
-  html->concat("<div id='ErrorText' class='errortext'></div>\n");
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_1'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Kalibrierung: 0% entsricht RAW Wert</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' size='5' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_2'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Kalibrierung: 100% entsricht RAW Wert</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='1024' name='measureDistMax' type='number' value='%d'/></td>\n", this->measureDistMax);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='extern_1'>\n", (this->Type==EXTERN?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>MQTT-Topic des externen Sensors (Füllstand in %)</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input size='30' name='externalSensor' type='text' value='%s'/></td>\n", this->externalSensor.c_str());
+  html.concat(buffer);
+  html.concat("</tr>\n");
+  
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='all_2'>\n", (this->Type==NONE?"hide":""));
+  html.concat(buffer);
+  html.concat("<td >Sensor Treshold Min für 3WegeVentil</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", this->threshold_min);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='all_3'>\n", (this->Type==NONE?"hide":""));
+  html.concat(buffer);
+  html.concat("<td>Sensor Treshold Max für 3WegeVentil</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", this->threshold_max);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+  html.concat("<tr>\n");
+
+  html.concat("</tbody>\n");
+  html.concat("</table>\n");
+  html.concat("</form>\n\n<br />\n");
+  html.concat("<form id='jsonform' action='StoreSensorConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  html.concat("  <input type='text' id='json' name='json' />\n");
+  html.concat("  <input type='submit' value='Speichern' />\n");
+  html.concat("</form>\n\n");
+  html.concat("<div id='ErrorText' class='errortext'></div>\n");
+
+  server->sendContent(html.c_str()); html = "";
 }

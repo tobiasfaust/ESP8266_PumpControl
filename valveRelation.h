@@ -1,13 +1,7 @@
 #ifndef VALVERELATION_H
 #define VALVERELATION_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#include <FS.h> 
+#include "CommonLibs.h"
 #include <vector>
 #include <ArduinoJson.h>
 #include "MQTT.h"
@@ -39,7 +33,7 @@ class valveRelation {
     
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(ESP8266WebServer* server);
+    void      GetWebContent(WM_WebServer* server);
     
   private:
     std::vector<relation_t>* _relationen  = NULL;

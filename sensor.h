@@ -1,13 +1,7 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#include <FS.h> 
+#include "CommonLibs.h"
 #include <ArduinoJson.h>
 #include "MQTT.h"
 #include "valveStructure.h"
@@ -19,7 +13,7 @@ extern valveStructure* VStruct;
 extern BaseConfig* Config;
 extern OLED* oled;
 
-enum sensorType_t {NONE, EXTERN, HCSR04, ANALOG};
+enum sensorType_t {NONE, EXTERN, HCSR04, ONBOARD_ANALOG};
 
 class sensor {
 
@@ -33,7 +27,7 @@ class sensor {
     void      SetLvl(uint8_t lvl);
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(String* html);
+    void      GetWebContent(WM_WebServer* server);
     const uint16_t& GetRaw() const {return raw;}
     const uint8_t&  GetLvl() const {return level; }
     const sensorType_t& GetType() const {return Type; }

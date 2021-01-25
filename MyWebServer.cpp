@@ -1,12 +1,17 @@
-#include "WebServer.h"
+#include "MyWebServer.h"
 
-WebServer::WebServer() : DoReboot(false) {
-  server = new ESP8266WebServer(80);
+MyWebServer::MyWebServer() : DoReboot(false) {
+  server = new WM_WebServer(80);
 
   if (!MDNS.begin("esp82660"))  {  Serial.println(F("Error setting up MDNS responder!"));  }
   else                          {  Serial.println(F("mDNS responder started"));  }
 
-  httpUpdater.setup(server);
+  #ifdef ESP8266
+    httpUpdater.setup(server);
+  #elif ESP32
+    server->on("/update", HTTP_POST, [this]() {this->handleFWUpdate(); });
+  #endif
+  
   server->begin(); 
 
   server->onNotFound([this]() { this->handleNotFound(); });
@@ -36,16 +41,16 @@ WebServer::WebServer() : DoReboot(false) {
   Serial.println(F("WebServer started..."));
 }
 
-void WebServer::loop() {
+void MyWebServer::loop() {
   server->handleClient();
   if (this->DoReboot) {ESP.restart();}
 }
 
-void WebServer::handleNotFound() {
+void MyWebServer::handleNotFound() {
   server->send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
 
-void WebServer::handleRoot() {
+void MyWebServer::handleRoot() {
   String html;
   this->getPageHeader(&html, ROOT);
   this->getPage_Status(&html);
@@ -54,46 +59,53 @@ void WebServer::handleRoot() {
   server->send(200, "text/html", html.c_str());   // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
-void WebServer::handleCSS() {
+void MyWebServer::handleFWUpdate() {
+  String html;
+  this->getPage_FWUpdate(&html);
+  server->setContentLength(html.length());
+  server->send(200, "text/html", html.c_str()); 
+}
+
+void MyWebServer::handleCSS() {
   //server->setContentLength(sizeof(STYLE_CSS));
   server->send_P(200, "text/css", STYLE_CSS);
 }
 
-void WebServer::handleJS() {
+void MyWebServer::handleJS() {
   //server->setContentLength(sizeof(JAVASCRIPT));
   server->send_P(200, "text/javascript", JAVASCRIPT);
 }
 
-void WebServer::handleJsAjax() {
+void MyWebServer::handleJsAjax() {
   //server->setContentLength(sizeof(JSAJAX));
   server->send_P(200, "text/javascript", JSAJAX);
 }
 
-void WebServer::handleJSParam() {
+void MyWebServer::handleJSParam() {
   String html;
   VStruct->getWebJsParameter(&html);
   server->setContentLength(html.length());
   server->send(200, "text/javascript", html.c_str());
 }
 
-void WebServer::handleReboot() {
+void MyWebServer::handleReboot() {
   server->sendHeader("Location","/");
   server->send(303); 
   this->DoReboot = true;  
 }
 
-void WebServer::handleReset() {
+void MyWebServer::handleReset() {
   SPIFFS.format();
   this->handleReboot();
 }
 
-void WebServer::handleWiFiReset() {
-  ESP.eraseConfig();
+void MyWebServer::handleWiFiReset() {
+  //ESP.eraseConfig(); TODO, funktioniert nicht mit ESP32
   this->handleReboot();
 }
 
 
-void WebServer::handleBaseConfig() {
+void MyWebServer::handleBaseConfig() {
   String html;
   server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   server->sendHeader("Pragma", "no-cache");
@@ -108,7 +120,7 @@ void WebServer::handleBaseConfig() {
   server->sendContent("");
 }
 
-void WebServer::handleVentilConfig() {
+void MyWebServer::handleVentilConfig() {
   String html;
   server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   server->sendHeader("Pragma", "no-cache");
@@ -123,7 +135,7 @@ void WebServer::handleVentilConfig() {
   server->sendContent("");
 }
 
-void WebServer::handle1WireConfig() {
+void MyWebServer::handle1WireConfig() {
   String html;
   server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   server->sendHeader("Pragma", "no-cache");
@@ -139,15 +151,23 @@ void WebServer::handle1WireConfig() {
   server->sendContent("");
 }
 
-void WebServer::handleSensorConfig() {
+void MyWebServer::handleSensorConfig() {
   String html;
+  server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server->sendHeader("Pragma", "no-cache");
+  server->sendHeader("Expires", "-1");
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "text/html", "");
   this->getPageHeader(&html, SENSOR);
-  LevelSensor->GetWebContent(&html);
+  server->sendContent(html.c_str());
+  LevelSensor->GetWebContent(server);
+  html = "";
   this->getPageFooter(&html);
-  server->send(200, "text/html", html.c_str());
+  server->sendContent(html.c_str());
+  server->sendContent("");
 }
 
-void WebServer::handleRelations() {
+void MyWebServer::handleRelations() {
   String html;
   server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   server->sendHeader("Pragma", "no-cache");
@@ -164,7 +184,7 @@ void WebServer::handleRelations() {
 }
 
 
-void WebServer::ReceiveJSONConfiguration(page_t page) {
+void MyWebServer::ReceiveJSONConfiguration(page_t page) {
   String json = server->arg("json");
   String targetPage = "/";
   Serial.print(F("json empfangen: "));
@@ -179,7 +199,7 @@ void WebServer::ReceiveJSONConfiguration(page_t page) {
   server->send(303); 
 }
 
-void WebServer::handleAjax() {
+void MyWebServer::handleAjax() {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   String ret;
@@ -242,7 +262,7 @@ void WebServer::handleAjax() {
   server->send(200, "text/html", ret.c_str());
 }
 
-void WebServer::getPageHeader(String* html, page_t pageactive) {
+void MyWebServer::getPageHeader(String* html, page_t pageactive) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   
@@ -303,13 +323,13 @@ void WebServer::getPageHeader(String* html, page_t pageactive) {
   html->concat("   <p />\n");
 }
 
-void WebServer::getPageFooter(String* html) {
+void MyWebServer::getPageFooter(String* html) {
   html->concat("</table>\n");
   html->concat("</body>\n");
   html->concat("</html>\n");
 }
 
-void WebServer::getPage_Status(String* html) {
+void MyWebServer::getPage_Status(String* html) {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
   uint8_t count = 0;
@@ -417,4 +437,8 @@ void WebServer::getPage_Status(String* html) {
   
   html->concat("</tbody>\n");
   html->concat("</table>\n");     
+}
+
+void MyWebServer::getPage_FWUpdate(String* html) {
+  // TODO
 }

@@ -217,11 +217,11 @@ void valveStructure::LoadJsonConfig() {
   }
 }
 
-void valveStructure::GetWebContent1Wire(ESP8266WebServer* server) {
+void valveStructure::GetWebContent1Wire(WM_WebServer* server) {
    if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(server); }
 }
 
-void valveStructure::GetWebContent(ESP8266WebServer* server) {
+void valveStructure::GetWebContent(WM_WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   String html = "";

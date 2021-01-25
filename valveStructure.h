@@ -2,13 +2,7 @@
 #ifndef VALVESTRUCTURE_H
 #define VALVESTRUCTURE_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#include <FS.h> 
+#include "CommonLibs.h"
 #include <ArduinoJson.h>
 #include <i2cdetect.h>
 #include "BaseConfig.h"
@@ -37,8 +31,8 @@ class valveStructure {
     
     void      StoreJsonConfig(String* json);
     void      LoadJsonConfig();
-    void      GetWebContent(ESP8266WebServer* server);
-    void      GetWebContent1Wire(ESP8266WebServer* server);
+    void      GetWebContent(WM_WebServer* server);
+    void      GetWebContent1Wire(WM_WebServer* server);
     void      getWebJsParameter(String* html);
     void      ReceiveMQTT(String topic, int value);
     

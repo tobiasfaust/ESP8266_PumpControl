@@ -3,6 +3,7 @@ Release 2.5.0:
   - Feature: Add a keepalive message via MQTT, configurable at BasisConfig: 
   - Feature: Add configurable DebugMode at BaseConfig
   - Feature: push out memory and rssi values via mqtt together with keepalive message if Debugmode >= 4
+  - Feature: support for ESP32, still without OTA Update and Wifi Credential deletion
   
 Release 2.4.5:
   - Feature: deletion of WiFi credentials now possible

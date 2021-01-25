@@ -10,30 +10,31 @@ def delete_old_objects(bucketname, targetpath):
     if 'Contents' in resp:
         objs = resp['Contents']
         files = sorted(objs, key=get_last_modified, reverse=True)
-        files_DEV  = []
-        files_PRE  = []
-        files_PROD = []
+        
+        hashtable = {}
+        hashtable = {'ESP32': {'DEV':[],'PRE':[],'PROD':[]}, 
+                     'ESP8266': {'DEV':[],'PRE':[],'PROD':[]}
+                    }
+        delete = True
+        
+        print ("HashTable Length: #"+str(len(hashtable["ESP32"]["DEV"])))
         
         for key in files:
-            #print(key)
+            print(key)
             
-            if key['Key'].find(".DEV.") > 0 and len(files_DEV) <= ((save_versions * 2) - 1) : # 4 Binaries + 4 Json (incl. dem jetzt kommenden)
-                files_DEV.append(key)
-                print ("Save DEV Object: " + key['Key'])
-            elif key['Key'].find(".DEV.") > 0 and len(files_DEV) > ((save_versions * 2) - 1) :
-                print("Delete DEV Object: " + key['Key'])
-                s3.delete_object(Bucket=bucketname, Key=key['Key'])
+            for arch in hashtable.keys():
+                delete = True
+                for stage in hashtable[arch].keys():
+                    #print(stage)
+                    if key['Key'].find("."+arch+".") > 0 and key['Key'].find("."+stage+".") > 0 :
+                        if len(hashtable[arch][stage]) <= ((save_versions * 2) - 1) : # 4 Binaries + 4 Json (incl. dem jetzt kommenden)
+                            hashtable[arch][stage].append(key)
+                            delete = False;
+                            print ("Save Object #"+str(len(hashtable[arch][stage]))+" : " + key['Key'])
+                        #else :
+                            #print("Delete this Object: " + key['Key'])
             
-            if key['Key'].find(".PRE.") > 0 and len(files_PRE) <= ((save_versions * 2) - 1) : 
-                files_PRE.append(key)
-                print ("Save PRE Object: " + key['Key'])
-            elif key['Key'].find(".PRE.") > 0 and len(files_PRE) > ((save_versions * 2) - 1) :
-                print("Delete PRE Object: " + key['Key'])
-                s3.delete_object(Bucket=bucketname, Key=key['Key'])
+            if delete == True:
+                print("Delete this Object: " + key['Key'])
+                s3.delete_object(Bucket=bucketname, Key=key['Key'])   
                 
-            if key['Key'].find(".PROD.") > 0 and len(files_PROD) <= ((save_versions * 2) - 1) : 
-                files_PROD.append(key)
-                print ("Save PROD Object: " + key['Key'])
-            elif key['Key'].find(".PROD.") > 0 and len(files_PROD) > ((save_versions * 2) - 1) :
-                print("Delete PROD Object: " + key['Key'])
-                s3.delete_object(Bucket=bucketname, Key=key['Key'])

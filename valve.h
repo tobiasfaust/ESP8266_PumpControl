@@ -1,12 +1,7 @@
 #ifndef VALVE_H
 #define VALVE_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
 #include "valveHardware.h"
 #include "MQTT.h"
 

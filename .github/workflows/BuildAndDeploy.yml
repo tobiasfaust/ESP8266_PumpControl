@@ -24,7 +24,7 @@ jobs:
       run: |
          VERSION=$(sed 's/[^0-9|.]//g' _Release.h)  # zb. 2.4.2
          if [ ${{ github.ref }} == 'refs/heads/master' ]; then IS_PRE='false'; else IS_PRE='true'; fi
-         if [ ${{ github.ref }} == 'refs/heads/master' ]; then POSTFIX=''    ; else POSTFIX='PRE';    fi
+         if [ ${{ github.ref }} == 'refs/heads/master' ]; then POSTFIX=''    ; else POSTFIX='PRE'; fi
          RELEASEBODY=$(awk -v RS='Release ' '/'$VERSION':(.*)/ {print $0}' ChangeLog.h)
          RELEASEBODY="${RELEASEBODY//'%'/'%25'}"
          RELEASEBODY="${RELEASEBODY//$'\n'/'%0A'}"
@@ -33,7 +33,7 @@ jobs:
          echo "::set-output name=IS_PRERELEASE::${IS_PRE}"
          echo "::set-output name=RELEASENAME_POSTFIX::${POSTFIX}"
          echo "::set-output name=RELEASEBODY::${RELEASEBODY}"
-         echo "::set-env name=body::${RELEASEBODY}"
+
       env:
         REPOSITORY: ${{ github.event.repository.name }}
     
@@ -67,14 +67,14 @@ jobs:
     env:
       REQUIRED_LIBRARIES: WiFiManager,PubSubClient,ESP8266 and ESP32 OLED driver for SSD1306 displays,Uptime Library,OneWire
       REPOSITORY: ${{ github.event.repository.name }}
-      sketch-name: ESP8266_PumpControl.ino
+      sketch-name: test.ino
       #FULLREPO: ${{ github.repository }} # tobiasfaust/test
 
     strategy:
       matrix:
         arduino-boards-fqbn:
-#          - arduino:avr:uno
           - esp8266:esp8266:d1_mini
+          - esp32:esp32:esp32
 
         include:
 #          - arduino-boards-fqbn: arduino:avr:uno
@@ -83,10 +83,13 @@ jobs:
           - arduino-boards-fqbn: esp8266:esp8266:d1_mini
             platform-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json  
             architecture: ESP8266
-            save_libs: libraries.zip # name must be unique, it makes sense to define it only once
-#            examples-build-properties:
-#              All:
-#                -DDEBUG    
+            save_libs: libraries_esp8266.zip # name must be unique, it makes sense to define it only once  
+
+          - arduino-boards-fqbn: esp32:esp32:esp32
+            platform-url: https://dl.espressif.com/dl/package_esp32_index.json  
+#            extra-arduino-cli-args: "--build-property build.partitions=no_ota --build-property upload.maximum_size=2097152"
+            architecture: ESP32
+            save_libs: libraries_esp32.zip # name must be unique, it makes sense to define it only once
 
     steps:
       - name: Checkout Repository
@@ -127,29 +130,24 @@ jobs:
           ref: master
           path: DS2408_Custom_Library
 
-      - name: Compile all examples using the bash script arduino-test-compile.sh
-        env:
-          # Passing parameters to the script by setting the appropriate ENV_* variables.
-          ENV_ARDUINO_BOARD_FQBN: ${{ matrix.arduino-boards-fqbn }}
-          ENV_PLATFORM_URL: ${{ matrix.platform-url }}
-          ENV_REQUIRED_LIBRARIES: ${{ env.REQUIRED_LIBRARIES }}
-          ENV_EXAMPLES_EXCLUDE: ${{ matrix.examples-exclude }}
-          ENV_SKETCH_NAMES: ${{ env.sketch-name }}
-          ENV_EXAMPLES_BUILD_PROPERTIES: ${{ toJson(matrix.examples-build-properties) }}
-        run: |
-          wget --quiet https://raw.githubusercontent.com/ArminJo/arduino-test-compile/master/arduino-test-compile.sh
-          chmod +x arduino-test-compile.sh
-          ./arduino-test-compile.sh
-
+      - name: Arduino build
+        uses: ArminJo/arduino-test-compile@v3
+        with:
+          arduino-board-fqbn: ${{ matrix.arduino-boards-fqbn }}
+          platform-url: ${{ matrix.platform-url }}
+          required-libraries: ${{ env.REQUIRED_LIBRARIES }}
+          sketch_names: ${{ env.sketch-name }}
+          extra-arduino-cli-args: ${{ matrix.extra-arduino-cli-args }}
+    
       - if: endsWith(github.ref, 'master')
         name: Set Environment Variable "PRODUCTION" 
-        run: echo ::set-env name=ENV_STAGE::PROD
+        run: echo "ENV_STAGE=PROD" >> $GITHUB_ENV
       - if: endsWith(github.ref, 'prelive')
         name: Set Environment Variable "PreLive" 
-        run: echo ::set-env name=ENV_STAGE::PRE
+        run: echo "ENV_STAGE=PRE" >> $GITHUB_ENV
       - if: endsWith(github.ref, 'development')
         name: Set Environment Variable "Development" 
-        run: echo ::set-env name=ENV_STAGE::DEV
+        run: echo "ENV_STAGE=DEV" >> $GITHUB_ENV
 
       # Script um JSON Datei zu erstellen
       - name: Schreibe Json File
@@ -187,7 +185,7 @@ jobs:
         id: set_asset_env
         if: endsWith(github.ref, 'master') || endsWith(github.ref, 'prelive')
         run: |
-          echo ::set-env name=BOARD::${{ matrix.arduino-boards-fqbn }}
+          echo "BOARD=${{ matrix.arduino-boards-fqbn }}" >> $GITHUB_ENV
           echo ::set-output name=URL::$(cat release-url/url.txt)
           echo ::set-output name=BinaryName::$(cat release/*$BOARD*.json |  cut -d"\"" -f24 | cut -d "/" -f5)
           echo ::set-output name=BinaryPath::release/$(cat release/*.json |  cut -d"\"" -f24 | cut -d "/" -f5)

@@ -1,13 +1,7 @@
 #ifndef OW2408_H
 #define OW2408_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#include "ESP8266WebServer.h"
+#include "CommonLibs.h"
 #include "DS2408.h"     // https://github.com/queezythegreat/arduino-ds2408
                                      // https://github.com/PaulStoffregen/OneWire
 
@@ -22,7 +16,7 @@ class ow2408 {
     void        setDebugMode(uint8_t debugmode);
     bool        isValidPort(uint8_t port);
     const uint8_t& GetCountDevices() const {return device_count;}
-    void        GetWebContent1Wire(ESP8266WebServer* server);
+    void        GetWebContent1Wire(WM_WebServer* server);
   private:
     DS2408* ow;
     Devices devices;

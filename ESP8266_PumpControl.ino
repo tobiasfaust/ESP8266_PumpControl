@@ -23,7 +23,7 @@
 #include "BaseConfig.h"
 #include "valveStructure.h"
 #include "MQTT.h"
-#include "WebServer.h"
+#include "MyWebServer.h"
 #include "sensor.h"
 #include "oled.h" 
 
@@ -34,7 +34,7 @@ valveStructure* VStruct = NULL;
 MQTT* mqtt = NULL;
 sensor* LevelSensor = NULL;
 OLED* oled = NULL;
-WebServer* webserver = NULL;
+MyWebServer* mywebserver = NULL;
 
 /* debugmodes 
  *  0 -> nothing
@@ -77,7 +77,7 @@ void setup() {
   VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
 
   Serial.println("Starting WebServer");
-  webserver = new WebServer(); 
+  mywebserver = new MyWebServer(); 
  
   //VStruct->OnForTimer("Valve1", 10); // Test
 }
@@ -103,6 +103,6 @@ void loop() {
   VStruct->loop();
   mqtt->loop();
   LevelSensor->loop();
-  webserver->loop();
+  mywebserver->loop();
   Config->loop();
 }

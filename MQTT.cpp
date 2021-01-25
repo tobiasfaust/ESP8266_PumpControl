@@ -20,7 +20,8 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   Serial.println("wifi start 7");
   wifiManager.setTimeout(300);
   Serial.println("wifi start ");
-  wifi_station_set_hostname(mqtt_root.c_str());
+  //wifi_station_set_hostname(mqtt_root.c_str());
+  //SetHostName(mqtt_root.c_str());
   Serial.println("wifi start 8");
   
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
@@ -30,11 +31,13 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
     }
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
-    ESP.reset();
+    ESP.restart();
     delay(5000);
   }
   
   Serial.print("WiFi connected with local IP: ");
+  Serial.println(WiFi.localIP());
+  //WiFi.printDiag(Serial);
   
   if (oled && oled->GetEnabled()) {
     oled->SetIP(WiFi.localIP().toString());
@@ -42,8 +45,7 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
     oled->SetSSID(WiFi.SSID());
     oled->SetWiFiConnected(true);
   }
-  Serial.println(WiFi.localIP());
-  //WiFi.printDiag(Serial);
+
 
   Serial.print("Starting MQTT (");Serial.print(server); Serial.print(":");Serial.print(port);Serial.println(")");
   mqtt->setClient(espClient);
@@ -60,7 +62,7 @@ void MQTT::reconnect() {
   if (Config->UseRandomMQTTClientID()) { 
     snprintf (topic, sizeof(topic), "%s-%s", this->mqtt_root.c_str(), String(random(0xffff)).c_str());
   } else {
-    snprintf (topic, sizeof(topic), "%s-%08X", this->mqtt_root.c_str(), ESP.getFlashChipId());
+    snprintf (topic, sizeof(topic), "%s-%08X", this->mqtt_root.c_str(), WIFI_getChipId());
   }
   snprintf(LWT, sizeof(LWT), "%s/state", this->mqtt_root.c_str());
   

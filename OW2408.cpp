@@ -83,7 +83,7 @@ bool ow2408::isValidPort(uint8_t port)  {
   return true; 
 }
 
-void ow2408::GetWebContent1Wire(ESP8266WebServer* server) {
+void ow2408::GetWebContent1Wire(WM_WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   String html = "";

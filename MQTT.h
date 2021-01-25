@@ -1,22 +1,22 @@
 #ifndef MQTT_H
 #define MQTT_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#include <ESP8266WiFi.h>
+#include "CommonLibs.h" 
 #include <PubSubClient.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <vector>
 #include "oled.h"
 #include "BaseConfig.h"
 
-extern "C" {
-  #include "user_interface.h"
-}
+#ifdef ESP8266
+  //#define SetHostName(x) wifi_station_set_hostname(x);
+  #define WIFI_getChipId() ESP.getChipId() 
+#elif ESP32
+  //#define SetHostName(x) WiFi.getHostname(x); --> MQTT.cpp
+  #define WIFI_getChipId() (uint32_t)ESP.getEfuseMac()   // Unterschied zu ESP.getFlashChipId() ???
+  
+#endif
+
 
 extern OLED* oled;
 extern BaseConfig* Config;

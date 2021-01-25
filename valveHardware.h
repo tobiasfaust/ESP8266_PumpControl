@@ -1,20 +1,14 @@
 #ifndef VALVEHARDWARE_H
 #define VALVEHARDWARE_H
   
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
 #include <vector>
 #include <Wire.h>
 #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
 #include "TB6612.h"
 #include "OW2408.h"
-#include "ESP8266WebServer.h"
 
-enum HWType_t {GPIO, PCF, TB6612, OW2408};
+enum HWType_t {ONBOARD, PCF, TB6612, OW2408};
 
 typedef struct {
     void* Device;
@@ -46,7 +40,7 @@ class valveHardware {
     bool      IsValidPort(uint8_t Port);
     uint8_t  GetI2CAddress(uint8_t Port);
     void      setDebugMode(uint8_t debugmode);
-    void      GetWebContent1Wire(ESP8266WebServer* server);
+    void      GetWebContent1Wire(WM_WebServer* server);
     
   private:
     

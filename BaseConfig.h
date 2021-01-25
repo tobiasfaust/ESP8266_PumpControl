@@ -1,18 +1,7 @@
 #ifndef BASECONFIG_H
 #define BASECONFIG_H
-
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
-#if defined(ESP8266) || defined(ESP32)
-  #define min(x,y) _min(x,y)
-#endif
-
-#include <FS.h> 
-#include <ESP8266WebServer.h>
+ 
+#include "CommonLibs.h"
 #include "ArduinoJson.h"
 #include "oled.h"
 #include "updater.h"
@@ -25,7 +14,7 @@ class BaseConfig {
     BaseConfig();
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(ESP8266WebServer* server);
+    void      GetWebContent(WM_WebServer* server);
     void      loop();
     const uint8_t& GetPinSDA()      const {return pin_sda;}
     const uint8_t& GetPinSCL()      const {return pin_scl;}

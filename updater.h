@@ -1,25 +1,28 @@
 #ifndef UPDATER_H
 #define UPDATER
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
 #include <vector>
 #include "ArduinoJson.h"
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <ESP8266httpUpdate.h>
-//#include <WiFiClientSecureBearSSL.h> //HTTPS
-#include <WiFiClient.h> // HTTP
-
 #include "_Release.h";
 
-  enum stage_t {UNDEF, PROD, PRE, DEV};
+#ifdef ESP8266
+   #include <ESP8266httpUpdate.h>
+   #include <ESP8266HTTPClient.h>
+   #include <WiFiClient.h> // HTTP
+
+   using WM_httpUpdate = ESP8266HTTPUpdate;
+   
+#elif ESP32
+  #include <HTTPClient.h>
+  #include <HTTPUpdate.h>
   
-  typedef struct {
+  using WM_httpUpdate  = HTTPUpdate;
+#endif 
+
+enum stage_t {UNDEF, PROD, PRE, DEV};
+  
+typedef struct {
     String name;
     String version;
     uint32_t subversion;
@@ -50,6 +53,7 @@ class updater {
   private:
     //BearSSL::WiFiClientSecure* client;
     WiFiClient* client;
+    WM_httpUpdate* httpUpdate;
     
     void        Update();
     void        downloadJson();

@@ -12,7 +12,7 @@ valveHardware::valveHardware(uint8_t sda, uint8_t scl, uint8_t debugmode)
   
   // initial immer das GPIO HardwareDevice erstellen
   HWdev_t t; 
-  t.HWType=GPIO;
+  t.HWType=ONBOARD;
   t.i2cAddress=0x00;
   HWDevice->push_back(t);
 
@@ -143,7 +143,7 @@ bool valveHardware::RegisterPort(HWdev_t* dev, uint8_t Port, bool reverse) {
       ow2408* MyDS2408 = static_cast<ow2408*>(dev->Device);
       MyDS2408->setOff(PortMap.internalPort);
       success = true;
-    } else if (dev->HWType == GPIO) {
+    } else if (dev->HWType == ONBOARD) {
       pinMode(PortMap.internalPort, OUTPUT);
       digitalWrite(PortMap.internalPort, reverse); // normal: LOW
       success = true;
@@ -210,7 +210,7 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
       delay(duration);
       MyDS2408->setPort(PortMap2.internalPort, reverse); // Normal: LOW
     }
-  } else if (dev->HWType == GPIO) {
+  } else if (dev->HWType == ONBOARD) {
     digitalWrite(PortMap1.internalPort,  state);
     if (Port2) {
       digitalWrite(PortMap2.internalPort, !reverse); // Normal: HIGH
@@ -233,7 +233,7 @@ void valveHardware::setHWType(HWdev_t* dev) {
   } else if (dev->i2cAddress >= 0x38 and dev->i2cAddress <= 0x3F) {
     dev->HWType = PCF;
   } else if (dev->i2cAddress == 0x00) {
-    dev->HWType = GPIO;
+    dev->HWType = ONBOARD;
   } else if(dev->i2cAddress >= 0x2D and dev->i2cAddress <= 0x30) {
     dev->HWType = TB6612;
   } else if(dev->i2cAddress == 0x01) {
@@ -354,13 +354,13 @@ void valveHardware::PortMapping(PortMap_t* Map) {
     // interne GPIO
     Map->i2cAddress=0x00;
     Map->internalPort=Map->Port-200;
-    Map->HWType = GPIO;
+    Map->HWType = ONBOARD;
   } else {
     Map->Port = 0;
   }
 }
 
-void valveHardware::GetWebContent1Wire(ESP8266WebServer* server) {
+void valveHardware::GetWebContent1Wire(WM_WebServer* server) {
   HWdev_t* t = getI2CDevice(0x01);
   ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
   MyDS2408->GetWebContent1Wire(server);

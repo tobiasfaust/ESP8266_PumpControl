@@ -3,6 +3,7 @@
 updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600) {
   this->releases = new std::vector<release_t>;
   client = new WiFiClient;
+  httpUpdate = new WM_httpUpdate;
   
   this->lastupdate = millis();
   this->LoadJsonConfig();
@@ -40,7 +41,7 @@ String updater::Stage2String(stage_t s) {
 }
 
 String updater::GetUpdateErrorString() {
-  return ESPhttpUpdate.getLastErrorString() + "(" + ESPhttpUpdate.getLastError() + ")";
+  return httpUpdate->getLastErrorString() + "(" + httpUpdate->getLastError() + ")";
 }
 
 
@@ -128,9 +129,9 @@ void updater::downloadJson() {
 void updater::parseJson(String* json) {
   this->releases->clear();
 
-  #if defined(ESP8266) 
+  #ifdef ESP8266 
     String arch = "ESP8266";
-  #elif defined(ESP32)
+  #elif ESP32
     String arch = "ESP32";
   #endif
   
@@ -152,7 +153,8 @@ void updater::parseJson(String* json) {
         this->releases->push_back(r);  
       }
       
-      //this->printRelease(&r); 
+      //if (Config->GetDebugLevel() >=3) 
+        this->printRelease(&r); 
     }
   } else {
     Serial.println("Cannot parse json");
@@ -241,12 +243,12 @@ void updater::InstallRelease(uint32_t ReleaseNumber) {
 
   Serial.printf("Install Release: %s (Number: %d)\n", this->currentRelease.name.c_str(), this->currentRelease.number);
   Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
-  ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
+  //httpUpdate->setLedPin(LED_BUILTIN, LOW);
   
-  t_httpUpdate_return ret = ESPhttpUpdate.update(*client, this->currentRelease.downloadURL);
+  t_httpUpdate_return ret = httpUpdate->update(*client, this->currentRelease.downloadURL);
   switch (ret) {
     case HTTP_UPDATE_FAILED:
-      Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+      Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate->getLastError(), httpUpdate->getLastErrorString().c_str());
       this->currentRelease = oldRelease;
       this->StoreJsonConfig(&this->currentRelease);
       //this->automode = false;
@@ -279,4 +281,3 @@ void updater::loop() {
     }
   } 
 }
-

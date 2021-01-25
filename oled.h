@@ -1,12 +1,7 @@
 #ifndef OLED_H
 #define OLED_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
 #include <Wire.h>
 #include "SSD1306Wire.h"
 
@@ -51,4 +46,3 @@ class OLED {
 };
 
 #endif
-

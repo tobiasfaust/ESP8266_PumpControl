@@ -3,6 +3,7 @@
 BaseConfig::BaseConfig() {
   SPIFFS.begin();
   ESPUpdate = new updater;
+  
   LoadJsonConfig();
 }
 
@@ -123,7 +124,7 @@ void BaseConfig::loop() {
   ESPUpdate->loop();  
 }
 
-void BaseConfig::GetWebContent(ESP8266WebServer* server) {
+void BaseConfig::GetWebContent(WM_WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
 

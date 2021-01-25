@@ -1,12 +1,7 @@
 #ifndef TB6612_H
 #define TB6612_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
 #include "WEMOS_Motor.h"
 
 class tb6612 {
