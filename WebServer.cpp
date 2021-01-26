@@ -27,6 +27,8 @@ WebServer::WebServer() : DoReboot(false) {
   server->on("/StoreRelations", HTTP_POST, [this]()    { this->ReceiveJSONConfiguration(RELATIONS); });
   server->on("/reboot", HTTP_GET, [this]()             { this->handleReboot(); });
   server->on("/reset", HTTP_GET, [this]()              { this->handleReset(); });
+  server->on("/wifireset", HTTP_GET, [this]()          { this->handleWiFiReset(); });
+
   
   server->on("/ajax", [this]() {this->handleAjax(); });
   
@@ -83,6 +85,12 @@ void WebServer::handleReset() {
   SPIFFS.format();
   this->handleReboot();
 }
+
+void WebServer::handleWiFiReset() {
+  ESP.eraseConfig();
+  this->handleReboot();
+}
+
 
 void WebServer::handleBaseConfig() {
   String html;
@@ -371,6 +379,11 @@ void WebServer::getPage_Status(String* html) {
   html->concat("<tr>\n");
   html->concat("  <td>Werkszustand herstellen (ohne WiFi)</td>\n");
   html->concat("  <td><form action='reset'><input class='button' type='submit' value='Reset' /></form></td>\n");
+  html->concat("</tr>\n");
+
+  html->concat("<tr>\n");
+  html->concat("  <td>WiFi Zugangsdaten entfernen</td>\n");
+  html->concat("  <td><form action='wifireset'><input class='button' type='submit' value='WifiReset' /></form></td>\n");
   html->concat("</tr>\n");
   
   html->concat("</tbody>\n");

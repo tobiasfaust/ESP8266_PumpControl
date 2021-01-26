@@ -1,55 +1,61 @@
 #include "valve.h"
 
-valve::valve() : enabled(true), active(false), ValveType(NONE){
+valve::valve() : enabled(true), active(false), ValveType(NONE), autooff(0), reverse(false) {
 }
 
 void valve::init(valveHardware* vHW, uint8_t Port, String SubTopic) {
-  valveHWClass = vHW;
-  myHWdev = valveHWClass->RegisterPort(Port);
-  ValveType = NORMAL;
-  port1 = Port;
-  subtopic = SubTopic;
+  this->valveHWClass = vHW;
+  this->myHWdev = valveHWClass->RegisterPort(Port);
+  this->ValveType = NORMAL;
+  this->port1 = Port;
+  this->subtopic = SubTopic;
 }
 
 void valve::AddPort1(valveHardware* Device, uint8_t Port1) {
-  myHWdev = Device->RegisterPort(Port1);
-  port1 = Port1;  
+  this->valveHWClass = Device;
+  this->myHWdev = Device->RegisterPort(Port1);
+  this->port1 = Port1;  
 }
 
 void valve::AddPort2(valveHardware* Device, uint8_t Port2) {
-  myHWdev = Device->RegisterPort(Port2);
-  port2 = Port2;
+  this->myHWdev = Device->RegisterPort(Port2);
+  this->port2 = Port2;
 }
 
 bool valve::OnForTimer(int duration) {
   bool ret;
-  if (enabled && ActiveTimeLeft() < duration) {ret = HandleSwitch(true, duration);}
+  if (enabled && ActiveTimeLeft() < duration) {ret = this->HandleSwitch(true, duration);}
   if (duration == 0) { SetOff(); }
   return ret;
 }
 
 bool valve::SetOn() {
   bool ret = false;
-  if (this->enabled && !this->active) {ret = HandleSwitch(true, NULL);}
+  if (this->enabled && !this->active) {
+    if (this->autooff > 0) {
+      ret = this->HandleSwitch(true, this->autooff);
+    } else {
+      ret = this->HandleSwitch(true, NULL);
+    }
+  }
   return ret;
 }
 
 bool valve::SetOff() {
   bool ret = false;
-  if (this->active) {ret = HandleSwitch(false, NULL);}
+  if (this->active) {ret = this->HandleSwitch(false, NULL);}
   return ret;
 }
 
 bool valve::HandleSwitch (bool state, int duration) {
   char buffer[50] = {0};
   memset(buffer, 0, sizeof(buffer));
-  
   if (ValveType == NORMAL) {
-    valveHWClass->SetPort(myHWdev, port1, state);
+    Serial.printf("Schalte Standard Ventil %s: Port %d (0x%02X) \n", (state?"An":"Aus"), this->port1, myHWdev->i2cAddress);
+    valveHWClass->SetPort(myHWdev, this->port1, state, this->reverse);
   } else if (ValveType == BISTABIL) {
-    sprintf(buffer, "Schalte Bistabiles Ventil %s: Port %d/%d, ms: %d/%d", (state?"An":"Aus"), port1, port2, port1ms, port2ms);
-    Serial.println(buffer);
-    valveHWClass->SetPort(myHWdev, port1, port2, state, (state?port1ms:port2ms));
+    Serial.printf("Schalte Bistabiles Ventil %s: Port %d/%d, ms: %d/%d (0x%02X) \n", (state?"An":"Aus"), port1, port2, port1ms, port2ms, myHWdev->i2cAddress);
+    valveHWClass->SetPort(myHWdev, this->port1, this->port2, state, this->reverse, (state?this->port1ms:this->port2ms));
   }
 
   this->active = state;
@@ -99,4 +105,3 @@ void valve::loop() {
     SetOff();
   }
 }
-

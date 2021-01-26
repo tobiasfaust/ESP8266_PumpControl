@@ -48,6 +48,7 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("mqttport"))         { this->mqtt_port = atoi(json["mqttport"]);}
         if (json.containsKey("mqttuser"))         { this->mqtt_username = json["mqttuser"].as<String>();}
         if (json.containsKey("mqttpass"))         { this->mqtt_password = json["mqttpass"].as<String>();}
+        if (json.containsKey("sel_UseRandomClientID")){ if (strcmp(json["sel_UseRandomClientID"], "none")==0) { this->mqtt_UseRandomClientID=false;} else {this->mqtt_UseRandomClientID=true;}} else {this->mqtt_UseRandomClientID = true;}
         if (json.containsKey("pinsda"))           { this->pin_sda = atoi(json["pinsda"]) - 200;}
         if (json.containsKey("pinscl"))           { this->pin_scl = atoi(json["pinscl"]) - 200;}
         if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
@@ -79,6 +80,7 @@ void BaseConfig::LoadJsonConfig() {
     this->mqtt_server = "192.178.168.1";
     this->mqtt_port  = 1883;
     this->mqtt_root = "PumpControl";
+    this->mqtt_UseRandomClientID = true;
     this->pin_sda = 5;
     this->pin_scl = 4;
     this->enable_oled = false;
@@ -157,6 +159,22 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat(buffer);
   html->concat("</tr>\n");
 
+  html->concat("<tr>\n");
+  html->concat("  <td colspan='2'>\n");
+  
+  html->concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='sel_URCID1' name='sel_UseRandomClientID' value='none' %s />", (this->mqtt_UseRandomClientID)?"":"checked");
+  html->concat(buffer);
+  html->concat("<label for='sel_URCID1'>benutze statische MQTT ClientID</label></div>\n");
+  
+  html->concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='sel_URCID2' name='sel_UseRandomClientID' value='yes' %s />", (this->mqtt_UseRandomClientID)?"checked":"");
+  html->concat(buffer);
+  html->concat("<label for='sel_URCID2'>benutze dynamische MQTT ClientID</label></div>\n");
+    
+  html->concat("  </td>\n");
+  html->concat("</tr>\n");
+  
   html->concat("<tr>\n");
   html->concat("<td>Pin i2c SDA</td>\n");
   sprintf(buffer, "<td><input min='0' max='15' id='GpioPin_0' name='pinsda' type='number' value='%d'/></td>\n", this->pin_sda +200 );
@@ -304,4 +322,3 @@ void BaseConfig::GetWebContent(String* html) {
   html->concat("</form>\n\n");
   html->concat("<div id='ErrorText' class='errortext'></div>\n");  
 }
-
