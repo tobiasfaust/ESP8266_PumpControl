@@ -6,11 +6,9 @@ MyWebServer::MyWebServer() : DoReboot(false) {
   if (!MDNS.begin("esp82660"))  {  Serial.println(F("Error setting up MDNS responder!"));  }
   else                          {  Serial.println(F("mDNS responder started"));  }
 
-  #ifdef ESP8266
-    httpUpdater.setup(server);
-  #elif ESP32
-    server->on("/update", HTTP_POST, [this]() {this->handleFWUpdate(); });
-  #endif
+
+  //httpUpdater = new WM_httpUpdater(false);
+  httpUpdater.setup(server);
   
   server->begin(); 
 
@@ -57,13 +55,6 @@ void MyWebServer::handleRoot() {
   this->getPageFooter(&html);
   server->setContentLength(html.length());
   server->send(200, "text/html", html.c_str());   // Send HTTP status 200 (Ok) and send some text to the browser/client
-}
-
-void MyWebServer::handleFWUpdate() {
-  String html;
-  this->getPage_FWUpdate(&html);
-  server->setContentLength(html.length());
-  server->send(200, "text/html", html.c_str()); 
 }
 
 void MyWebServer::handleCSS() {
@@ -438,8 +429,4 @@ void MyWebServer::getPage_Status(String* html) {
   
   html->concat("</tbody>\n");
   html->concat("</table>\n");     
-}
-
-void MyWebServer::getPage_FWUpdate(String* html) {
-  // TODO
 }

@@ -43,27 +43,20 @@ class MyWebServer {
 
     #ifdef ESP8266
       using WM_mdns = MDNSResponder;
-      //using WM_httpUpdater = ESP8266HTTPUpdateServer;
-      //WM_httpUpdater httpUpdater;
-      ESP8266HTTPUpdateServer httpUpdater;
+      using WM_httpUpdater = ESP8266HTTPUpdateServer;
     #elif ESP32
       using WM_mdns = MDNSResponder;
-      //using WM_httpUpdater = ESP8266HTTPUpdateServer;
+      using WM_httpUpdater = ESPHTTPUpdateServer;
     #endif
 
     WM_mdns mdns;
     WM_WebServer* server;
-    //WM_httpUpdater httpUpdater;
-    
-    //MDNSResponder mdns;
-    //ESP8266WebServer* server;
-    //ESP8266HTTPUpdateServer httpUpdater;
+    WM_httpUpdater httpUpdater;
         
     void      handleNotFound();
     void      handleReboot();
     void      handleReset();
     void      handleWiFiReset();
-    void      handleFWUpdate();
     void      handleCSS();
     void      handleJS();
     void      handleJsAjax();
@@ -80,7 +73,6 @@ class MyWebServer {
     void      getPageFooter(String* html);
     
     void      getPage_Status(String* html);
-    void      getPage_FWUpdate(String* html);
   
 };
 

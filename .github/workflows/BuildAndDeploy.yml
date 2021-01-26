@@ -109,6 +109,13 @@ jobs:
           ref: master
           path: i2cDetect_Custom_Library
 
+      - name: Checkout ESPHTTPUpdateServer
+        uses: actions/checkout@v2
+        with:
+          repository: tobiasfaust/ESPHTTPUpdateServer
+          ref: master
+          path: ESPHTTPUpdateServer_Custom_Library
+
       - name: Checkout PCF8574_library 
         uses: actions/checkout@v2
         with:

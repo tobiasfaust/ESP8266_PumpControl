@@ -24,6 +24,7 @@
   #include <Update.h>
   #include <WebServer.h>
   #include <ESPmDNS.h>
+  #include <ESPHTTPUpdateServer.h>
 #endif
 
 #ifdef ESP8266
