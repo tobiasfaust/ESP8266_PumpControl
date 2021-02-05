@@ -9,12 +9,14 @@
 #include "valveRelation.h"
 #include "valve.h"
 #include "MQTT.h"
+#include "JavaScript.h"
 
 extern BaseConfig* Config;
 extern MQTT* mqtt;
 extern valveRelation* ValveRel;
 extern i2cdetect* I2Cdetect;
 class valveStructure {
+
 
   public:
     valveStructure(uint8_t sda, uint8_t scl);
@@ -37,13 +39,13 @@ class valveStructure {
     void      ReceiveMQTT(String topic, int value);
     
   private:
-    void      addValve(uint8_t Port, String SubTopic);
+    //void      addValve(uint8_t Port, String SubTopic);
     valve*    GetValveItem(uint8_t Port);
     valve*    GetValveItem(String SubTopic);
     void      handleDeps(String topic, int value); //prueft die Relationen
     
     valveHardware* ValveHW = NULL;
-    std::vector<valve> *Valves = NULL;
+    std::vector<valve>* Valves = NULL;
     
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;

@@ -47,6 +47,7 @@ class sensor {
     uint16_t  raw;
     uint8_t   pinTrigger;
     uint8_t   pinEcho;
+    uint8_t   pinAnalog;
     uint16_t  MAX_DIST;
     uint8_t   threshold_min;
     uint8_t   threshold_max;

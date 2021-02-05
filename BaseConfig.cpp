@@ -50,7 +50,7 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("mqttuser"))         { this->mqtt_username = json["mqttuser"].as<String>();}
         if (json.containsKey("mqttpass"))         { this->mqtt_password = json["mqttpass"].as<String>();}
         if (json.containsKey("sel_UseRandomClientID")){ if (strcmp(json["sel_UseRandomClientID"], "none")==0) { this->mqtt_UseRandomClientID=false;} else {this->mqtt_UseRandomClientID=true;}} else {this->mqtt_UseRandomClientID = true;}
-        if (json.containsKey("keepalive"))          { this->keepalive = _max(atoi(json["keepalive"]), 10);} else {this->keepalive = 0; }
+        if (json.containsKey("keepalive"))          { if (atoi(json["keepalive"]) == 0) { this->keepalive = 0;} else { this->keepalive = _max(atoi(json["keepalive"]), 10);}} else {this->keepalive = 0; }
         if (json.containsKey("debuglevel"))        { this->debuglevel = _max(atoi(json["debuglevel"]), 0);} else {this->debuglevel = 0; }
         if (json.containsKey("pinsda"))           { this->pin_sda = atoi(json["pinsda"]) - 200;}
         if (json.containsKey("pinscl"))           { this->pin_scl = atoi(json["pinscl"]) - 200;}
@@ -386,7 +386,6 @@ void BaseConfig::GetWebContent(WM_WebServer* server) {
   html.concat("  <input type='text' id='json' name='json' />\n");
   html.concat("  <input type='submit' value='Speichern' />\n");
   html.concat("</form>\n\n");
-  html.concat("<div id='ErrorText' class='errortext'></div>\n");  
 
   server->sendContent(html.c_str()); html = "";
 }

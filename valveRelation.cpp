@@ -223,6 +223,6 @@ void valveRelation::GetWebContent(WM_WebServer* server) {
   html.concat("  <input type='text' id='json' name='json' />\n");
   html.concat("  <input type='submit' value='Speichern' />\n");
   html.concat("</form>\n\n");
-  html.concat("<div id='ErrorText' class='errortext'></div>\n");
+
   server->sendContent(html.c_str()); html = "";
 }

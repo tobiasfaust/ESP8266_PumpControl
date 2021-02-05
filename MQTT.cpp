@@ -1,28 +1,21 @@
 #include "MQTT.h"
 
 MQTT::MQTT(const char* server, uint16_t port, String root) { 
- Serial.println("wifi start 1");
   this->mqtt_root = root;
   this->subscriptions = new std::vector<subscription_t>{};
-  Serial.println("wifi start 2");
   espClient = WiFiClient();
-  Serial.println("wifi start 3");
-  WiFi.mode(WIFI_STA);
-  Serial.println("wifi start 4");  
+  WiFi.mode(WIFI_STA); 
   this->mqtt = new PubSubClient();
-  Serial.println("wifi start 5");
   WiFiManager wifiManager;
-  Serial.println("wifi start 6");
+
   
   if (Config->GetDebugLevel() >=4) wifiManager.setDebugOutput(true); 
     else wifiManager.setDebugOutput(false); 
 
-  Serial.println("wifi start 7");
   wifiManager.setTimeout(300);
-  Serial.println("wifi start ");
+  Serial.println("WiFi Start");
   //wifi_station_set_hostname(mqtt_root.c_str());
-  //SetHostName(mqtt_root.c_str());
-  Serial.println("wifi start 8");
+  //SetHostName(mqtt_root.c_str()); //TODO
   
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
     Serial.println("failed to connect and hit timeout");

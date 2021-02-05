@@ -1,3 +1,9 @@
+Release 2.5.1:
+  - Fix Firmware OTA Support for ESP32
+  - Fix deleting stored WiFi Credentials
+  - fixes some ESP32 bugs
+  - refreshing i2c Seach in Basisconfig now working
+  
 Release 2.5.0:
   - Feature: Add OneWire DS2408 hardware support
   - Feature: Add a keepalive message via MQTT, configurable at BasisConfig: 

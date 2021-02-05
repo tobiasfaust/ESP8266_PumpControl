@@ -2,18 +2,18 @@
 
 valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   pin_sda(sda), pin_scl(scl) {
-  ValveHW = new valveHardware(sda, scl, Config->GetDebugLevel());
-  if (Config->Enabled1Wire()) { ValveHW->add1WireDevice(Config->GetPin1Wire());}
+  this->ValveHW = new valveHardware(sda, scl, Config->GetDebugLevel());
+  if (Config->Enabled1Wire()) { this->ValveHW->add1WireDevice(Config->GetPin1Wire());}
   Valves  = new std::vector<valve>{};
   SPIFFS.begin();
   LoadJsonConfig();
 }
 
-void valveStructure::addValve(uint8_t Port, String SubTopic) {
+/*void valveStructure::addValve(uint8_t Port, String SubTopic) {
   valve myValve;
   myValve.init(ValveHW, Port, SubTopic);
-  Valves->push_back(myValve);
-}
+  this->Valves->push_back(myValve);
+}*/
 
 void valveStructure::OnForTimer(String SubTopic, int duration) {
   valve* v = this->GetValveItem(SubTopic);
@@ -29,7 +29,7 @@ void valveStructure::SetOff(String SubTopic) {
 
 void valveStructure::SetOn(String SubTopic) {
   valve* v = this->GetValveItem(SubTopic);
-  if (v) { this->SetOn(GetValveItem(SubTopic)->GetPort1()); }
+  if (v) {this->SetOn(GetValveItem(SubTopic)->GetPort1()); }
 }
 
 void valveStructure::SetOn(uint8_t Port) {
@@ -168,7 +168,7 @@ void valveStructure::LoadJsonConfig() {
           valve myValve;
           
           sprintf(buffer, "pcfport_%d_0", i);
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.AddPort1(ValveHW, json[buffer].as<int>()); }
+          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.AddPort1(this->ValveHW, json[buffer].as<int>()); }
 
           sprintf(buffer, "type_%d", i);
           if (json.containsKey(buffer)) {myValve.SetValveType(json[buffer].as<String>()); }
@@ -336,14 +336,14 @@ void valveStructure::GetWebContent(WM_WebServer* server) {
   html.concat("  <input type='text' id='json' name='json' />\n");
   html.concat("  <input type='submit' value='Speichern' />\n");
   html.concat("</form>\n\n");
-  html.concat("<div id='ErrorText' class='errortext'></div>\n");
+
   server->sendContent(html.c_str()); html = "";
 }
 
 void valveStructure::getWebJsParameter(String* html) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
-  
+
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
   sprintf(buffer, "const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, Config->GetPin1Wire() + 200);

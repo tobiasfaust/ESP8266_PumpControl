@@ -1,6 +1,7 @@
 #pragma once
 
 /* getestet mit ESP8266 Board Library 2.6.3 | 2.7.1  */
+/* getestet mit ESP32 Board Library 1.0.4  */
 
 /*#include <Wire.h>
 #include "PCF8574.h"
@@ -49,10 +50,11 @@ MyWebServer* mywebserver = NULL;
 void setup() {
   Serial.begin(115200);
   Serial.println("");
-  Serial.println("ready");
+  Serial.println("ready");  
 
 // Flash Write Issue
 // https://github.com/esp8266/Arduino/issues/4061#issuecomment-428007580
+//SPIFFS.format();
 
   oled = new OLED();
   Config = new BaseConfig();

@@ -3,8 +3,14 @@
 MyWebServer::MyWebServer() : DoReboot(false) {
   server = new WM_WebServer(80);
 
-  if (!MDNS.begin("esp82660"))  {  Serial.println(F("Error setting up MDNS responder!"));  }
-  else                          {  Serial.println(F("mDNS responder started"));  }
+  if (!MDNS.begin(Config->GetMqttRoot().c_str()))  {  
+    Serial.println(F("Error setting up MDNS responder!"));  
+    // Add service to MDNS-SD
+    MDNS.addService("http", "tcp", 80);
+  }
+  else {  
+    Serial.println(F("mDNS responder started"));  
+  }
 
 
   //httpUpdater = new WM_httpUpdater(false);
@@ -41,6 +47,7 @@ MyWebServer::MyWebServer() : DoReboot(false) {
 
 void MyWebServer::loop() {
   server->handleClient();
+  delay(1); // slow response Issue: https://github.com/espressif/arduino-esp32/issues/4348#issuecomment-695115885
   if (this->DoReboot) {ESP.restart();}
 }
 
@@ -63,8 +70,21 @@ void MyWebServer::handleCSS() {
 }
 
 void MyWebServer::handleJS() {
-  //server->setContentLength(sizeof(JAVASCRIPT));
-  server->send_P(200, "text/javascript", JAVASCRIPT);
+
+  //server->send_P(200, "text/javascript", ESPGPIO);
+  //server->send_P(200, "text/javascript", JAVASCRIPT);
+
+  server->sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server->sendHeader("Pragma", "no-cache");
+  server->sendHeader("Expires", "-1");
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "text/javascript", "");
+  
+  server->sendContent(ESPGPIO); 
+  server->sendContent(ESPANALOG);
+  server->sendContent(JAVASCRIPT); 
+  
+  server->sendContent("");  
 }
 
 void MyWebServer::handleJsAjax() {
@@ -91,7 +111,12 @@ void MyWebServer::handleReset() {
 }
 
 void MyWebServer::handleWiFiReset() {
-  //ESP.eraseConfig(); TODO, funktioniert nicht mit ESP32
+  #ifdef ESP32
+    WiFi.disconnect(true,true);
+  #elif ESP8266  
+    ESP.eraseConfig();
+  #endif
+  
   this->handleReboot();
 }
 
@@ -214,7 +239,7 @@ void MyWebServer::handleAjax() {
 
     if (action && strcmp(action.c_str(), "SetValve")==0) {
       if (newState && port && port > 0 && !VStruct->GetEnabled(port)) { jsonReturn["accepted"] = 0; jsonReturn["error"] = "Requested Port not enabled. Please enable first!";}
-      else if (newState && port && port > 0 && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
+      else if (newState && port && port > 0 && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;} //TODO
       else if (newState && port && port > 0 && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
       else { RaiseError = true; }
 
@@ -239,6 +264,13 @@ void MyWebServer::handleAjax() {
       Config->RefreshReleases();  
       jsonReturn["accepted"] = 1;  
     }
+
+    if (action && strcmp(action.c_str(), "RefreshI2C")==0) {
+      I2Cdetect->i2cScan();  
+      jsonReturn["NewState"] = I2Cdetect->i2cGetAddresses();
+      jsonReturn["accepted"] = 1;  
+    }
+    
     
   } else { RaiseError = true; }
 
@@ -317,6 +349,7 @@ void MyWebServer::getPageHeader(String* html, page_t pageactive) {
 
 void MyWebServer::getPageFooter(String* html) {
   html->concat("</table>\n");
+  html->concat("<div id='ErrorText' class='errortext'></div>\n");
   html->concat("</body>\n");
   html->concat("</html>\n");
 }
@@ -349,12 +382,13 @@ void MyWebServer::getPage_Status(String* html) {
   html->concat("</tr>\n");
 
   html->concat("<tr>\n");
-  html->concat("<td>i2c Bus:</td>\n");
-  html->concat("<td>");
-  html->concat(I2Cdetect->i2cGetAddresses());
-  //https://fdossena.com/?p=html5cool/buttons/i.frag
-  html->concat("<a href='#' class='button bouncy'>&#8634;</a>");
+  html->concat("<td>i2c Bus:\n");
+    //https://fdossena.com/?p=html5cool/buttons/i.frag
+  html->concat("<a href='#' onclick=\"RefreshI2C('showI2C')\" class='button bouncy'>&#8634;</a>\n");
   html->concat("</td>\n");
+  html->concat("<td><div id='showI2C'>");
+  html->concat(I2Cdetect->i2cGetAddresses());
+  html->concat("</div></td>\n");
   html->concat("</tr>\n");
 
   html->concat("<tr>\n");

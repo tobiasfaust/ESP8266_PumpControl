@@ -351,7 +351,7 @@ void valveHardware::PortMapping(PortMap_t* Map) {
         Map->HWType = OW2408;
       } else Map->Port = 0;
     } else Map->Port = 0;
-  } else if (Map->Port >=200 && Map->Port <=216) {
+  } else if (Map->Port >=200 && Map->Port <=250) {
     // interne GPIO
     Map->i2cAddress=0x00;
     Map->internalPort=Map->Port-200;

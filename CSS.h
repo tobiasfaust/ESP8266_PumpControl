@@ -1,3 +1,6 @@
+#ifndef CSS_H
+#define CSS_H
+
 const char STYLE_CSS[] PROGMEM = R"=====(
  /* https://www.peterkropff.de/site/css/kontext_selektoren.htm */
  
@@ -127,3 +130,4 @@ const char STYLE_CSS[] PROGMEM = R"=====(
     }
 )=====";
 
+#endif

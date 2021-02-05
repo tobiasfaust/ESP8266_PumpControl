@@ -37,8 +37,13 @@ void sensor::SetLvl(uint8_t lvl) {
 void sensor::loop_analog() {
   this->raw = 0;
   this->level = 0;
+
+  #ifdef ESP8266
+    this->raw = analogRead(A0);
+  #elif ESP32
+    this->raw = analogRead(this->pinAnalog);
+  #endif
   
-  this->raw = analogRead(A0);
   this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
 }
 
@@ -108,6 +113,12 @@ void sensor::StoreJsonConfig(String* json) {
 
 void sensor::LoadJsonConfig() {
   bool loadDefaultConfig = false;
+
+  #ifdef ESP8266
+    uint8_t pinAnalogDefault = A0;
+  #elif ESP32
+    uint8_t pinAnalogDefault = 36; // ADC1_CH0 (GPIO 36) 
+  #endif
   
   mqtt->ClearSubscriptions(MQTT::SENSOR);
   
@@ -132,6 +143,7 @@ void sensor::LoadJsonConfig() {
         if (json.containsKey("measureDistMax"))       { this->measureDistMax = atoi(json["measureDistMax"]);}
         if (json.containsKey("pinhcsr04trigger"))     { this->pinTrigger = atoi(json["pinhcsr04trigger"]) - 200;}
         if (json.containsKey("pinhcsr04echo"))        { this->pinEcho = atoi(json["pinhcsr04echo"]) - 200;}
+        if (json.containsKey("pinanalog"))              {this->pinAnalog = atoi(json["pinanalog"]) - 200;} else {this->pinAnalog = pinAnalogDefault; }
         if (json.containsKey("treshold_min"))         { this->threshold_min = atoi(json["treshold_min"]);}
         if (json.containsKey("treshold_max"))         { this->threshold_max = atoi(json["treshold_max"]);}
         if (json.containsKey("externalSensor"))       { this->externalSensor = json["externalSensor"].as<String>();}
@@ -139,7 +151,6 @@ void sensor::LoadJsonConfig() {
           else if(strcmp(json["selection"],"hcsr04")==0) { init(this->pinTrigger, this->pinEcho); }
           else if(strcmp(json["selection"],"extern")==0) { init(this->externalSensor); }
           else if(strcmp(json["selection"],"none")==0)   { this->Type=NONE; Serial.println("No LevelSensor requested"); }  
-        
       } else {
         Serial.println("failed to load json config, load default config");
         loadDefaultConfig = true;
@@ -154,6 +165,7 @@ void sensor::LoadJsonConfig() {
     // do something
     this->threshold_min = 26;
     this->threshold_max = 30;
+    this->pinAnalog = pinAnalogDefault; 
 
     loadDefaultConfig = false; //set back
   }
@@ -178,22 +190,22 @@ void sensor::GetWebContent(WM_WebServer* server) {
   html.concat("  <td colspan='2'>\n");
   
   html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==NONE)?"checked":"");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==NONE)?"checked":"");
   html.concat(buffer);
   html.concat("<label for='sel0'>keine Füllstandsmessung</label></div>\n");
   
   html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_1','analog_2','extern_1'])\"/>", (this->Type==HCSR04)?"checked":"");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_0','analog_1','analog_2','extern_1'])\"/>", (this->Type==HCSR04)?"checked":"");
   html.concat(buffer);
   html.concat("<label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
   
   html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==ONBOARD_ANALOG)?"checked":"");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','all_2','all_3','analog_0','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==ONBOARD_ANALOG)?"checked":"");
   html.concat(buffer);
   html.concat("<label for='sel2'>Füllstandsmessung mit analogem Signal (an A0)</label></div>\n");
 
   html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel3' name='selection' value='extern' %s onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_1','analog_2'])\"/>", (this->Type==EXTERN)?"checked":"");
+  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel3' name='selection' value='extern' %s onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_0','analog_1','analog_2'])\"/>", (this->Type==EXTERN)?"checked":"");
   html.concat(buffer);
   html.concat("<label for='sel3'>Füllstandsmessung mit externem Signal per MQTT</label></div>\n");
   
@@ -239,17 +251,32 @@ void sensor::GetWebContent(WM_WebServer* server) {
 
   server->sendContent(html.c_str()); html = "";
   
+  #ifdef ESP32
+    snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_0'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
+    html.concat(buffer);
+    html.concat("<td>GPIO an welchem das signal anliegt</td>\n");
+    snprintf(buffer, sizeof(buffer), "<td><input min='0' size='15' id='AnalogPin_1' name='pinanalog' type='number' value='%d'/></td>\n", this->pinAnalog + 200);
+    html.concat(buffer);
+    html.concat("</tr>\n");
+  #endif
+
+  #ifdef ESP32
+    uint16_t maxAnalogRaw = 4096;
+  #elif ESP8266
+    uint16_t maxAnalogRaw = 1024;
+  #endif
+  
   snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_1'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
   html.concat(buffer);
-  html.concat("<td>Kalibrierung: 0% entsricht RAW Wert</td>\n");
+  html.concat("<td>Kalibrierung: 0% entspricht RAW Wert</td>\n");
   snprintf(buffer, sizeof(buffer), "<td><input min='0' size='5' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
   html.concat(buffer);
   html.concat("</tr>\n");
 
   snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_2'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
   html.concat(buffer);
-  html.concat("<td>Kalibrierung: 100% entsricht RAW Wert</td>\n");
-  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='1024' name='measureDistMax' type='number' value='%d'/></td>\n", this->measureDistMax);
+  html.concat("<td>Kalibrierung: 100% entspricht RAW Wert</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='%d' name='measureDistMax' type='number' value='%d'/></td>\n", maxAnalogRaw, this->measureDistMax);
   html.concat(buffer);
   html.concat("</tr>\n");
 
@@ -282,7 +309,6 @@ void sensor::GetWebContent(WM_WebServer* server) {
   html.concat("  <input type='text' id='json' name='json' />\n");
   html.concat("  <input type='submit' value='Speichern' />\n");
   html.concat("</form>\n\n");
-  html.concat("<div id='ErrorText' class='errortext'></div>\n");
-
+  
   server->sendContent(html.c_str()); html = "";
 }
