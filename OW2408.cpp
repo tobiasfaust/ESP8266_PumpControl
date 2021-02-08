@@ -3,14 +3,15 @@
 ow2408::ow2408(): debugmode(0) {  }
 
 void ow2408::init(uint8_t pin) {
-  ow = new DS2408(pin); 
+  this->ow = new DS2408(pin); 
   this->findDevices();
   this->setup_devices();
   if (debugmode >=3) Serial.printf("OneWire DS2408 with %d devices initialized \n", this->device_count);
 }
 
-void ow2408::findDevices() {
+uint8_t ow2408::findDevices() {
   this->device_count = ow->find(&devices);
+  return this->device_count;
 }
 
 void ow2408::setup_devices() {

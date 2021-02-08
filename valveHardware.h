@@ -2,11 +2,14 @@
 #define VALVEHARDWARE_H
   
 #include "CommonLibs.h"
+#include "BaseConfig.h"
 #include <vector>
 #include <Wire.h>
 #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
 #include "TB6612.h"
 #include "OW2408.h"
+
+extern BaseConfig* Config;
 
 enum HWType_t {ONBOARD, PCF, TB6612, OW2408};
 
@@ -40,7 +43,12 @@ class valveHardware {
     bool      IsValidPort(uint8_t Port);
     uint8_t  GetI2CAddress(uint8_t Port);
     void      setDebugMode(uint8_t debugmode);
+    
     void      GetWebContent1Wire(WM_WebServer* server);
+    
+    bool      Get1WireActive(); // ist 1wire initialisiert?
+    uint8_t  Get1WireCountDevices();
+    const uint8_t& GetPin1wire()      const {return pin_1wire;}
     
   private:
     
@@ -52,6 +60,7 @@ class valveHardware {
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;
     uint8_t pin_1wire = 0;
+    //bool     1wireInitDone;
     uint8_t debugmode;
     
     void    setHWType(HWdev_t* dev);

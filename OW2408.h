@@ -15,7 +15,9 @@ class ow2408 {
     bool        setPort(uint8_t port, bool state);
     void        setDebugMode(uint8_t debugmode);
     bool        isValidPort(uint8_t port);
+    uint8_t    findDevices();
     const uint8_t& GetCountDevices() const {return device_count;}
+    
     void        GetWebContent1Wire(WM_WebServer* server);
   private:
     DS2408* ow;
@@ -23,7 +25,6 @@ class ow2408 {
     uint8_t device_count;
     uint8_t debugmode;
 
-    void findDevices();
     void setup_devices();
     String print_device(uint8_t index);
     void print_byte(uint8_t data); // nur test

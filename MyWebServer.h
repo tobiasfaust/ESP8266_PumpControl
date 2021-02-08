@@ -23,6 +23,7 @@
 #include "valveRelation.h"
 
 extern BaseConfig* Config;
+extern MQTT* mqtt;
 extern sensor* LevelSensor;
 extern valveStructure* VStruct;
 extern valveRelation* ValveRel;

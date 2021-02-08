@@ -61,6 +61,11 @@ void valveStructure::loop() {
   for (uint8_t i=0; i<Valves->size(); i++) {
     Valves->at(i).loop();
   }
+
+  if (Config->Enabled1Wire() && /*this->ValveHW->Get1WireActive() &&*/ Config->GetPin1Wire() != this->ValveHW->GetPin1wire()) {
+    Serial.println("Der 1Wire hat sich geändert, initiiere den 1Wire Bus neu.....");
+    ValveHW->add1WireDevice(Config->GetPin1Wire());
+  }
 }
 
 void valveStructure::ReceiveMQTT(String topic, int value) {
@@ -118,6 +123,10 @@ uint8_t valveStructure::CountActiveThreads() {
     if (Valves->at(i).GetActive() && (Valves->at(i).GetPort1() != Config->Get3WegePort() || !Config->Enabled3Wege() )) {count++;}
   }
   return count;
+}
+
+uint8_t valveStructure::Get1WireCountDevices() {
+  return this->ValveHW->Get1WireCountDevices();
 }
 
 void valveStructure::StoreJsonConfig(String* json) {

@@ -391,6 +391,14 @@ void MyWebServer::getPage_Status(String* html) {
   html->concat("</div></td>\n");
   html->concat("</tr>\n");
 
+  if (Config->Enabled1Wire()) {
+    html->concat("<tr>\n");
+    html->concat("<td>gefundene 1Wire Controller (Devices):</td>\n");
+    sprintf(buffer, "<td>%d (%d)</td>\n", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
+    html->concat(buffer);
+    html->concat("</tr>\n");
+  }
+  
   html->concat("<tr>\n");
   html->concat("<td>MAC:</td>\n");
   sprintf(buffer, "<td>%s</td>\n", WiFi.macAddress().c_str());
@@ -400,6 +408,12 @@ void MyWebServer::getPage_Status(String* html) {
   html->concat("<tr>\n");
   html->concat("<td>WiFi RSSI:</td>\n");
   sprintf(buffer, "<td>%d</td>\n", WiFi.RSSI());
+  html->concat(buffer);
+  html->concat("</tr>\n");
+
+  html->concat("<tr>\n");
+  html->concat("<td>MQTT Status:</td>\n");
+  sprintf(buffer, "<td>%s</td>\n", (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected"));
   html->concat(buffer);
   html->concat("</tr>\n");
 

@@ -37,6 +37,7 @@ class valveStructure {
     void      GetWebContent1Wire(WM_WebServer* server);
     void      getWebJsParameter(String* html);
     void      ReceiveMQTT(String topic, int value);
+    uint8_t Get1WireCountDevices();
     
   private:
     //void      addValve(uint8_t Port, String SubTopic);

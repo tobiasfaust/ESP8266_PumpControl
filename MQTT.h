@@ -52,6 +52,9 @@ class MQTT {
     void    Subscribe(String topic, MqttSubscriptionType_t identifier);
     void    ClearSubscriptions(MqttSubscriptionType_t identifier);
 
+    const bool& GetConnectStatusWifi()      const {return ConnectStatusWifi;}
+    const bool& GetConnectStatusMqtt()      const {return ConnectStatusMqtt;}
+
   private:
     WiFiClient espClient;
     PubSubClient* mqtt;
@@ -63,6 +66,8 @@ class MQTT {
     String  mqtt_root = "";
     unsigned long mqttreconnect_lasttry = 0;
     unsigned long last_keepalive = 0;
+    bool     ConnectStatusWifi;
+    bool     ConnectStatusMqtt;
   
 };
 

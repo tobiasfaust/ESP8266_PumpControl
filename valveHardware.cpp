@@ -29,10 +29,17 @@ void valveHardware::setDebugMode(uint8_t debugmode) {
 }
 
 void valveHardware::add1WireDevice(uint8_t pin_1wire) {
-  if (! this->I2CIsPresent(0x01)) {    
+  if (this->Get1WireActive() && this->pin_1wire != pin_1wire) {
+    HWdev_t* t = this->getI2CDevice(0x01);
+    ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+    MyDS2408->init(pin_1wire);
+    this->pin_1wire = pin_1wire;
+    if (debugmode >=3) { Serial.printf("1Wire Pin changed successfully, %d devices found\n", MyDS2408->GetCountDevices()); }
+  } 
+  else if (!this->Get1WireActive()) {    
     ow2408* MyDS2408 = new ow2408();
     MyDS2408->setDebugMode(this->debugmode);
-    MyDS2408->init(pin_1wire); //Pin from BaseConfig -> ToDo
+    MyDS2408->init(pin_1wire); 
     this->pin_1wire = pin_1wire;
     
     HWdev_t t; 
@@ -45,6 +52,24 @@ void valveHardware::add1WireDevice(uint8_t pin_1wire) {
   } else {
     if (debugmode >=5) { Serial.println("1wire already present"); }
   }
+}
+
+bool valveHardware::Get1WireActive() {
+  for (uint8_t i=0; i<HWDevice->size(); i++) {
+    if (HWDevice->at(i).i2cAddress == 0x01) {
+      return true;
+    }
+  }
+  return false;
+}
+
+uint8_t valveHardware::Get1WireCountDevices() {
+  if (this->Get1WireActive()) {
+    HWdev_t* t = this->getI2CDevice(0x01);
+    ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+    return MyDS2408->GetCountDevices();
+  }
+  else  return 0;
 }
 
 void valveHardware::addI2CDevice(uint8_t i2cAddress) {
@@ -342,7 +367,7 @@ void valveHardware::PortMapping(PortMap_t* Map) {
     Map->HWType = TB6612;
   } else if (Map->Port >=140 && Map->Port <=199) {
     // nur die Ports anzeigen die auch wirklich vorhanden sind
-    if (this->I2CIsPresent(0x01)) {
+    if (Config->Enabled1Wire() && this->I2CIsPresent(0x01)) {
       HWdev_t* t = this->getI2CDevice(0x01);
       ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
       if (MyDS2408->isValidPort(Map->Port-140)) {

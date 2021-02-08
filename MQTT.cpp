@@ -170,10 +170,10 @@ void MQTT::loop() {
   }
   
   if (!mqtt->connected() && WiFi.status() == WL_CONNECTED) { 
-      if (millis() - mqttreconnect_lasttry > 10000) {
-        espClient = WiFiClient();
-        this->reconnect(); 
-        this->mqttreconnect_lasttry = millis();
+    if (millis() - mqttreconnect_lasttry > 10000) {
+      espClient = WiFiClient();
+      this->reconnect(); 
+      this->mqttreconnect_lasttry = millis();
     }
   } else if (WiFi.status() == WL_CONNECTED) { 
     mqtt->loop();
@@ -184,8 +184,16 @@ void MQTT::loop() {
     oled->SetRSSI(WiFi.RSSI());
     oled->SetSSID(WiFi.SSID());
     oled->SetWiFiConnected(true);
+    this->ConnectStatusWifi = true;
   } else {
     oled->SetWiFiConnected(false);
+    this->ConnectStatusWifi = false;
+  }
+
+  if (mqtt->connected()) {
+    this->ConnectStatusMqtt = true;
+  } else {
+    this->ConnectStatusMqtt = false;
   }
 
   if (Config->GetKeepAlive() > 0 && millis() - this->last_keepalive > (Config->GetKeepAlive() * 1000))  {
