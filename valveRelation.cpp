@@ -3,7 +3,6 @@
 valveRelation::valveRelation() {
   _relationen  = new std::vector<relation_t>{};
   _subscriber  = new std::vector<subscriber_t>{};
-  SPIFFS.begin();
   LoadJsonConfig();
 }
 

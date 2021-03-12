@@ -1,7 +1,6 @@
 #include "BaseConfig.h"
 
 BaseConfig::BaseConfig() {
-  SPIFFS.begin();
   ESPUpdate = new updater;
   
   LoadJsonConfig();

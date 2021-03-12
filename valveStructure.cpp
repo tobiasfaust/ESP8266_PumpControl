@@ -5,7 +5,6 @@ valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   this->ValveHW = new valveHardware(sda, scl, Config->GetDebugLevel());
   if (Config->Enabled1Wire()) { this->ValveHW->add1WireDevice(Config->GetPin1Wire());}
   Valves  = new std::vector<valve>{};
-  SPIFFS.begin();
   LoadJsonConfig();
 }
 
