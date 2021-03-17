@@ -52,8 +52,12 @@ void setup() {
   Serial.println("");
   Serial.println("ready");
 
-  SPIFFS.begin(true); // true: format SPIFFS/NVS if mount fails
-
+  #ifdef ESP8266
+    SPIFFS.begin();
+  #elif ESP32
+    SPIFFS.begin(true); // true: format SPIFFS/NVS if mount fails
+  #endif
+  
   // Flash Write Issue
   // https://github.com/esp8266/Arduino/issues/4061#issuecomment-428007580
   // SPIFFS.format();
