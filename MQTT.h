@@ -18,7 +18,7 @@
 #endif
 
 
-extern OLED* oled;
+//extern OLED* oled;
 extern BaseConfig* Config;
 
 #if defined(ESP8266) || defined(ESP32)
@@ -42,6 +42,7 @@ class MQTT {
     
     MQTT(const char* server, uint16_t port, String root);
     void    loop();
+    void    SetOled(OLED* oled);
     void    Publish_Bool(const char* subtopic, bool b);
     void    Publish_Int(const char* subtopic, int number);
     void    Publish_String(const char* subtopic, String value);
@@ -62,7 +63,8 @@ class MQTT {
     void    reconnect();
     void    callback(char* topic, byte* payload, unsigned int length);
     std::vector<subscription_t>* subscriptions = NULL;
-
+    OLED* oled;
+    
     String  mqtt_root = "";
     unsigned long mqttreconnect_lasttry = 0;
     unsigned long last_keepalive = 0;

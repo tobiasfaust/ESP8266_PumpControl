@@ -67,7 +67,8 @@ void BaseConfig::LoadJsonConfig() {
                                                     if (json["autoupdate_stage"] == "DEV")  { this->autoupdate_stage = (stage_t)DEV; }
                                                     ESPUpdate->setStage(this->autoupdate_stage);
                                                   }
-        if (json.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(json["i2coled"], NULL, 16);} // hex convert to dec        
+        if (json.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(json["i2coled"], NULL, 16);} // hex convert to dec    
+        if (json.containsKey("oled_type"))      { this->oled_type = atoi(json["oled_type"]);} else {this->oled_type = 0;}; 
         if (json.containsKey("ventil3wege_port")) { this->ventil3wege_port = atoi(json["ventil3wege_port"]);}
         
       } else {
@@ -91,6 +92,7 @@ void BaseConfig::LoadJsonConfig() {
     this->pin_scl = 4;
     this->pin_1wire = 0;
     this->enable_oled = false;
+    this->oled_type = 0;
     this->enable_1wire = false;
     this->i2caddress_oled = 60; //0x3C;
     this->enable_3wege = false;
@@ -101,10 +103,6 @@ void BaseConfig::LoadJsonConfig() {
     
     loadDefaultConfig = false; //set back
   }
-
-  if (this->enable_oled) {oled->init(this->pin_sda, this->pin_scl, this->i2caddress_oled);}
-  oled->Enable(this->enable_oled);
-
 }
 
 String BaseConfig::GetReleaseName() {
@@ -260,11 +258,22 @@ void BaseConfig::GetWebContent(WM_WebServer* server) {
 
   sprintf(buffer, "<tr class='%s' id='oled_0'>\n", (this->enable_oled?"":"hide"));
   html.concat(buffer);
-  html.concat("<td>i2c Adresse OLED 1306</td>\n");
+  html.concat("<td>i2c Adresse OLED</td>\n");
   sprintf(buffer, "<td><input maxlength='2' name='i2coled' type='text' value='%02x'/></td>\n", this->i2caddress_oled);
   html.concat(buffer);
   html.concat("</tr>\n");
 
+  sprintf(buffer, "<tr class='%s' id='oled_1'>\n", (this->enable_oled?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>OLED Typ</td>\n");
+  html.concat("<td><select name='oled_type' size='1'> \n");
+  sprintf(buffer, "  <option %s value='0'/>OLED SSD1306</option>\n", (this->oled_type==0?"selected":""));
+  html.concat(buffer);
+  sprintf(buffer, "  <option %s value='1'/>OLED SH1106</option>\n", (this->oled_type==1?"selected":""));
+  html.concat(buffer);
+  html.concat("</select></td>\n");
+  html.concat("</tr>\n");
+  
   server->sendContent(html.c_str()); html = "";
  
   html.concat("<tr>\n");

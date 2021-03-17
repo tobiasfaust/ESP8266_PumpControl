@@ -7,10 +7,7 @@
 
 #include "CommonLibs.h"
 #include "ArduinoJson.h"
-#include "oled.h"
 #include "updater.h"
-
-extern OLED* oled;
 
 class BaseConfig {
 
@@ -20,11 +17,13 @@ class BaseConfig {
     void      LoadJsonConfig();
     void      GetWebContent(WM_WebServer* server);
     void      loop();
+
     const uint8_t& GetPinSDA()      const {return pin_sda;}
     const uint8_t& GetPinSCL()      const {return pin_scl;}
     const uint8_t& GetPin1Wire()      const {return pin_1wire;}
     const uint8_t& GetI2cOLED()     const {return i2caddress_oled;}
     const bool&    EnabledOled()    const {return enable_oled;}
+    const uint8_t& GetOledType()   const {return oled_type;}
     const bool&    Enabled1Wire()    const {return enable_1wire;}
     const String&  GetMqttServer()  const {return mqtt_server;}
     const uint16_t& GetMqttPort()   const {return mqtt_port;}
@@ -57,6 +56,7 @@ class BaseConfig {
     String    autoupdate_url;
     stage_t   autoupdate_stage;
     uint8_t   i2caddress_oled;
+    uint8_t   oled_type;
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;

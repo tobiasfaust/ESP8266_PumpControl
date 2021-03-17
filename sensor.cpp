@@ -24,13 +24,17 @@ void sensor::init(String externalSensor) {
   mqtt->Subscribe(externalSensor, MQTT::SENSOR);
 }
 
+void sensor::SetOled(OLED* oled) {
+  this->oled = oled;
+}
+
 void sensor::setSensorType(sensorType_t t) {
   this->Type = t;
 }
 
 void sensor::SetLvl(uint8_t lvl) {
   this->level = lvl;
-  oled->SetLevel(this->level);
+  if(this->oled) this->oled->SetLevel(this->level);
 }
 
 void sensor::loop_analog() {
@@ -86,7 +90,7 @@ void sensor::loop() {
     }
     
     if (this->Type != NONE && this->Type != EXTERN) {
-      oled->SetLevel(this->level);
+      if(this->oled) this->oled->SetLevel(this->level);
     }
   }
 }

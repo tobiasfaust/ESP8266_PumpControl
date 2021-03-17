@@ -11,7 +11,7 @@
 extern MQTT* mqtt;
 extern valveStructure* VStruct;
 extern BaseConfig* Config;
-extern OLED* oled;
+//extern OLED* oled;
 
 enum sensorType_t {NONE, EXTERN, HCSR04, ONBOARD_ANALOG};
 
@@ -22,6 +22,7 @@ class sensor {
     void      init(uint8_t pinTrigger, uint8_t pinEcho);
     void      init(String externalSensor);
     void      init();
+    void      SetOled(OLED* oled);
     void      setSensorType(sensorType_t t);
     void      loop();
     void      SetLvl(uint8_t lvl);
@@ -38,7 +39,8 @@ class sensor {
   private:
     void      loop_analog();
     void      loop_hcsr04();
-    
+
+    OLED*    oled;
     sensorType_t   Type;
     uint16_t  measureDistMin;
     uint16_t  measureDistMax;

@@ -3,12 +3,38 @@
 
 #include "CommonLibs.h"
 #include <Wire.h>
+#include "BaseConfig.h"
 #include "SSD1306Wire.h"
+#include "SH1106.h"
 
-class OLED {
+extern BaseConfig* Config;
+
+class OLEDWrapper {
 
   public:
+    OLEDWrapper(uint8_t sda, uint8_t scl, uint8_t i2cAddress);
+    void flipScreenVertically();
+    bool init();
+    void fillRect(int16_t x, int16_t y, int16_t width, int16_t height);
+    void setColor(OLEDDISPLAY_COLOR color);
+    void setTextAlignment(OLEDDISPLAY_TEXT_ALIGNMENT textAlignment);
+    void setFont(const uint8_t *fontData);
+    void drawString(int16_t x, int16_t y, String text);
+    void drawHorizontalLine(int16_t x, int16_t y, int16_t length);
+    uint16_t getStringWidth(String text);
+    void clear(void);
+    void display(void);
+  
+  private:
+    void* oled;
+};
+
+
+class OLED {
+   
+  public:
     OLED();
+    void      loop();
     void      init(uint8_t sda, uint8_t scl, uint8_t i2cAddress);
     
     void      SetLevel(uint8_t Level);
@@ -35,8 +61,12 @@ class OLED {
     uint8_t   pin_sda;
     uint8_t   pin_scl;
     uint8_t   i2cAddress;
-    SSD1306Wire* ssd;
-
+    uint8_t   type;
+    
+    //SSD1306Wire* ssd;
+    //SH1106* ssd;
+    OLEDWrapper* ssd;
+    
     void      display_header();
     void      display_wifibars();
     void      display_MqttConnectInfo();

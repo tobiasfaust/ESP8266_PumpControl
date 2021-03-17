@@ -19,9 +19,6 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   
   if (!wifiManager.autoConnect(mqtt_root.c_str())) {
     Serial.println("failed to connect and hit timeout");
-    if (oled->GetEnabled()) {
-      oled->SetWiFiConnected(false);
-    }
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
     ESP.restart();
@@ -31,19 +28,15 @@ MQTT::MQTT(const char* server, uint16_t port, String root) {
   Serial.print("WiFi connected with local IP: ");
   Serial.println(WiFi.localIP());
   //WiFi.printDiag(Serial);
-  
-  if (oled && oled->GetEnabled()) {
-    oled->SetIP(WiFi.localIP().toString());
-    oled->SetRSSI(WiFi.RSSI());
-    oled->SetSSID(WiFi.SSID());
-    oled->SetWiFiConnected(true);
-  }
-
 
   Serial.print("Starting MQTT (");Serial.print(server); Serial.print(":");Serial.print(port);Serial.println(")");
   mqtt->setClient(espClient);
   mqtt->setServer(server, port);
   mqtt->setCallback([this] (char* topic, byte* payload, unsigned int length) { this->callback(topic, payload, length); });
+}
+
+void MQTT::SetOled(OLED* oled) {
+  this->oled=oled;  
 }
 
 void MQTT::reconnect() {
@@ -63,7 +56,7 @@ void MQTT::reconnect() {
   
   if (mqtt->connect(topic, Config->GetMqttUsername().c_str(), Config->GetMqttPassword().c_str(), LWT, true, false, "Offline")) {
     Serial.println("connected... ");
-    oled->SetMqttConnected(true);
+    if(this->oled) this->oled->SetMqttConnected(true);
     
     // Once connected, publish basics ...
     this->Publish_IP();
@@ -86,7 +79,7 @@ void MQTT::reconnect() {
     Serial.print(F("failed, rc="));
     Serial.print(mqtt->state());
     Serial.println(F(" try again in few seconds"));
-    oled->SetMqttConnected(false);
+    if(this->oled) this->oled->SetMqttConnected(false);
   }
 }
 
@@ -180,13 +173,15 @@ void MQTT::loop() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    oled->SetIP(WiFi.localIP().toString());
-    oled->SetRSSI(WiFi.RSSI());
-    oled->SetSSID(WiFi.SSID());
-    oled->SetWiFiConnected(true);
+    if(this->oled) {
+      this->oled->SetIP(WiFi.localIP().toString());
+      this->oled->SetRSSI(WiFi.RSSI());
+      this->oled->SetSSID(WiFi.SSID());
+      this->oled->SetWiFiConnected(true);
+    }
     this->ConnectStatusWifi = true;
   } else {
-    oled->SetWiFiConnected(false);
+    if(this->oled) this->oled->SetWiFiConnected(false);
     this->ConnectStatusWifi = false;
   }
 

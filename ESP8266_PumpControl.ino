@@ -58,14 +58,18 @@ void setup() {
   // https://github.com/esp8266/Arduino/issues/4061#issuecomment-428007580
   // SPIFFS.format();
 
-  oled = new OLED();
   Config = new BaseConfig();
 
   Serial.print(F("Starting WIRE at (SDA, SCL)): ")); Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
   Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
 
+  oled = new OLED();    
+  if (Config->EnabledOled() ) oled->init(Config->GetPinSDA(), Config->GetPinSCL(), Config->GetI2cOLED());
+  oled->Enable(Config->EnabledOled());
+
   Serial.println("Starting Wifi and MQTT");
   mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
+  mqtt->SetOled(oled);
   mqtt->setCallback(myMQTTCallBack);
 
   Serial.println("Starting I2CDetect");
@@ -113,4 +117,5 @@ void loop() {
   LevelSensor->loop();
   mywebserver->loop();
   Config->loop();
+  oled->loop();  
 }

@@ -1,6 +1,7 @@
 Release 2.5.2:
   - changing 1wire pin without reboot now possible
   - show 1wire devices and controller at status page
+  - Feature: OLED Type SSD1306 and SH1106 available
   
 Release 2.5.1:
   - Fix Firmware OTA Support for ESP32
