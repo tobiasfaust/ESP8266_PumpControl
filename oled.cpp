@@ -203,7 +203,7 @@ OLEDWrapper::OLEDWrapper(uint8_t sda, uint8_t scl, uint8_t i2cAddress) {
 }
 
 bool OLEDWrapper::init() {
-  bool ret;
+  bool ret = false;
   if (Config->GetOledType() == 0) {
     SSD1306Wire* ssd = static_cast<SSD1306Wire*>(this->oled);
     ret = ssd->init();    
@@ -285,13 +285,15 @@ void OLEDWrapper::drawHorizontalLine(int16_t x, int16_t y, int16_t length) {
 }
 
 uint16_t OLEDWrapper::getStringWidth(String text) {
+  uint16_t ret = 0;
   if (Config->GetOledType() == 0) {
     SSD1306Wire* ssd = static_cast<SSD1306Wire*>(this->oled);
-    return ssd->getStringWidth(text);
+    ret = ssd->getStringWidth(text);
   } else if (Config->GetOledType() == 1) {
     SH1106* ssd = static_cast<SH1106*>(this->oled);
-    return ssd->getStringWidth(text);
+    ret = ssd->getStringWidth(text);
   }
+  return ret;
 }
 
 void OLEDWrapper::clear(void) {
