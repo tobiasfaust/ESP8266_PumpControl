@@ -203,13 +203,15 @@ OLEDWrapper::OLEDWrapper(uint8_t sda, uint8_t scl, uint8_t i2cAddress) {
 }
 
 bool OLEDWrapper::init() {
+  bool ret;
   if (Config->GetOledType() == 0) {
     SSD1306Wire* ssd = static_cast<SSD1306Wire*>(this->oled);
-    ssd->init();    
+    ret = ssd->init();    
   } else if (Config->GetOledType() == 1) {
     SH1106* ssd = static_cast<SH1106*>(this->oled);
-    ssd->init();
+    ret = ssd->init();
   }
+  return ret;
 }
 
 void OLEDWrapper::flipScreenVertically() {
@@ -285,10 +287,10 @@ void OLEDWrapper::drawHorizontalLine(int16_t x, int16_t y, int16_t length) {
 uint16_t OLEDWrapper::getStringWidth(String text) {
   if (Config->GetOledType() == 0) {
     SSD1306Wire* ssd = static_cast<SSD1306Wire*>(this->oled);
-    ssd->getStringWidth(text);
+    return ssd->getStringWidth(text);
   } else if (Config->GetOledType() == 1) {
     SH1106* ssd = static_cast<SH1106*>(this->oled);
-    ssd->getStringWidth(text);
+    return ssd->getStringWidth(text);
   }
 }
 
