@@ -35,7 +35,7 @@ void sensor::init_ads1115(uint8_t i2c, uint8_t port) {
   ADS1115_WE* adc = new ADS1115_WE(0x48);
  
   if(!adc->init()){
-    Serial.printf("Could not connect to ADS1115 at i2cAdress 0x02x \n", i2c);
+    Serial.printf("Could not connect to ADS1115 at i2cAdress 0x%02x \n", i2c );
   }
 
   adc->setVoltageRange_mV(ADS1115_RANGE_4096);
