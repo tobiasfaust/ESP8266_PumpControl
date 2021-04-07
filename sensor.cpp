@@ -4,12 +4,13 @@ sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycl
   LoadJsonConfig(); 
 }
 
-void sensor::init() {
+void sensor::init_analog(uint8_t pinAnalog) {
   setSensorType(ONBOARD_ANALOG);
+  this->pinAnalog = pinAnalog;
   this->MAX_DIST=500; // is maximum by default
 }
 
-void sensor::init(uint8_t pinTrigger, uint8_t pinEcho) {
+void sensor::init_hcsr04(uint8_t pinTrigger, uint8_t pinEcho) {
   setSensorType(HCSR04);
   this->MAX_DIST = 23200; // Anything over 400 cm (400*58 = 23200 us pulse) is "out of range"
   this->pinTrigger = pinTrigger;
@@ -18,10 +19,27 @@ void sensor::init(uint8_t pinTrigger, uint8_t pinEcho) {
   pinMode(this->pinEcho, INPUT);
 }
 
-void sensor::init(String externalSensor) {
+void sensor::init_extern(String externalSensor) {
   setSensorType(EXTERN);
   this->measurecycle = 10;
   mqtt->Subscribe(externalSensor, MQTT::SENSOR);
+}
+
+void sensor::init_ads1115(uint8_t i2c, uint8_t port) {
+  if (Config->GetDebugLevel() >=4) Serial.printf("Init ADS1115 at i2cAdress 0x%02x \n", i2c);
+  
+  this->ads1115_i2c = i2c;
+  this->ads1115_port = port;
+  setSensorType(ADS1115);
+  
+  ADS1115_WE* adc = new ADS1115_WE(0x48);
+ 
+  if(!adc->init()){
+    Serial.printf("Could not connect to ADS1115 at i2cAdress 0x02x \n", i2c);
+  }
+
+  adc->setVoltageRange_mV(ADS1115_RANGE_4096);
+  this->Device = adc;
 }
 
 void sensor::SetOled(OLED* oled) {
@@ -40,12 +58,15 @@ void sensor::SetLvl(uint8_t lvl) {
 void sensor::loop_analog() {
   this->raw = 0;
   this->level = 0;
+  uint8_t pinanalog = this->pinAnalog;
 
   #ifdef ESP8266
-    this->raw = analogRead(A0);
-  #elif ESP32
-    this->raw = analogRead(this->pinAnalog);
+    pinanalog = A0;;
   #endif
+
+  if (Config->GetDebugLevel() >=4) Serial.printf("start measure, using analog Sensor pin: %d \n", pinanalog);
+
+  this->raw = analogRead(pinanalog);
   
   this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
 }
@@ -73,11 +94,49 @@ void sensor::loop_hcsr04() {
   }
 }
 
+void sensor::loop_ads1115() {
+  this->raw = 0;
+  this->level = 0;
+
+  if (Config->GetDebugLevel() >=4) Serial.printf("start measure, use analog Sensor ADS1115 port: %d \n", this->ads1115_port);
+
+  switch (this->ads1115_port) {
+    case 0:
+      this->raw = readADS1115Channel(ADS1115_COMP_0_GND);
+    break;
+    case 1:
+      this->raw = readADS1115Channel(ADS1115_COMP_1_GND);
+    break;
+    case 2:
+      this->raw = readADS1115Channel(ADS1115_COMP_2_GND);
+    break;
+    case 3:
+      this->raw = readADS1115Channel(ADS1115_COMP_3_GND);
+    break;
+    default:
+       Serial.printf("portnummer %d not available \n", this->ads1115_port);
+    break;
+  }
+  
+  this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
+}
+
+uint16_t sensor::readADS1115Channel(ADS1115_MUX channel) {
+  int16_t raw = 0;
+  ADS1115_WE* adc = static_cast<ADS1115_WE*>(this->Device);
+  adc->setCompareChannels(channel);
+  adc->startSingleMeasurement();
+  while(adc->isBusy()){}
+  raw = adc->getResultWithRange(-4096,4096); 
+  return (uint16_t) abs(raw);
+}
+
 void sensor::loop() {
   if (millis() - this->previousMillis > this->measurecycle*1000) {
     this->previousMillis = millis();
    
     if (this->Type == ONBOARD_ANALOG) {loop_analog();}
+    if (this->Type == ADS1115) {loop_ads1115();}
     if (this->Type == HCSR04) {loop_hcsr04();}
 
     if (this->Type != NONE && this->level !=0 && Config->Enabled3Wege()) {
@@ -92,6 +151,10 @@ void sensor::loop() {
     if (this->Type != NONE && this->Type != EXTERN) {
       if(this->oled) this->oled->SetLevel(this->level);
     }
+
+     if (Config->GetDebugLevel() >=4) {
+      Serial.printf("measured sensor raw value: %d \n", this->raw);
+     }
   }
 }
 
@@ -118,7 +181,7 @@ void sensor::LoadJsonConfig() {
   bool loadDefaultConfig = false;
 
   #ifdef ESP8266
-    uint8_t pinAnalogDefault = A0;
+    uint8_t pinAnalogDefault = 0;
   #elif ESP32
     uint8_t pinAnalogDefault = 36; // ADC1_CH0 (GPIO 36) 
   #endif
@@ -149,10 +212,13 @@ void sensor::LoadJsonConfig() {
         if (json.containsKey("pinanalog"))              {this->pinAnalog = atoi(json["pinanalog"]) - 200;} else {this->pinAnalog = pinAnalogDefault; }
         if (json.containsKey("treshold_min"))         { this->threshold_min = atoi(json["treshold_min"]);}
         if (json.containsKey("treshold_max"))         { this->threshold_max = atoi(json["treshold_max"]);}
+        if (json.containsKey("ads1115_i2c"))          { this->ads1115_i2c = strtoul(json["ads1115_i2c"], NULL, 16);} // hex convert to dec 
+        if (json.containsKey("ads1115_port"))          { this->ads1115_port = atoi(json["ads1115_port"]);}
         if (json.containsKey("externalSensor"))       { this->externalSensor = json["externalSensor"].as<String>();}
-        if(strcmp(json["selection"],"analog")==0)        { init(); }
-          else if(strcmp(json["selection"],"hcsr04")==0) { init(this->pinTrigger, this->pinEcho); }
-          else if(strcmp(json["selection"],"extern")==0) { init(this->externalSensor); }
+        if(strcmp(json["selection"],"analog")==0)        { init_analog(this->pinAnalog); }
+          else if(strcmp(json["selection"],"hcsr04")==0) { init_hcsr04(this->pinTrigger, this->pinEcho); }
+          else if(strcmp(json["selection"],"extern")==0) { init_extern(this->externalSensor); }
+          else if(strcmp(json["selection"],"ads1115")==0) { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
           else if(strcmp(json["selection"],"none")==0)   { this->Type=NONE; Serial.println("No LevelSensor requested"); }  
       } else {
         Serial.println("failed to load json config, load default config");
@@ -192,25 +258,38 @@ void sensor::GetWebContent(WM_WebServer* server) {
   html.concat("<tr>\n");
   html.concat("  <td colspan='2'>\n");
   
-  html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==NONE)?"checked":"");
+  html.concat("    <div class='inline'>\n");
+  snprintf(buffer, sizeof(buffer), "    <input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])\"/>", (this->Type==NONE)?"checked":"");
   html.concat(buffer);
-  html.concat("<label for='sel0'>keine Füllstandsmessung</label></div>\n");
+  html.concat("    <label for='sel0'>keine Füllstandsmessung</label></div>\n");
+  html.concat("    \n");
   
-  html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel1' name='selection' value='hcsr04' %s onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_0','analog_1','analog_2','extern_1'])\"/>", (this->Type==HCSR04)?"checked":"");
+  html.concat("    <div class='inline'>\n");
+  snprintf(buffer, sizeof(buffer), "    <input type='radio' id='sel1' name='selection' value='hcsr04' %s ", (this->Type==HCSR04)?"checked":"");
   html.concat(buffer);
-  html.concat("<label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
+  html.concat("onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_0','analog_1','analog_2','extern_1','ads1115_0','ads1115_1'])\"/>\n");
+  html.concat("    <label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
+  html.concat("    \n");
   
-  html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel2' name='selection' value='analog' %s onclick=\"radioselection(['all_1','all_2','all_3','analog_0','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1'])\"/>", (this->Type==ONBOARD_ANALOG)?"checked":"");
+  html.concat("    <div class='inline'>\n");
+  snprintf(buffer, sizeof(buffer), "    <input type='radio' id='sel2' name='selection' value='analog' %s ", (this->Type==ONBOARD_ANALOG)?"checked":"");
   html.concat(buffer);
-  html.concat("<label for='sel2'>Füllstandsmessung mit analogem Signal (an A0)</label></div>\n");
-
-  html.concat("    <div class='inline'>");
-  snprintf(buffer, sizeof(buffer), "<input type='radio' id='sel3' name='selection' value='extern' %s onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_0','analog_1','analog_2'])\"/>", (this->Type==EXTERN)?"checked":"");
+  html.concat("onclick=\"radioselection(['all_1','all_2','all_3','analog_0','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])\"/>\n");
+  html.concat("    <label for='sel2'>Füllstandsmessung mit Analogsignal am ESP</label></div>\n");
+  html.concat("    \n");
+  
+  html.concat("    <div class='inline'>\n");
+  snprintf(buffer, sizeof(buffer), "    <input type='radio' id='sel3' name='selection' value='ads1115' %s ", (this->Type==ADS1115)?"checked":"");
   html.concat(buffer);
-  html.concat("<label for='sel3'>Füllstandsmessung mit externem Signal per MQTT</label></div>\n");
+  html.concat("onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2','ads1115_0','ads1115_1'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','analog_0'])\"/>\n");
+  html.concat("    <label for='sel3'>Füllstandsmessung mit Analogsignal am ADS1115 </label></div>\n");
+  html.concat("    \n");
+  
+  html.concat("    <div class='inline'>\n");
+  snprintf(buffer, sizeof(buffer), "    <input type='radio' id='sel4' name='selection' value='extern' %s ", (this->Type==EXTERN)?"checked":"");
+  html.concat(buffer);
+  html.concat("onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_0','analog_1','analog_2','ads1115_0','ads1115_1'])\"/>\n");
+  html.concat("    <label for='sel4'>Füllstandsmessung mit externem Signal per MQTT</label></div>\n");
   
   html.concat("  </td>\n");
   html.concat("</tr>\n");
@@ -254,29 +333,43 @@ void sensor::GetWebContent(WM_WebServer* server) {
 
   server->sendContent(html.c_str()); html = "";
   
-  #ifdef ESP32
-    snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_0'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
-    html.concat(buffer);
-    html.concat("<td>GPIO an welchem das signal anliegt</td>\n");
-    snprintf(buffer, sizeof(buffer), "<td><input min='0' size='15' id='AnalogPin_1' name='pinanalog' type='number' value='%d'/></td>\n", this->pinAnalog + 200);
-    html.concat(buffer);
-    html.concat("</tr>\n");
-  #endif
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_0'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>GPIO an welchem das Signal anliegt</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' size='15' id='AnalogPin_1' name='pinanalog' type='number' value='%d'/></td>\n", this->pinAnalog + 200);
+  html.concat(buffer);
+  html.concat("</tr>\n");
 
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='ads1115_0'>\n", (this->Type==ADS1115?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>i2c Adresse des ADS1115</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input maxlength='2'  name='ads1115_i2c' type='text' value='%02x'/></td>\n", this->ads1115_i2c);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+  
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='ads1115_1'>\n", (this->Type==ADS1115?"":"hide"));
+  html.concat(buffer);
+  html.concat("<td>Portnummer am ADS1115 bei dem das Signal anliegt</td>\n");
+  snprintf(buffer, sizeof(buffer), "<td><input min='0' max='4' size='15'  name='ads1115_port' type='number' value='%d'/></td>\n", this->ads1115_port);
+  html.concat(buffer);
+  html.concat("</tr>\n");
+  
   #ifdef ESP32
     uint16_t maxAnalogRaw = 4096;
   #elif ESP8266
     uint16_t maxAnalogRaw = 1024;
   #endif
+
+  server->sendContent(html.c_str()); html = "";
   
-  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_1'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_1'>\n", (this->Type==ONBOARD_ANALOG || this->Type==ADS1115?"":"hide"));
   html.concat(buffer);
   html.concat("<td>Kalibrierung: 0% entspricht RAW Wert</td>\n");
   snprintf(buffer, sizeof(buffer), "<td><input min='0' size='5' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
   html.concat(buffer);
   html.concat("</tr>\n");
 
-  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_2'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
+  snprintf(buffer, sizeof(buffer), "<tr class='%s' id='analog_2'>\n", (this->Type==ONBOARD_ANALOG || this->Type==ADS1115?"":"hide"));
   html.concat(buffer);
   html.concat("<td>Kalibrierung: 100% entspricht RAW Wert</td>\n");
   snprintf(buffer, sizeof(buffer), "<td><input min='0' max='%d' name='measureDistMax' type='number' value='%d'/></td>\n", maxAnalogRaw, this->measureDistMax);

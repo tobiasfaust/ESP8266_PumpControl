@@ -81,6 +81,7 @@ void setup() {
 
   Serial.println("Starting Sensor");
   LevelSensor = new sensor();
+  LevelSensor->SetOled(oled);
 
   Serial.println("Valve Relations");
   ValveRel = new valveRelation();
