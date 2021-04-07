@@ -23,7 +23,7 @@ const gpio = [  {port: 204, name:'D24'},
                ];
       )=====";
   const char ESPANALOG[] PROGMEM = R"=====(
-const gpioanalog = [  {port: 204, name:'ADC1_CH0 – GPIO36'},
+const gpioanalog = [  {port: 236, name:'ADC1_CH0 – GPIO36'},
                   {port: 237, name:'ADC1_CH1 – GPIO37'},
                   {port: 238, name:'ADC1_CH2 – GPIO38'},
                   {port: 239, name:'ADC1_CH3 – GPIO39'},
@@ -62,7 +62,7 @@ const gpio = [  {port: 216, name:'D0'},
          )=====";
 
   const char ESPANALOG[] PROGMEM = R"=====(
-const gpioanalog = [  {port: A0, name:'A0'}
+const gpioanalog = [  {port: 200, name:'A0'}
                ];
       )=====";
 #endif
