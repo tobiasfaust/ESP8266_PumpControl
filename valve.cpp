@@ -68,11 +68,12 @@ bool valve::SetOff() {
 bool valve::HandleSwitch (bool state, int duration) {
   char buffer[50] = {0};
   memset(buffer, 0, sizeof(buffer));
+  
   if (this->ValveType == NORMAL) {
-    valveHWClass->SetPort(myHWdev, this->port1, state, this->reverse);
+    valveHWClass->SetPort(this->myHWdev, this->port1, state, this->reverse);
     Serial.printf("Schalte Standard Ventil %s: Port %d (0x%02X) \n", (state?"An":"Aus"), this->port1, myHWdev->i2cAddress);
   } else if (ValveType == BISTABIL) {
-    valveHWClass->SetPort(myHWdev, this->port1, this->port2, state, this->reverse, (state?this->port1ms:this->port2ms));
+    valveHWClass->SetPort(this->myHWdev, this->port1, this->port2, state, this->reverse, (state?this->port1ms:this->port2ms));
     Serial.printf("Schalte Bistabiles Ventil %s: Port %d/%d, ms: %d/%d (0x%02X) \n", (state?"An":"Aus"), port1, port2, port1ms, port2ms, myHWdev->i2cAddress);
   } else {
     Serial.println("Unerwarteter Ventiltyp ?? Breche Schaltvorgang ab .....");

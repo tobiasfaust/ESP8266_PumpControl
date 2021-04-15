@@ -130,11 +130,11 @@ void valveHardware::ConnectHWdevice(HWdev_t* dev) {
   }
 }
 
-bool valveHardware::RegisterPort(HWdev_t* dev, uint8_t Port) {
+bool valveHardware::RegisterPort(HWdev_t*& dev, uint8_t Port) {
   return this->RegisterPort(dev, Port, false);
 }
 
-bool valveHardware::RegisterPort(HWdev_t* dev, uint8_t Port, bool reverse) {
+bool valveHardware::RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse) {
   char buffer[200] = {0};
   bool success = false;
   if (Config->GetDebugLevel() >=4) { 

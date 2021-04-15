@@ -34,8 +34,8 @@ class valveHardware {
   public:
     valveHardware(uint8_t sda, uint8_t scl);
     
-    bool    RegisterPort(HWdev_t* dev, uint8_t Port);
-    bool    RegisterPort(HWdev_t* dev, uint8_t Port, bool reverse);
+    bool    RegisterPort(HWdev_t*& dev, uint8_t Port);
+    bool    RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse);
 
     void      add1WireDevice(uint8_t pin_1wire);
     void      SetPort(HWdev_t* dev, uint8_t Port, bool state, bool reverse);
