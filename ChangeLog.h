@@ -3,6 +3,7 @@ Release 2.5.2:
   - show 1wire devices and controller at status page
   - Feature: OLED Type SSD1306 and SH1106 available
   - add ADS1115 ADC for a better level measurement (page sensor)
+  - debugmode handling optimized (-> use it only from BaseConfig)
   
 Release 2.5.1:
   - Fix Firmware OTA Support for ESP32
