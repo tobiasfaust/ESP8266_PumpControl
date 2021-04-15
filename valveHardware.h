@@ -32,7 +32,7 @@ class valveHardware {
   } PortMap_t;
 
   public:
-    valveHardware(uint8_t sda, uint8_t scl, uint8_t debugmode);
+    valveHardware(uint8_t sda, uint8_t scl);
     
     bool    RegisterPort(HWdev_t* dev, uint8_t Port);
     bool    RegisterPort(HWdev_t* dev, uint8_t Port, bool reverse);
@@ -42,7 +42,6 @@ class valveHardware {
     void      SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, bool reverse, uint16_t duration);
     bool      IsValidPort(uint8_t Port);
     uint8_t  GetI2CAddress(uint8_t Port);
-    void      setDebugMode(uint8_t debugmode);
     
     void      GetWebContent1Wire(WM_WebServer* server);
     
@@ -61,7 +60,6 @@ class valveHardware {
     uint8_t pin_scl = SCL;
     uint8_t pin_1wire = 0;
     //bool     1wireInitDone;
-    uint8_t debugmode;
     
     void    setHWType(HWdev_t* dev);
     void    ConnectHWdevice(HWdev_t* dev);

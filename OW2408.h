@@ -2,8 +2,11 @@
 #define OW2408_H
 
 #include "CommonLibs.h"
+#include "BaseConfig.h"
 #include "DS2408.h"     // https://github.com/queezythegreat/arduino-ds2408
                                      // https://github.com/PaulStoffregen/OneWire
+
+extern BaseConfig* Config;
 
 class ow2408 {
   
@@ -13,7 +16,6 @@ class ow2408 {
     bool        setOn(uint8_t port); 
     bool        setOff(uint8_t port);
     bool        setPort(uint8_t port, bool state);
-    void        setDebugMode(uint8_t debugmode);
     bool        isValidPort(uint8_t port);
     uint8_t    findDevices();
     const uint8_t& GetCountDevices() const {return device_count;}
@@ -23,7 +25,6 @@ class ow2408 {
     DS2408* ow;
     Devices devices;
     uint8_t device_count;
-    uint8_t debugmode;
 
     void setup_devices();
     String print_device(uint8_t index);

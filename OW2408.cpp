@@ -1,12 +1,12 @@
 #include "OW2408.h"
 
-ow2408::ow2408(): debugmode(0) {  }
+ow2408::ow2408(){  }
 
 void ow2408::init(uint8_t pin) {
   this->ow = new DS2408(pin); 
   this->findDevices();
   this->setup_devices();
-  if (debugmode >=3) Serial.printf("OneWire DS2408 with %d devices initialized \n", this->device_count);
+  if (Config->GetDebugLevel() >=3) Serial.printf("OneWire DS2408 with %d devices initialized \n", this->device_count);
 }
 
 uint8_t ow2408::findDevices() {
@@ -53,13 +53,13 @@ bool ow2408::handlePort(uint8_t port, bool state) {
   bool ret;
   
   if ((index+1) > this->device_count) {
-    if (debugmode >=2) { Serial.printf("requested OnWire index %d out of range\n", index); }
+    if (Config->GetDebugLevel() >=2) { Serial.printf("requested OnWire index %d out of range\n", index); }
     return false; 
   }
-  if (debugmode >=4) { Serial.printf("Schalte Device #%d  Port %d (%s)\n", index, DevPort, this->print_device(index).c_str()); }
+  if (Config->GetDebugLevel() >=4) { Serial.printf("Schalte Device #%d  Port %d (%s)\n", index, DevPort, this->print_device(index).c_str()); }
 
   uint8_t currentstate = (ow->get_state(this->devices[index]));
-  if (debugmode >=5) { Serial.print(" STATE="); print_byte(currentstate); }
+  if (Config->GetDebugLevel() >=5)  { Serial.print(" STATE="); print_byte(currentstate); }
 
   if(state) {
     // set ON
@@ -70,14 +70,9 @@ bool ow2408::handlePort(uint8_t port, bool state) {
   }
 
   ret = ow->set_state(this->devices[index], currentstate);
-  if (debugmode >=5) { Serial.print(" STATE NEU ="); print_byte(currentstate); Serial.println(""); }
+  if (Config->GetDebugLevel() >=5) { Serial.print(" STATE NEU ="); print_byte(currentstate); Serial.println(""); }
 
   return ret;
-  
-}
-
-void ow2408::setDebugMode(uint8_t debugmode) {
-  this->debugmode = debugmode;
 }
 
 bool ow2408::isValidPort(uint8_t port)  {

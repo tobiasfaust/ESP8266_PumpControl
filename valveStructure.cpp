@@ -2,7 +2,7 @@
 
 valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   pin_sda(sda), pin_scl(scl) {
-  this->ValveHW = new valveHardware(sda, scl, Config->GetDebugLevel());
+  this->ValveHW = new valveHardware(sda, scl);
   if (Config->Enabled1Wire()) { this->ValveHW->add1WireDevice(Config->GetPin1Wire());}
   Valves  = new std::vector<valve>{};
   LoadJsonConfig();
