@@ -6,9 +6,6 @@ ressource = boto3.resource('s3')
 
 def lambda_handler(event, context):
     
-    #bucketname = "tfa-releases"
-    #targetPath = "test/" 
-    
     releaseJSON = "releases.json"
     
     # Name des Buckets in dem das S3 Put Event aufgetreten ist
