@@ -37,6 +37,7 @@ echo STAGE=$STAGE
 echo BINARYPATH=$BINARYPATH
 echo DESTPATH=$DESTPATH
 echo ARCHITECTURE=$ARCH
+echo RELEASEFILE=$RELEASEFILE
 
 if [[ ! -d $BINARYPATH ]]; then
   echo -e "\n\n"$RED"Binarypath $BINARYPATH not found\n"$NC
@@ -61,13 +62,13 @@ VERSION3=`echo $VERSION | cut -d '.' -f3`   # 2
 
 let NUMBER=$(printf "%d%d%d%d" $VERSION1 $VERSION2 $VERSION3 $SUBVERSION)
 
-for FILE in `find $BINARYPATH/ -name *.bin` 
+for FILE in `find $BINARYPATH/ -name *.ino.bin` 
 do
 
   FILENAME=${FILE%.*}
   FILEEXT=${FILE/*./}
 
-  BINARYFILENAME=$(basename $FILENAME".v"$VERSION"-"$SUBVERSION"."$STAGE)
+  BINARYFILENAME=$(basename $FILENAME"."$ARCH".v"$VERSION"-"$SUBVERSION"."$STAGE)
   DOWNLOADURL="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/"$REPOSITORYNAME"/"$BINARYFILENAME"."$FILEEXT
 
   JSON='      {

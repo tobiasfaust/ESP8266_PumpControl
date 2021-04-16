@@ -1,9 +1,39 @@
-Release 2.4.4:  -
+Release 2.5.2:
+  - changing 1wire pin without reboot now possible
+  - show 1wire devices and controller at status page
+  - Feature: OLED Type SSD1306 and SH1106 available
+  - add ADS1115 ADC for a better level measurement (page sensor)
+  - debugmode handling optimized (-> use it only from BaseConfig)
+  
+Release 2.5.1:
+  - Fix Firmware OTA Support for ESP32
+  - Fix deleting stored WiFi Credentials
+  - fixes some ESP32 bugs
+  - refreshing i2c Seach in Basisconfig now working
+  
+Release 2.5.0:
+  - Feature: Add OneWire DS2408 hardware support
+  - Feature: Add a keepalive message via MQTT, configurable at BasisConfig: 
+  - Feature: Add configurable DebugMode at BaseConfig
+  - Feature: push out memory and rssi values via mqtt together with keepalive message if Debugmode >= 4
+  - Feature: support for ESP32, still without OTA Update and Wifi Credential deletion
+  
+Release 2.4.5:
+  - Feature: deletion of WiFi credentials now possible
+  - Feature: ESP Hostname now the configured Devicename
+  - Bug: WIFI Mode forces to STATION-Mode, some devices has been ran in unsecured STA+AP Mode
+  - Bug: security issue: dont show debug output of WiFi Connection (password has been shown)
+  - Feature: valve reverse mode: enable if your valve act on LOW instead of ON
+  - Feature: AutoOff: possibility to setup a security AutoOff 
+  - Bug: count of Threads now push out if an on-for-timer has been expired
+  
+Release 2.4.4:
   - Feature: Issue #9: MQTT Client ID now configurable
   - MQTT now reconnect after DeviceName has been changed
   - MQTT LastWillTopic as device status configured by topic "/state [Offline|Online]"
   - Publish Release and Version after MQTT Connect by topic "/version"
   - Bugfix: Nullpointer to Hardwaredevice if multiple hardware devices are defined
+
 Release 2.4.3:
   - Bugfixing Automatische Releaseverteilung
   - Überarbeitung Github Workflow mit automatischer Releaseerstellung 

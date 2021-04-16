@@ -1,18 +1,17 @@
 #ifndef VALVEHARDWARE_H
 #define VALVEHARDWARE_H
   
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
+#include "BaseConfig.h"
 #include <vector>
 #include <Wire.h>
 #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
 #include "TB6612.h"
+#include "OW2408.h"
 
-enum HWType_t {GPIO, PCF, TB6612};
+extern BaseConfig* Config;
+
+enum HWType_t {ONBOARD, PCF, TB6612, OW2408};
 
 typedef struct {
     void* Device;
@@ -35,11 +34,20 @@ class valveHardware {
   public:
     valveHardware(uint8_t sda, uint8_t scl);
     
-    HWdev_t* RegisterPort(uint8_t Port);
-    void    SetPort(HWdev_t* dev, uint8_t Port, bool state);
-    void    SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, uint16_t duration);
-    bool    IsValidPort(uint8_t Port);
-    uint8_t GetI2CAddress(uint8_t Port);
+    bool    RegisterPort(HWdev_t*& dev, uint8_t Port);
+    bool    RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse);
+
+    void      add1WireDevice(uint8_t pin_1wire);
+    void      SetPort(HWdev_t* dev, uint8_t Port, bool state, bool reverse);
+    void      SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, bool reverse, uint16_t duration);
+    bool      IsValidPort(uint8_t Port);
+    uint8_t  GetI2CAddress(uint8_t Port);
+    
+    void      GetWebContent1Wire(WM_WebServer* server);
+    
+    bool      Get1WireActive(); // ist 1wire initialisiert?
+    uint8_t  Get1WireCountDevices();
+    const uint8_t& GetPin1wire()      const {return pin_1wire;}
     
   private:
     
@@ -50,7 +58,9 @@ class valveHardware {
     
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;
-  
+    uint8_t pin_1wire = 0;
+    //bool     1wireInitDone;
+    
     void    setHWType(HWdev_t* dev);
     void    ConnectHWdevice(HWdev_t* dev);
     void    PortMapping(PortMap_t* Map);
@@ -63,4 +73,3 @@ class valveHardware {
 };
 
 #endif
-

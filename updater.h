@@ -1,25 +1,28 @@
 #ifndef UPDATER_H
 #define UPDATER
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
-
+#include "CommonLibs.h"
 #include <vector>
 #include "ArduinoJson.h"
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <ESP8266httpUpdate.h>
-//#include <WiFiClientSecureBearSSL.h> //HTTPS
-#include <WiFiClient.h> // HTTP
+#include "_Release.h"
 
-#include "_Release.h";
+#ifdef ESP8266
+   #include <ESP8266httpUpdate.h>
+   #include <ESP8266HTTPClient.h>
+   #include <WiFiClient.h> // HTTP
 
-  enum stage_t {UNDEF, PROD, PRE, DEV};
+   using WM_httpUpdate = ESP8266HTTPUpdate;
+   
+#elif ESP32
+  #include <HTTPClient.h>
+  #include <HTTPUpdate.h>
   
-  typedef struct {
+  using WM_httpUpdate  = HTTPUpdate;
+#endif 
+
+enum stage_t {UNDEF, PROD, PRE, DEV};
+  
+typedef struct {
     String name;
     String version;
     uint32_t subversion;
@@ -39,7 +42,7 @@ class updater {
     void        loop();
     release_t*  GetCurrentRelease();
     String      GetReleaseName();
-    const int&  GetInterval()     const {return interval;}
+    const uint32_t&  GetInterval()     const {return interval;}
     std::vector<release_t>* GetReleases();
     void        InstallRelease(uint32_t ReleaseNumber);
     void        RefreshReleases();
@@ -50,6 +53,7 @@ class updater {
   private:
     //BearSSL::WiFiClientSecure* client;
     WiFiClient* client;
+    WM_httpUpdate* httpUpdate;
     
     void        Update();
     void        downloadJson();
@@ -61,13 +65,13 @@ class updater {
     release_t   getLatestRelease();
     void        printRelease(release_t* r);
     
-    String      json_url;
-    stage_t     stage;
-    release_t   currentRelease;
+    bool        DoUpdate = false;
     bool        automode;
     bool        updateError;
     uint32_t    interval;
-    bool        DoUpdate = false;
+    String      json_url;
+    stage_t     stage;
+    release_t   currentRelease;
     uint32_t    lastupdate;
 
     std::vector<release_t>* releases = NULL;
