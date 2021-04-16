@@ -72,10 +72,5 @@ class MQTT {
     bool     ConnectStatusMqtt;
   
 };
-<<<<<<< HEAD
 
 #endif
-=======
-#endif
-
->>>>>>> 3861a30c629bdaa7d5dd01704155d746e14122d8
