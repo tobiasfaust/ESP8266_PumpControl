@@ -394,7 +394,7 @@ void MyWebServer::getPage_Status(String* html) {
   html->concat("<a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>\n");
   html->concat("</td>\n");
   html->concat("<td><div id='showI2C'>");
-  sprintf(buffer, "%s \n", I2Cdetect->i2cGetAddresses());
+  sprintf(buffer, "%s \n", I2Cdetect->i2cGetAddresses().c_str());
   html->concat(buffer);
   html->concat("</div></td>\n");
   html->concat("</tr>\n");
