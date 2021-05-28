@@ -128,6 +128,10 @@ uint8_t valveStructure::Get1WireCountDevices() {
   return this->ValveHW->Get1WireCountDevices();
 }
 
+uint8_t valveStructure::Refresh1WireDevices() {
+  return this->ValveHW->Refresh1WireDevices();
+}
+
 void valveStructure::StoreJsonConfig(String* json) {
   //https://arduinojson.org/v5/api/jsonobject/begin_end/
   DynamicJsonBuffer jsonBuffer;

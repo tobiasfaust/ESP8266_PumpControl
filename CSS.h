@@ -82,6 +82,17 @@ const char STYLE_CSS[] PROGMEM = R"=====(
    border-bottom: none;
  }
 
+ .ajaxchange {
+   color: red;
+ }
+ 
+.ButtonRefresh {
+   font-size: 13px;
+   background-color: #EEEEEE; 
+   color: #999999;
+}
+
+
 /* https://proto.io/freebies/onoff/ */
     .onoffswitch {
         position: relative; width: 46px;

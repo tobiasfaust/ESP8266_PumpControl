@@ -239,7 +239,7 @@ void MyWebServer::handleAjax() {
 
     if (action && strcmp(action.c_str(), "SetValve")==0) {
       if (newState && port && port > 0 && !VStruct->GetEnabled(port)) { jsonReturn["accepted"] = 0; jsonReturn["error"] = "Requested Port not enabled. Please enable first!";}
-      else if (newState && port && port > 0 && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;} //TODO
+      else if (newState && port && port > 0 && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
       else if (newState && port && port > 0 && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
       else { RaiseError = true; }
 
@@ -270,7 +270,14 @@ void MyWebServer::handleAjax() {
       jsonReturn["NewState"] = I2Cdetect->i2cGetAddresses();
       jsonReturn["accepted"] = 1;  
     }
-    
+
+    if (action && strcmp(action.c_str(), "Refresh1Wire")==0) {
+      uint8_t ret = VStruct->Refresh1WireDevices();  
+      snprintf(buffer, sizeof(buffer), "%d (%d)", ret, ret * 8);
+      jsonReturn["NewState"] = buffer;
+      jsonReturn["accepted"] = 1;  
+    }
+
     
   } else { RaiseError = true; }
 
@@ -384,18 +391,23 @@ void MyWebServer::getPage_Status(String* html) {
   html->concat("<tr>\n");
   html->concat("<td>i2c Bus:\n");
     //https://fdossena.com/?p=html5cool/buttons/i.frag
-  html->concat("<a href='#' onclick=\"RefreshI2C('showI2C')\" class='button bouncy'>&#8634;</a>\n");
+  html->concat("<a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>\n");
   html->concat("</td>\n");
   html->concat("<td><div id='showI2C'>");
-  html->concat(I2Cdetect->i2cGetAddresses());
+  sprintf(buffer, "%s \n", I2Cdetect->i2cGetAddresses());
+  html->concat(buffer);
   html->concat("</div></td>\n");
   html->concat("</tr>\n");
 
   if (Config->Enabled1Wire()) {
     html->concat("<tr>\n");
-    html->concat("<td>gefundene 1Wire Controller (Devices):</td>\n");
-    sprintf(buffer, "<td>%d (%d)</td>\n", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
+    html->concat("<td>gefundene 1Wire Controller (Devices):\n");
+    html->concat("<a href='#' onclick=\"Refresh1Wire('show1Wire')\" class='ButtonRefresh'>&#8634;</a>\n");
+    html->concat("</td>\n");
+    html->concat("<td><div id='show1Wire'>");
+    sprintf(buffer, "%d (%d)", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
     html->concat(buffer);
+    html->concat("</div></td>\n");
     html->concat("</tr>\n");
   }
   

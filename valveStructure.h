@@ -15,8 +15,9 @@ extern BaseConfig* Config;
 extern MQTT* mqtt;
 extern valveRelation* ValveRel;
 extern i2cdetect* I2Cdetect;
-class valveStructure {
 
+
+class valveStructure {
 
   public:
     valveStructure(uint8_t sda, uint8_t scl);
@@ -38,6 +39,7 @@ class valveStructure {
     void      getWebJsParameter(String* html);
     void      ReceiveMQTT(String topic, int value);
     uint8_t Get1WireCountDevices();
+    uint8_t Refresh1WireDevices();
     
   private:
     //void      addValve(uint8_t Port, String SubTopic);

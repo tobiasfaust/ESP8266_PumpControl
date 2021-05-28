@@ -67,6 +67,15 @@ uint8_t valveHardware::Get1WireCountDevices() {
   else  return 0;
 }
 
+uint8_t valveHardware::Refresh1WireDevices() {
+    if (this->Get1WireActive()) {
+    HWdev_t* t = this->getI2CDevice(0x01);
+    ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+    return MyDS2408->findDevices();
+  }
+  else  return 0;
+}
+
 void valveHardware::addI2CDevice(uint8_t i2cAddress) {
   if (!I2CIsPresent(i2cAddress)) {
     if (i2cAddress == 0x01) {
@@ -146,6 +155,8 @@ bool valveHardware::RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse) {
   PortMap_t PortMap;
   PortMap.Port = Port;
   this->PortMapping(&PortMap); // need i2cAddress and internalPort
+
+  bool state = false ^ reverse; // default: OFF
   
   if (PortMap.Port !=0) {
     addI2CDevice(PortMap.i2cAddress);
@@ -154,7 +165,7 @@ bool valveHardware::RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse) {
     if(dev->HWType == PCF) {
       PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device);
       pcf8574->pinMode(PortMap.internalPort, OUTPUT);
-      pcf8574->digitalWrite(PortMap.internalPort, !reverse); // normal: HIGH
+      pcf8574->digitalWrite(PortMap.internalPort, !state); // normal: HIGH
       success = true;
     } else if (dev->HWType == TB6612) {
       tb6612* motor = static_cast<tb6612*>(dev->Device);
@@ -162,11 +173,11 @@ bool valveHardware::RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse) {
       success = true;
     } else if (dev->HWType == OW2408) {
       ow2408* MyDS2408 = static_cast<ow2408*>(dev->Device);
-      MyDS2408->setOff(PortMap.internalPort);
+      MyDS2408->setPort(PortMap.internalPort, state);
       success = true;
     } else if (dev->HWType == ONBOARD) {
       pinMode(PortMap.internalPort, OUTPUT);
-      digitalWrite(PortMap.internalPort, reverse); // normal: LOW
+      digitalWrite(PortMap.internalPort, state); // normal: LOW
       success = true;
     }
   }
@@ -200,20 +211,24 @@ uint8_t valveHardware::GetI2CAddress(uint8_t Port) {
 }
 
 void valveHardware::SetPort(HWdev_t* dev, uint8_t Port, bool state, bool reverse) {
-  SetPort(dev, Port, 0 , state, reverse, 0);
+  this->SetPort(dev, Port, 0 , state, reverse, 0);
 }
 
 void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, bool reverse, uint16_t duration) {
   PortMap_t PortMap1, PortMap2;
   PortMap1.Port = Port1; PortMap2.Port = Port2;
   PortMapping(&PortMap1); PortMapping(&PortMap2); // need internalPort
+
+  state = state ^ reverse;
+  
   if (dev->HWType == PCF) { //schaltet auf LOW
     PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device); // , pin_sda, pin_scl
-    pcf8574->digitalWrite(PortMap1.internalPort, !state); 
+    pcf8574->digitalWrite(PortMap1.internalPort, !state); // Normal: HIGH
     if (Port2 && Port2 > 0) {
-      pcf8574->digitalWrite(PortMap2.internalPort, reverse);
+      pcf8574->digitalWrite(PortMap2.internalPort, state);
       delay(duration);
-      pcf8574->digitalWrite(PortMap2.internalPort, !reverse); // Normal: HIGH
+      pcf8574->digitalWrite(PortMap1.internalPort, state); 
+      pcf8574->digitalWrite(PortMap2.internalPort, !state); 
     }
   } else if (dev->HWType == TB6612) {
     tb6612* motor = static_cast<tb6612*>(dev->Device);
@@ -227,16 +242,18 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
     ow2408* MyDS2408 = static_cast<ow2408*>(dev->Device);
     MyDS2408->setPort(PortMap1.internalPort, state);
     if (Port2 && Port2 > 0) {
-      MyDS2408->setPort(PortMap2.internalPort, !reverse); // Normal: HIGH
+      MyDS2408->setPort(PortMap2.internalPort, !state); // Normal: HIGH
       delay(duration);
-      MyDS2408->setPort(PortMap2.internalPort, reverse); // Normal: LOW
+      MyDS2408->setPort(PortMap1.internalPort, !state);
+      MyDS2408->setPort(PortMap2.internalPort, state); // Normal: LOW
     }
   } else if (dev->HWType == ONBOARD) {
     digitalWrite(PortMap1.internalPort,  state);
     if (Port2 && Port2 > 0) {
-      digitalWrite(PortMap2.internalPort, !reverse); // Normal: HIGH
+      digitalWrite(PortMap2.internalPort, !state); // Normal: HIGH
       delay(duration);
-      digitalWrite(PortMap2.internalPort, reverse); // Normal: LOW
+      digitalWrite(PortMap1.internalPort,  !state);
+      digitalWrite(PortMap2.internalPort, state); // Normal: LOW
     }
   }
 

@@ -34,6 +34,7 @@ void valve::SetActive(bool value) {
 
 void valve::SetReverse(bool value) {
   this->reverse = value;
+  if (value) this->HandleSwitch(false, 0); // set OFF
 }
 
 void valve::SetAutoOff(uint16_t value) {

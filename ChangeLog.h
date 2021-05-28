@@ -1,3 +1,12 @@
+Release 2.5.3:
+  - Bug: Oled Typ wird nicht korrekt angezeigt -> OK
+  - Feature: 1Wire ReScan  -> OK, TEST
+  - Bug: ADS1115 scan Timeout setzen/check if ADC found  -> OK, TEST
+  - Bug: Einstellung "Reverse" funktioniert nicht -> OK
+  - Bug: 1Wire schaltet immer nur einen Port -> siehe ow2408 modul, handlePort
+  - Feature: S0 Zähler
+  - AjaxChange
+  
 Release 2.5.2:
   - changing 1wire pin without reboot now possible
   - show 1wire devices and controller at status page
