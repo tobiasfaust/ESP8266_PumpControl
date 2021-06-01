@@ -1,11 +1,14 @@
 Release 2.5.3:
-  - Bug: Oled Typ wird nicht korrekt angezeigt -> OK
-  - Feature: 1Wire ReScan  -> OK, TEST
-  - Bug: ADS1115 scan Timeout setzen/check if ADC found  -> OK, TEST
-  - Bug: Einstellung "Reverse" funktioniert nicht -> OK
+  - Bug: Oled Typ selectionbox in GUI will now list correct
+  - Bug: Reverse function works now as expected
+  - ReScan i2cBus or 1WireBus will now change textcolor to red
+  - Bug: ADS1115 Scan checks now if ADC is present to prevent ESP freezes 
+  - Feature: 1Wire ReScan at statuspage
+  - Bug: bistable valve works again due an definition error in 2.5.2
+
   - Bug: 1Wire schaltet immer nur einen Port -> siehe ow2408 modul, handlePort
   - Feature: S0 Zähler
-  - AjaxChange
+  - Feature: MQTT Präfix
   
 Release 2.5.2:
   - changing 1wire pin without reboot now possible

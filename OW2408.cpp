@@ -58,8 +58,8 @@ bool ow2408::handlePort(uint8_t port, bool state) {
   }
   if (Config->GetDebugLevel() >=4) { Serial.printf("Schalte Device #%d  Port %d (%s)\n", index, DevPort, this->print_device(index).c_str()); }
 
-  uint8_t currentstate = (ow->get_state(this->devices[index]));
-  if (Config->GetDebugLevel() >=5)  { Serial.print(" STATE="); print_byte(currentstate); }
+  uint8_t currentstate = (this->ow->get_state(this->devices[index]));
+  if (Config->GetDebugLevel() >=5)  { Serial.print(" STATE ALT="); print_byte(currentstate); }
 
   if(state) {
     // set ON
@@ -69,7 +69,7 @@ bool ow2408::handlePort(uint8_t port, bool state) {
     currentstate &= ~(1 << DevPort);
   }
 
-  ret = ow->set_state(this->devices[index], currentstate);
+  ret = this->ow->set_state(this->devices[index], currentstate);
   if (Config->GetDebugLevel() >=5) { Serial.print(" STATE NEU ="); print_byte(currentstate); Serial.println(""); }
 
   return ret;

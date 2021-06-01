@@ -248,12 +248,11 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
       MyDS2408->setPort(PortMap2.internalPort, state); // Normal: LOW
     }
   } else if (dev->HWType == ONBOARD) {
-    digitalWrite(PortMap1.internalPort,  state);
+    digitalWrite(PortMap1.internalPort,  state); // Bistabil: set Direction
     if (Port2 && Port2 > 0) {
-      digitalWrite(PortMap2.internalPort, !state); // Normal: HIGH
+      digitalWrite(PortMap2.internalPort, true); // Bistabil: set ON
       delay(duration);
-      digitalWrite(PortMap1.internalPort,  !state);
-      digitalWrite(PortMap2.internalPort, state); // Normal: LOW
+      digitalWrite(PortMap2.internalPort, false); // Bistabil: set OFF
     }
   }
 
