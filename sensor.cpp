@@ -156,7 +156,7 @@ void sensor::loop() {
       if(this->oled) this->oled->SetLevel(this->level);
     }
 
-     if (Config->GetDebugLevel() >=4) {
+     if (this->Type != NONE && Config->GetDebugLevel() >=4) {
       Serial.printf("measured sensor raw value: %d \n", this->raw);
      }
   }

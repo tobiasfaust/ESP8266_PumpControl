@@ -5,7 +5,9 @@ Release 2.5.3:
   - Bug: ADS1115 Scan checks now if ADC is present to prevent ESP freezes 
   - Feature: 1Wire ReScan at statuspage
   - Bug: bistable valve works again due an definition error in 2.5.2
-
+  - Bug: ESP8266: reduce autoupdater to last version due RAM limitations
+  - Bug: valve doesnt switch back to OFF status after on-for-timer sometimes
+  
   - Bug: 1Wire schaltet immer nur einen Port -> siehe ow2408 modul, handlePort
   - Feature: S0 Zähler
   - Feature: MQTT Präfix
