@@ -130,7 +130,7 @@ uint8_t valve::GetPort2() {
 void valve::loop() {
   //if (this->active) Serial.printf("Check on-for-timer -> Time left: %d \n", this->ActiveTimeLeft());
   
-  if (this->active && this->ActiveTimeLeft()==0) { 
+  if (this->active && this->lengthmillis >0 && this->ActiveTimeLeft()==0) { 
     //Serial.printf("on-for-timer abgelaufen: Pin %d  \n", this->port1);
     SetOff();
   }
