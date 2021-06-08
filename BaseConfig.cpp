@@ -99,7 +99,12 @@ void BaseConfig::LoadJsonConfig() {
     this->ventil3wege_port = 0;
     this->max_parallel = 0;
     this->enable_autoupdate = true;
-    this->autoupdate_url="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/ESP8266_PumpControl/releases.json";
+    
+    #ifdef ESP8266
+      this->autoupdate_url="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/ESP8266_PumpControl/releases_ESP8266.json";
+    #elif ESP32
+      this->autoupdate_url="http://tfa-releases.s3-website.eu-central-1.amazonaws.com/ESP8266_PumpControl/releases_ESP32.json";
+    #endif
     
     loadDefaultConfig = false; //set back
   }
@@ -219,15 +224,15 @@ void BaseConfig::GetWebContent(WM_WebServer* server) {
   html.concat("  <td colspan='2'>\n");
 
   html.concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='ow1' name='sel_1wire' value='1wire' %s onclick=\"radioselection(['onewire_0'],[''])\"/>", (this->enable_1wire)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='ow1' name='sel_1wire' value='none' %s onclick=\"radioselection([''],['onewire_0'])\"/>", (this->enable_1wire)?"":"checked");
   html.concat(buffer);
-  html.concat("<label for='ow1'>OneWire Aktiv</label></div>\n");
-  
-  html.concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='ow2' name='sel_1wire' value='none' %s onclick=\"radioselection([''],['onewire_0'])\"/>", (this->enable_1wire)?"":"checked");
-  html.concat(buffer);
-  html.concat("<label for='ow2'>kein OneWire</label></div>\n");
+  html.concat("<label for='ow1'>kein OneWire</label></div>\n");
     
+  html.concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='ow2' name='sel_1wire' value='1wire' %s onclick=\"radioselection(['onewire_0'],[''])\"/>", (this->enable_1wire)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='ow2'>OneWire Aktiv</label></div>\n");
+  
   html.concat("  </td>\n");
   html.concat("</tr>\n");
 
@@ -244,14 +249,14 @@ void BaseConfig::GetWebContent(WM_WebServer* server) {
   html.concat("  <td colspan='2'>\n");
 
   html.concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel2' name='sel_oled' value='none' %s onclick=\"radioselection([''],['oled_0'])\"/>", (this->enable_oled)?"":"checked");
+  sprintf(buffer, "<input type='radio' id='sel_oled1' name='sel_oled' value='none' %s onclick=\"radioselection([''],['oled_0','oled_1'])\"/>", (this->enable_oled)?"":"checked");
   html.concat(buffer);
-  html.concat("<label for='sel2'>kein OLED</label></div>\n");
+  html.concat("<label for='sel_oled1'>kein OLED</label></div>\n");
   
   html.concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='sel3' name='sel_oled' value='oled' %s onclick=\"radioselection(['oled_0'],[''])\"/>", (this->enable_oled)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='sel_oled2' name='sel_oled' value='oled' %s onclick=\"radioselection(['oled_0','oled_1'],[''])\"/>", (this->enable_oled)?"checked":"");
   html.concat(buffer);
-  html.concat("<label for='sel3'>mit OLED</label></div>\n");
+  html.concat("<label for='sel_oled2'>mit OLED</label></div>\n");
     
   html.concat("  </td>\n");
   html.concat("</tr>\n");
@@ -340,7 +345,7 @@ void BaseConfig::GetWebContent(WM_WebServer* server) {
   sprintf(buffer, "<tr class='%s' id='update_1'>\n", (this->enable_autoupdate?"hide":""));
   html.concat(buffer);
   html.concat("<td>verfügbare Releases\n");
-  html.concat("<a href='#' onclick='RefreshReleases()' title='Die JSON Liste neu laden'>&#8634;</a>");
+  html.concat("<a href='#' onclick='RefreshReleases()' class='ButtonRefresh' title='Die JSON Liste neu laden'>&#8634;</a>");
   html.concat("</td><td>\n");
 
   server->sendContent(html.c_str()); html = "";

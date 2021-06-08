@@ -59,6 +59,15 @@ function RefreshI2C(id) {
   ajax_send(btn, JSON.stringify(data));
 }
 
+function Refresh1Wire(id) {
+  btn = document.getElementById(id);
+  
+  var data = {};
+  data['action'] = "Refresh1Wire";
+  data['newState'] = "";
+  ajax_send(btn, JSON.stringify(data));
+}
+
 function ajax_send(btn, json) {
   var http = null;
   ShowError("");
@@ -93,7 +102,7 @@ function ajax_send(btn, json) {
              }
            }
            else if (btn.tagName == "DIV") { 
-            btn.innerHTML = jsonReturn.NewState; 
+            btn.innerHTML = "<span class='ajaxchange'>"+jsonReturn.NewState+"</span>";
            }
            
            if (jsonReturn.accepted == 0 && jsonReturn.error) { ShowError(jsonReturn.error); }

@@ -34,6 +34,7 @@ void valve::SetActive(bool value) {
 
 void valve::SetReverse(bool value) {
   this->reverse = value;
+  if (value) this->HandleSwitch(false, 0); // set OFF
 }
 
 void valve::SetAutoOff(uint16_t value) {
@@ -83,10 +84,10 @@ bool valve::HandleSwitch (bool state, int duration) {
   this->active = state;
   
   if (state && duration && duration>0) {
-    startmillis = millis();
-    lengthmillis = duration * 1000;
+    this->startmillis = millis();
+    this->lengthmillis = duration * 1000;
   } else {
-    startmillis = lengthmillis = 0;
+    this->startmillis = lengthmillis = 0;
   }
 
   if(mqtt) {
@@ -98,7 +99,12 @@ bool valve::HandleSwitch (bool state, int duration) {
 }
 
 int valve::ActiveTimeLeft() {
-  return _max((lengthmillis - (millis() - startmillis)),0);
+  // its wiered, _min function don work correct everytime
+  if (!this->active) return 0;
+  
+  long t = this->lengthmillis - (millis() - this->startmillis);
+  if (t > 0) return t;
+  else return 0;
 }
 
 void valve::SetValveType(String type) {
@@ -122,8 +128,10 @@ uint8_t valve::GetPort2() {
 }
 
 void valve::loop() {
-  if (ActiveTimeLeft()==0) {
-    //Serial.print("on-for-timer abgelaufen: Pin");Serial.println(i);
+  //if (this->active) Serial.printf("Check on-for-timer -> Time left: %d \n", this->ActiveTimeLeft());
+  
+  if (this->active && this->lengthmillis >0 && this->ActiveTimeLeft()==0) { 
+    //Serial.printf("on-for-timer abgelaufen: Pin %d  \n", this->port1);
     SetOff();
   }
 }

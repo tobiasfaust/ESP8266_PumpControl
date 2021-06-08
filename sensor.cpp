@@ -36,10 +36,10 @@ void sensor::init_ads1115(uint8_t i2c, uint8_t port) {
  
   if(!adc->init()){
     Serial.printf("Could not connect to ADS1115 at i2cAdress 0x%02x \n", i2c );
+  } else {
+    adc->setVoltageRange_mV(ADS1115_RANGE_4096);
+    this->Device = adc;
   }
-
-  adc->setVoltageRange_mV(ADS1115_RANGE_4096);
-  this->Device = adc;
 }
 
 void sensor::SetOled(OLED* oled) {
@@ -98,27 +98,31 @@ void sensor::loop_ads1115() {
   this->raw = 0;
   this->level = 0;
 
-  if (Config->GetDebugLevel() >=4) Serial.printf("start measure, use analog Sensor ADS1115 port: %d \n", this->ads1115_port);
+  if (!this->Device) {
+    if (Config->GetDebugLevel() >=3) Serial.printf("Measure of analog Sensor ADS1115 port %d requested, but not ADS1115 found. Stop measure! \n", this->ads1115_port);
+  } else {
 
-  switch (this->ads1115_port) {
-    case 0:
-      this->raw = readADS1115Channel(ADS1115_COMP_0_GND);
-    break;
-    case 1:
-      this->raw = readADS1115Channel(ADS1115_COMP_1_GND);
-    break;
-    case 2:
-      this->raw = readADS1115Channel(ADS1115_COMP_2_GND);
-    break;
-    case 3:
-      this->raw = readADS1115Channel(ADS1115_COMP_3_GND);
-    break;
-    default:
-       Serial.printf("portnummer %d not available \n", this->ads1115_port);
-    break;
-  }
+    if (Config->GetDebugLevel() >=4) Serial.printf("start measure, use analog Sensor ADS1115 port: %d \n", this->ads1115_port);
   
-  this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
+    switch (this->ads1115_port) {
+      case 0:
+        this->raw = readADS1115Channel(ADS1115_COMP_0_GND);
+      break;
+      case 1:
+        this->raw = readADS1115Channel(ADS1115_COMP_1_GND);
+      break;
+      case 2:
+        this->raw = readADS1115Channel(ADS1115_COMP_2_GND);
+      break;
+      case 3:
+        this->raw = readADS1115Channel(ADS1115_COMP_3_GND);
+      break;
+      default:
+         Serial.printf("portnummer %d not available \n", this->ads1115_port);
+      break;
+    }
+    this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
+  }
 }
 
 uint16_t sensor::readADS1115Channel(ADS1115_MUX channel) {
@@ -152,7 +156,7 @@ void sensor::loop() {
       if(this->oled) this->oled->SetLevel(this->level);
     }
 
-     if (Config->GetDebugLevel() >=4) {
+     if (this->Type != NONE && Config->GetDebugLevel() >=4) {
       Serial.printf("measured sensor raw value: %d \n", this->raw);
      }
   }

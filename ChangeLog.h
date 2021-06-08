@@ -1,3 +1,14 @@
+Release 2.5.3:
+  - Bug: Oled Typ selectionbox in GUI will now list correct
+  - Bug: Reverse function works now as expected
+  - ReScan i2cBus or 1WireBus will now change textcolor to red
+  - Bug: ADS1115 Scan checks now if ADC is present to prevent ESP freezes 
+  - Feature: 1Wire ReScan at statuspage
+  - Bug: bistable valve works again due an definition error in 2.5.2
+  - Bug: ESP8266: reduce autoupdater to last version due RAM limitations by changing json file definition
+  - Bug: valve sometimes doesnt switch back to OFF status after on-for-timer 
+  - Bug: in ValveConfig Ajax Change of enabling/disabling of a valve doesn recognized
+  
 Release 2.5.2:
   - changing 1wire pin without reboot now possible
   - show 1wire devices and controller at status page

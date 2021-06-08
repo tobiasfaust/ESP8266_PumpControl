@@ -47,6 +47,8 @@ class valveHardware {
     
     bool      Get1WireActive(); // ist 1wire initialisiert?
     uint8_t  Get1WireCountDevices();
+    uint8_t  Refresh1WireDevices();
+    
     const uint8_t& GetPin1wire()      const {return pin_1wire;}
     
   private:
