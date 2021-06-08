@@ -224,15 +224,15 @@ void BaseConfig::GetWebContent(WM_WebServer* server) {
   html.concat("  <td colspan='2'>\n");
 
   html.concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='ow1' name='sel_1wire' value='1wire' %s onclick=\"radioselection(['onewire_0'],[''])\"/>", (this->enable_1wire)?"checked":"");
+  sprintf(buffer, "<input type='radio' id='ow1' name='sel_1wire' value='none' %s onclick=\"radioselection([''],['onewire_0'])\"/>", (this->enable_1wire)?"":"checked");
   html.concat(buffer);
-  html.concat("<label for='ow1'>OneWire Aktiv</label></div>\n");
-  
-  html.concat("    <div class='inline'>");
-  sprintf(buffer, "<input type='radio' id='ow2' name='sel_1wire' value='none' %s onclick=\"radioselection([''],['onewire_0'])\"/>", (this->enable_1wire)?"":"checked");
-  html.concat(buffer);
-  html.concat("<label for='ow2'>kein OneWire</label></div>\n");
+  html.concat("<label for='ow1'>kein OneWire</label></div>\n");
     
+  html.concat("    <div class='inline'>");
+  sprintf(buffer, "<input type='radio' id='ow2' name='sel_1wire' value='1wire' %s onclick=\"radioselection(['onewire_0'],[''])\"/>", (this->enable_1wire)?"checked":"");
+  html.concat(buffer);
+  html.concat("<label for='ow2'>OneWire Aktiv</label></div>\n");
+  
   html.concat("  </td>\n");
   html.concat("</tr>\n");
 
