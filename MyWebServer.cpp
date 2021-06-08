@@ -248,9 +248,9 @@ void MyWebServer::handleAjax() {
 
     if (action && strcmp(action.c_str(), "EnableValve")==0) {
       if (port && port > 0 && newState) {
-        uint8_t e = atoi(newState.c_str()); 
-        VStruct->SetEnable(port, e);
-        jsonReturn["NewState"] = (VStruct->GetEnabled(port)?"1":"0");
+        if (strcmp(newState.c_str(),"true")==0) VStruct->SetEnable(port, true);
+        if (strcmp(newState.c_str(),"false")==0) VStruct->SetEnable(port, false);
+        jsonReturn["NewState"] = (VStruct->GetEnabled(port)?"true":"false");
         jsonReturn["accepted"] = 1;
       }
     }
@@ -277,7 +277,6 @@ void MyWebServer::handleAjax() {
       jsonReturn["NewState"] = buffer;
       jsonReturn["accepted"] = 1;  
     }
-
     
   } else { RaiseError = true; }
 
