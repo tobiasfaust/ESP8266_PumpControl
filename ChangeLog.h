@@ -8,6 +8,7 @@ Release 2.5.3:
   - Bug: ESP8266: reduce autoupdater to last version due RAM limitations by changing json file definition
   - Bug: valve sometimes doesnt switch back to OFF status after on-for-timer 
   - Bug: in ValveConfig Ajax Change of enabling/disabling of a valve doesn recognized
+  - Bug: 1Wire switches only one port
   
 Release 2.5.2:
   - changing 1wire pin without reboot now possible
