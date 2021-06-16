@@ -358,7 +358,7 @@ void valveStructure::getWebJsParameter(String* html) {
 
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-  sprintf(buffer, "const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, Config->GetPin1Wire() + 200);
+  sprintf(buffer, "const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, (Config->Enabled1Wire()?Config->GetPin1Wire() + 200:0));
   html->concat(buffer);
 
   // anhand gefundener pcf Devices die verfügbaren Ports bereit stellen
