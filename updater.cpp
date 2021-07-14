@@ -3,6 +3,7 @@
 updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600) {
   this->releases = new std::vector<release_t>;
   client = new WiFiClient;
+  httpUpdate = new WM_httpUpdate;
   
   this->lastupdate = millis();
   this->LoadJsonConfig();
@@ -40,7 +41,7 @@ String updater::Stage2String(stage_t s) {
 }
 
 String updater::GetUpdateErrorString() {
-  return ESPhttpUpdate.getLastErrorString() + "(" + ESPhttpUpdate.getLastError() + ")";
+  return httpUpdate->getLastErrorString() + "(" + httpUpdate->getLastError() + ")";
 }
 
 
@@ -107,13 +108,13 @@ String* updater::getURLPath(String* url) {
 
 void updater::downloadJson() {
   HTTPClient http;
-
+  
   if (http.begin(*client, this->json_url)) { 
     int httpCode = http.GET();
     if (httpCode > 0) {
       //Serial.printf("[HTTP] GET... code: %d\n", httpCode);
       if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-        String payload = http.getString();
+        String payload = http.getString(); 
         this->parseJson(&payload);
       }
     } else {
@@ -125,12 +126,12 @@ void updater::downloadJson() {
   }
 }
 
-void updater::parseJson(String* json) {
+void updater::parseJson(String* json) {  
   this->releases->clear();
-
-  #if defined(ESP8266) 
+  
+  #ifdef ESP8266 
     String arch = "ESP8266";
-  #elif defined(ESP32)
+  #elif ESP32
     String arch = "ESP32";
   #endif
   
@@ -146,17 +147,17 @@ void updater::parseJson(String* json) {
       if (o.containsKey("number"))         { r.number  = o["number"].as<uint32_t>();}
       if (o.containsKey("subversion"))     { r.subversion  = o["subversion"].as<uint32_t>();}
       if (o.containsKey("stage"))          { r.stage   = this->String2Stage(o["stage"].as<String>());}
-      if (o.containsKey("download-url"))   { r.downloadURL = o["download-url"].as<String>();}
-      
+      if (o.containsKey("download-url"))   { r.downloadURL = o["download-url"].as<String>();}    
       if (o.containsKey("arch") && o["arch"] == arch) {
-        this->releases->push_back(r);  
+          this->releases->push_back(r);
       }
       
-      //this->printRelease(&r); 
+      //if (Config->GetDebugLevel() >=3) 
+        this->printRelease(&r); 
     }
   } else {
-    Serial.println("Cannot parse json");
-  } 
+    Serial.println("Cannot parse the json");
+  }   
 }
 
 void updater::StoreJsonConfig(release_t* r) {
@@ -241,12 +242,12 @@ void updater::InstallRelease(uint32_t ReleaseNumber) {
 
   Serial.printf("Install Release: %s (Number: %d)\n", this->currentRelease.name.c_str(), this->currentRelease.number);
   Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
-  ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
+  //httpUpdate->setLedPin(LED_BUILTIN, LOW);
   
-  t_httpUpdate_return ret = ESPhttpUpdate.update(*client, this->currentRelease.downloadURL);
+  t_httpUpdate_return ret = httpUpdate->update(*client, this->currentRelease.downloadURL);
   switch (ret) {
     case HTTP_UPDATE_FAILED:
-      Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+      Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate->getLastError(), httpUpdate->getLastErrorString().c_str());
       this->currentRelease = oldRelease;
       this->StoreJsonConfig(&this->currentRelease);
       //this->automode = false;
@@ -279,4 +280,3 @@ void updater::loop() {
     }
   } 
 }
-

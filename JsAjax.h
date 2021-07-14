@@ -1,3 +1,6 @@
+#ifndef AJAX_H
+#define AJAX_H
+
 const char JSAJAX[] PROGMEM = R"=====(
 
 function ChangeEnabled(id) {
@@ -47,6 +50,24 @@ function RefreshReleases() {
   ajax_send(null, JSON.stringify(data));
 }
 
+function RefreshI2C(id) {
+  btn = document.getElementById(id);
+  
+  var data = {};
+  data['action'] = "RefreshI2C";
+  data['newState'] = "";
+  ajax_send(btn, JSON.stringify(data));
+}
+
+function Refresh1Wire(id) {
+  btn = document.getElementById(id);
+  
+  var data = {};
+  data['action'] = "Refresh1Wire";
+  data['newState'] = "";
+  ajax_send(btn, JSON.stringify(data));
+}
+
 function ajax_send(btn, json) {
   var http = null;
   ShowError("");
@@ -80,6 +101,10 @@ function ajax_send(btn, json) {
                 btn.value = 'Set On';
              }
            }
+           else if (btn.tagName == "DIV") { 
+            btn.innerHTML = "<span class='ajaxchange'>"+jsonReturn.NewState+"</span>";
+           }
+           
            if (jsonReturn.accepted == 0 && jsonReturn.error) { ShowError(jsonReturn.error); }
       } 
     }
@@ -88,3 +113,5 @@ function ajax_send(btn, json) {
 
 
 )=====";
+
+#endif

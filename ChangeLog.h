@@ -1,3 +1,35 @@
+Release 2.5.3:
+  - Bug: Oled Typ selectionbox in GUI will now list correct
+  - Bug: Reverse function works now as expected
+  - ReScan i2cBus or 1WireBus will now change textcolor to red
+  - Bug: ADS1115 Scan checks now if ADC is present to prevent ESP freezes 
+  - Feature: 1Wire ReScan at statuspage
+  - Bug: bistable valve works again due an definition error in 2.5.2
+  - Bug: ESP8266: reduce autoupdater to last version due RAM limitations by changing json file definition
+  - Bug: valve sometimes doesnt switch back to OFF status after on-for-timer 
+  - Bug: in ValveConfig Ajax Change of enabling/disabling of a valve doesn recognized
+  - Bug: 1Wire switches only one port
+  
+Release 2.5.2:
+  - changing 1wire pin without reboot now possible
+  - show 1wire devices and controller at status page
+  - Feature: OLED Type SSD1306 and SH1106 available
+  - add ADS1115 ADC for a better level measurement (page sensor)
+  - debugmode handling optimized (-> use it only from BaseConfig)
+  
+Release 2.5.1:
+  - Fix Firmware OTA Support for ESP32
+  - Fix deleting stored WiFi Credentials
+  - fixes some ESP32 bugs
+  - refreshing i2c Seach in Basisconfig now working
+  
+Release 2.5.0:
+  - Feature: Add OneWire DS2408 hardware support
+  - Feature: Add a keepalive message via MQTT, configurable at BasisConfig: 
+  - Feature: Add configurable DebugMode at BaseConfig
+  - Feature: push out memory and rssi values via mqtt together with keepalive message if Debugmode >= 4
+  - Feature: support for ESP32, still without OTA Update and Wifi Credential deletion
+  
 Release 2.4.5:
   - Feature: deletion of WiFi credentials now possible
   - Feature: ESP Hostname now the configured Devicename

@@ -3,7 +3,6 @@
 valveRelation::valveRelation() {
   _relationen  = new std::vector<relation_t>{};
   _subscriber  = new std::vector<subscriber_t>{};
-  SPIFFS.begin();
   LoadJsonConfig();
 }
 
@@ -155,7 +154,7 @@ void valveRelation::LoadJsonConfig() {
   }
 }
 
-void valveRelation::GetWebContent(ESP8266WebServer* server) {
+void valveRelation::GetWebContent(WM_WebServer* server) {
   char buffer[200] = {0};
   memset(buffer, 0, sizeof(buffer));
   String html = "";
@@ -223,7 +222,6 @@ void valveRelation::GetWebContent(ESP8266WebServer* server) {
   html.concat("  <input type='text' id='json' name='json' />\n");
   html.concat("  <input type='submit' value='Speichern' />\n");
   html.concat("</form>\n\n");
-  html.concat("<div id='ErrorText' class='errortext'></div>\n");
+
   server->sendContent(html.c_str()); html = "";
 }
-
