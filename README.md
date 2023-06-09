@@ -1,9 +1,10 @@
 ## Bewässerungssteuerung für ein Hauswasserwerk sowie automatisierter Umschaltung bei leerer Zisterne auf Trinkwasser
 [![license](https://img.shields.io/badge/Licence-GNU%20v3.0-green)](https://github.com/desktop/desktop/blob/master/LICENSE)
 <br>
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/tobiasfaust/ESP8266_PumpControl/Build&Deploy/development?label=build%20development)
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/tobiasfaust/ESP8266_PumpControl/Build&Deploy/prelive?label=build%20prelive)
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/tobiasfaust/ESP8266_PumpControl/Build&Deploy/master?label=build%20productive/master)
+
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tobiasfaust/ESP8266_PumpControl/BuildAndDeploy.yml?label=build%20Development&branch=development)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tobiasfaust/ESP8266_PumpControl/BuildAndDeploy.yml?label=build%20Prelive&branch=prelive)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tobiasfaust/ESP8266_PumpControl/BuildAndDeploy.yml?label=build%20Master&branch=master)
 
 <br>
 
