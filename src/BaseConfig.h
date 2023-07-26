@@ -15,7 +15,7 @@ class BaseConfig {
     BaseConfig();
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(WM_WebServer* server);
+    void      GetWebContent(AsyncResponseStream *response);
     void      loop();
 
     const uint8_t& GetPinSDA()      const {return pin_sda;}
@@ -29,6 +29,7 @@ class BaseConfig {
     const uint16_t& GetMqttPort()   const {return mqtt_port;}
     const String&  GetMqttUsername()const {return mqtt_username;}
     const String&  GetMqttPassword()const {return mqtt_password;}
+    const String&   GetMqttBasePath()  const {return mqtt_basepath;}
     const String&  GetMqttRoot()    const {return mqtt_root;}
     const bool&    UseRandomMQTTClientID() const { return mqtt_UseRandomClientID; }
     const uint8_t& Get3WegePort()   const {return ventil3wege_port;}
@@ -46,6 +47,7 @@ class BaseConfig {
     String    mqtt_password;
     uint16_t  mqtt_port;
     String    mqtt_root;
+    String    mqtt_basepath;
     bool      mqtt_UseRandomClientID;
     uint8_t   pin_sda;
     uint8_t   pin_scl;
@@ -65,5 +67,7 @@ class BaseConfig {
 
     updater*  ESPUpdate;
 };
+
+extern BaseConfig* Config;
 
 #endif

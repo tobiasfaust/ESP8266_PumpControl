@@ -3,8 +3,8 @@
 
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
-#include<ADS1115_WE.h>  
-#include "MQTT.h"
+#include <ADS1115_WE.h>  
+#include "mqtt.h"
 #include "valveStructure.h"
 #include "BaseConfig.h"
 #include "oled.h"
@@ -30,7 +30,7 @@ class sensor {
     void      SetLvl(uint8_t lvl);
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(WM_WebServer* server);
+    void      GetWebContent(AsyncResponseStream *response);
     
     const uint16_t& GetRaw() const {return raw;}
     const uint8_t&  GetLvl() const {return level; }

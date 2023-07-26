@@ -135,12 +135,15 @@ void updater::parseJson(String* json) {
     String arch = "ESP32";
   #endif
   
-  DynamicJsonBuffer jsonBuffer;
-  JsonArray& root = jsonBuffer.parseArray(*json);
-  if (root.success()) {
+  StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, *json);
+
+  JsonArray root = doc.as<JsonArray>();
+
+  if (!error) {
     //root.printTo(Serial);
     for (JsonArray::iterator i=root.begin(); i!=root.end(); ++i) {
-      JsonObject& o = *i;
+      JsonObject o = i->as<JsonObject>();
       release_t r;
       if (o.containsKey("name"))           { r.name    = o["name"].as<String>();}
       if (o.containsKey("version"))        { r.version = o["version"].as<String>();}
@@ -161,8 +164,9 @@ void updater::parseJson(String* json) {
 }
 
 void updater::StoreJsonConfig(release_t* r) {
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
+
+  StaticJsonDocument<512> json; // TODO Use computed size??
+
   json["name"]          = r->name.c_str();
   json["version"]       = r->version.c_str();
   json["subversion"]    = r->subversion;
@@ -175,29 +179,26 @@ void updater::StoreJsonConfig(release_t* r) {
     Serial.println("failed to open ESPUpdate.json file for writing");
   }
 
-  //json.printTo(Serial);
-  json.printTo(configFile);
+  serializeJson(json, configFile);
   configFile.close();
 }
 
 void updater::LoadJsonConfig() {
   bool loadDefaultConfig = false;
-  if (SPIFFS.exists("/ESPUpdate.json")) {
+  if (SPIFFS.exists("/BaseConfig.json")) {
     //file exists, reading and loading
-    Serial.println("reading ESPUpdate config file");
-    File configFile = SPIFFS.open("/ESPUpdate.json", "r");
+    Serial.println("reading config file");
+    File configFile = SPIFFS.open("/BaseConfig.json", "r");
     if (configFile) {
-      Serial.println("opened ESPUpdate config file");
-      size_t size = configFile.size();
-      // Allocate a buffer to store contents of the file.
-      std::unique_ptr<char[]> buf(new char[size]);
+      Serial.println("opened config file");
+      //size_t size = configFile.size();
 
-      configFile.readBytes(buf.get(), size);
-      DynamicJsonBuffer jsonBuffer;
-      JsonObject& json = jsonBuffer.parseObject(buf.get());
-      json.printTo(Serial);
-      if (json.success()) {
-        Serial.println("\nparsed json");
+      StaticJsonDocument<512> json; // TODO Use computed size??
+      DeserializationError error = deserializeJson(json, configFile);
+      
+      if (!error) {
+        serializeJsonPretty(json, Serial);
+        
         release_t r;
         if (json.containsKey("name"))          { r.name       = json["name"].as<String>();}
         if (json.containsKey("version"))       { r.version    = json["version"].as<String>();}

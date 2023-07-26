@@ -1,5 +1,5 @@
 #ifndef UPDATER_H
-#define UPDATER
+#define UPDATER_H
 
 #include "CommonLibs.h"
 #include <vector>

@@ -8,7 +8,7 @@
 #include "BaseConfig.h"
 #include "valveRelation.h"
 #include "valve.h"
-#include "MQTT.h"
+#include "mqtt.h"
 #include "JavaScript.h"
 
 extern BaseConfig* Config;
@@ -34,9 +34,9 @@ class valveStructure {
     
     void      StoreJsonConfig(String* json);
     void      LoadJsonConfig();
-    void      GetWebContent(WM_WebServer* server);
-    void      GetWebContent1Wire(WM_WebServer* server);
-    void      getWebJsParameter(String* html);
+    void      GetWebContent(AsyncResponseStream *response);
+    void      GetWebContent1Wire(AsyncResponseStream *response);
+    void      getWebJsParameter(AsyncResponseStream *response);
     void      ReceiveMQTT(String topic, int value);
     uint8_t Get1WireCountDevices();
     uint8_t Refresh1WireDevices();

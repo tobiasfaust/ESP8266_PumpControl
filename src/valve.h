@@ -3,7 +3,7 @@
 
 #include "CommonLibs.h"
 #include "valveHardware.h"
-#include "MQTT.h"
+#include "mqtt.h"
 
 extern MQTT* mqtt;
 

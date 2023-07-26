@@ -43,7 +43,7 @@ class valveHardware {
     bool      IsValidPort(uint8_t Port);
     uint8_t  GetI2CAddress(uint8_t Port);
     
-    void      GetWebContent1Wire(WM_WebServer* server);
+    void      GetWebContent1Wire(AsyncResponseStream *response);
     
     bool      Get1WireActive(); // ist 1wire initialisiert?
     uint8_t  Get1WireCountDevices();

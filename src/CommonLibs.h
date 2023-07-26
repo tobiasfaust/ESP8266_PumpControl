@@ -4,6 +4,8 @@
   #include "WProgram.h"
 #endif
 
+#pragma once
+
 //#if defined(ESP8266) || defined(ESP32)
 //  #define min(x,y) _min(x,y)
 //#endif
@@ -19,16 +21,11 @@
   #include <ESP8266WiFi.h>
 #elif ESP32
   #include "SPIFFS.h"
-  #include <WiFi.h>
-  #include <esp_wifi.h>  
-  #include <Update.h>
-  #include <WebServer.h>
-  #include <ESPmDNS.h>
-  #include <ESPHTTPUpdateServer.h>
+  #include <WiFi.h> 
+  #include <AsyncTCP.h>
 #endif
 
-#ifdef ESP8266
-  using WM_WebServer = ESP8266WebServer;
-#elif ESP32
-  using WM_WebServer = WebServer;
-#endif
+#include <Update.h>
+#include <ESPAsyncWebServer.h>
+
+#include <DNSServer.h>

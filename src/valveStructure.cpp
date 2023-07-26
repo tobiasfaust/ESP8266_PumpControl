@@ -17,7 +17,7 @@ valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
 void valveStructure::OnForTimer(String SubTopic, int duration) {
   valve* v = this->GetValveItem(SubTopic);
   if (v && v->OnForTimer(duration)) {
-    if (mqtt) {mqtt->Publish_Int("Threads", (int)this->CountActiveThreads()); }
+    if (mqtt) {mqtt->Publish_Int("Threads", (int)this->CountActiveThreads(), false); }
   }
 }
 
@@ -33,13 +33,13 @@ void valveStructure::SetOn(String SubTopic) {
 
 void valveStructure::SetOn(uint8_t Port) {
   valve* v = this->GetValveItem(Port);
-  if (v && v->SetOn() && mqtt) { mqtt->Publish_Int("Threads", (int)this->CountActiveThreads()); }
+  if (v && v->SetOn() && mqtt) { mqtt->Publish_Int("Threads", (int)this->CountActiveThreads(), false); }
 }
 
 void valveStructure::SetOff(uint8_t Port) {
   valve* v = this->GetValveItem(Port);
   if (v) { v->SetOff(); }
-  if (mqtt) { mqtt->Publish_Int("Threads", (int)this->CountActiveThreads()); }
+  if (mqtt) { mqtt->Publish_Int("Threads", (int)this->CountActiveThreads(), false); }
 }
 
 bool valveStructure::GetState(uint8_t Port) {
@@ -133,17 +133,19 @@ uint8_t valveStructure::Refresh1WireDevices() {
 }
 
 void valveStructure::StoreJsonConfig(String* json) {
-  //https://arduinojson.org/v5/api/jsonobject/begin_end/
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(*json);
-    
-  if (root.success()) {
+  StaticJsonDocument<512> doc;
+  deserializeJson(doc, *json);
+  JsonObject root = doc.as<JsonObject>();
+
+  if (!root.isNull()) {
     File configFile = SPIFFS.open("/VentilConfig.json", "w");
     if (!configFile) {
-      if (Config->GetDebugLevel() >=2) { Serial.println("failed to open VentilConfig.json file for writing"); }
-    } else {
-      root.printTo(Serial);
-      root.printTo(configFile);
+      if (Config->GetDebugLevel() >=0) {Serial.println("failed to open VentilConfig.json file for writing");}
+    } else {  
+      serializeJsonPretty(doc, Serial);
+      if (serializeJson(doc, configFile) == 0) {
+        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed to write to file"));}
+      }
       configFile.close();
   
       LoadJsonConfig();
@@ -152,23 +154,24 @@ void valveStructure::StoreJsonConfig(String* json) {
 }
 
 void valveStructure::LoadJsonConfig() {
-  bool loadDefaultConfig = false;
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
-
-  Valves->clear(); // leere den Valve Vector bevor neu befüllt wird
+  bool loadDefaultConfig = false;
   
   if (SPIFFS.exists("/VentilConfig.json")) {
+    //file exists, reading and loading
+    Serial.println("reading config file");
     File configFile = SPIFFS.open("/VentilConfig.json", "r");
     if (configFile) {
-      size_t size = configFile.size();
-      // Allocate a buffer to store contents of the file.
-      std::unique_ptr<char[]> buf(new char[size]);
-      configFile.readBytes(buf.get(), size);
-      DynamicJsonBuffer jsonBuffer;
-      JsonObject& json = jsonBuffer.parseObject(buf.get());
-      json.printTo(Serial);
-      if (json.success()) {
+      Serial.println("opened config file");
+      //size_t size = configFile.size();
+
+      StaticJsonDocument<512> json; // TODO Use computed size??
+      DeserializationError error = deserializeJson(json, configFile);
+      
+      if (!error) {
+        serializeJsonPretty(json, Serial);
+        
         uint8_t count = 0;
         if (json.containsKey("count")) { count = json["count"].as<int>(); }
         if(count == 0) {
@@ -229,159 +232,127 @@ void valveStructure::LoadJsonConfig() {
   }
 }
 
-void valveStructure::GetWebContent1Wire(WM_WebServer* server) {
-   if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(server); }
+void valveStructure::GetWebContent1Wire(AsyncResponseStream *response) {
+   if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(response); }
 }
 
-void valveStructure::GetWebContent(WM_WebServer* server) {
-  char buffer[200] = {0};
-  memset(buffer, 0, sizeof(buffer));
-  String html = "";
-
-  html.concat("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
-  html.concat("<form id='DataForm'>\n");
-  html.concat("<table id='maintable' class='editorDemoTable'>\n");
-  html.concat("<thead>\n");
-  html.concat("<tr>\n");
-  html.concat("<td style='width: 25px;'>Nr</td>\n");
-  html.concat("<td style='width: 25px;'>Active</td>\n");
-  html.concat("<td style='width: 250px;'>MQTT SubTopic</td>\n");
-  html.concat("<td style='width: 210 px;'>Port</td>\n");
-  html.concat("<td style='width: 80px;'>Type</td>\n");
-  html.concat("<td style='width: 80px;'>Reverse</td>\n");
-  html.concat("<td style='width: 80px;'>AutoOff</td>\n");
-  html.concat("<td style='width: 25px;'>Delete</td>\n");
-  html.concat("<td style='width: 25px;'>Action</td>\n");
-  html.concat("</tr>\n");
-  html.concat("</thead>\n");
-  server->sendContent(html.c_str()); html = "";
+void valveStructure::GetWebContent(AsyncResponseStream *response) {
+  response->println("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
+  response->println("<form id='DataForm'>\n");
+  response->println("<table id='maintable' class='editorDemoTable'>\n");
+  response->println("<thead>\n");
+  response->println("<tr>\n");
+  response->println("<td style='width: 25px;'>Nr</td>\n");
+  response->println("<td style='width: 25px;'>Active</td>\n");
+  response->println("<td style='width: 250px;'>MQTT SubTopic</td>\n");
+  response->println("<td style='width: 210 px;'>Port</td>\n");
+  response->println("<td style='width: 80px;'>Type</td>\n");
+  response->println("<td style='width: 80px;'>Reverse</td>\n");
+  response->println("<td style='width: 80px;'>AutoOff</td>\n");
+  response->println("<td style='width: 25px;'>Delete</td>\n");
+  response->println("<td style='width: 25px;'>Action</td>\n");
+  response->println("</tr>\n");
+  response->println("</thead>\n");
 
   for(uint8_t i=0; i<Valves->size(); i++) {
-    html.concat("<tr>\n");
-    sprintf(buffer, "  <td>%d</td>\n", i+1);
-    html.concat(buffer);
-    html.concat("  <td>\n");
-    html.concat("    <div class='onoffswitch'>\n");
-    sprintf(buffer, "      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetEnabled()?"checked":""));
-    html.concat(buffer);
-    sprintf(buffer, "      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
-    html.concat(buffer);
-    html.concat("        <span class='onoffswitch-inner'></span>\n");
-    html.concat("        <span class='onoffswitch-switch'></span>\n");
-    html.concat("      </label>\n");
-    html.concat("    </div>\n");
-    html.concat("  </td>\n");
+    response->println("<tr>\n");
+    response->printf("  <td>%d</td>\n", i+1);
+    response->println("  <td>\n");
+    response->println("    <div class='onoffswitch'>\n");
+    response->printf("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetEnabled()?"checked":""));
+    response->printf("      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
+    response->println("        <span class='onoffswitch-inner'></span>\n");
+    response->println("        <span class='onoffswitch-switch'></span>\n");
+    response->println("      </label>\n");
+    response->println("    </div>\n");
+    response->println("  </td>\n");
     
-    sprintf(buffer, "  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
-    html.concat(buffer);
-    sprintf(buffer, "  <td id='tdport_%d'>\n", i);
-    html.concat(buffer);
+    response->printf("  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
+    response->printf("  <td id='tdport_%d'>\n", i);
     
     if (Valves->at(i).GetValveType() == "b") {
-      sprintf(buffer, "    <div id='PortA_%d'>\n", i);
-      html.concat(buffer);
-      html.concat("    <div class='inline'>\n");
-      sprintf(buffer, "      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
-      html.concat(buffer);
-      html.concat("      <label>for</label>\n");
-      sprintf(buffer, "      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
-      html.concat(buffer);
-      html.concat("      <label>ms</label>\n");
-      html.concat("    </div>\n");
+      response->printf("    <div id='PortA_%d'>\n", i);
+      response->println("    <div class='inline'>\n");
+      response->printf("      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
+      response->println("      <label>for</label>\n");
+      response->printf("      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
+      response->println("      <label>ms</label>\n");
+      response->println("    </div>\n");
       
-      sprintf(buffer, "    <div id='PortB_%d'>\n", i);
-      html.concat(buffer);
-      html.concat("      <div class='inline'>\n");
-      sprintf(buffer, "      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
-      html.concat(buffer);
-      html.concat("      <label>for</label>\n");
-      sprintf(buffer, "      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
-      html.concat(buffer);
-      html.concat("      <label>ms</label>\n");
-      html.concat("    </div>\n");
+      response->printf("    <div id='PortB_%d'>\n", i);
+      response->println("      <div class='inline'>\n");
+      response->printf("      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
+      response->println("      <label>for</label>\n");
+      response->printf("      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
+      response->println("      <label>ms</label>\n");
+      response->println("    </div>\n");
     } else if (Valves->at(i).GetValveType() == "n") {
-      sprintf(buffer, "    <div id='Port_%d'>\n", i);
-      html.concat(buffer);
-      sprintf(buffer, "      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
-      html.concat(buffer);
-      html.concat("    </div>\n");
+      response->printf("    <div id='Port_%d'>\n", i);
+      response->printf("      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
+      response->println("    </div>\n");
     } 
-    html.concat("  </td>\n");
-    html.concat("  <td>\n");
-    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
-    html.concat(buffer);
-    sprintf(buffer, "    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
-    html.concat(buffer);
-    html.concat("  </td>\n");
+    response->println("  </td>\n");
+    response->println("  <td>\n");
+    response->printf("    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
+    response->printf("    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
+    response->println("  </td>\n");
 
-    html.concat("  <td>\n");
-    html.concat("    <div class='onoffswitch'>\n");
-    sprintf(buffer, "      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).GetReverse()?"checked":""));
-    html.concat(buffer);
-    sprintf(buffer, "      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
-    html.concat(buffer);
-    html.concat("        <span class='onoffswitch-inner'></span>\n");
-    html.concat("        <span class='onoffswitch-switch'></span>\n");
-    html.concat("      </label>\n");
-    html.concat("    </div>\n");
-    html.concat("  </td>\n");
+    response->println("  <td>\n");
+    response->println("    <div class='onoffswitch'>\n");
+    response->printf("      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).GetReverse()?"checked":""));
+    response->printf("      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
+    response->println("        <span class='onoffswitch-inner'></span>\n");
+    response->println("        <span class='onoffswitch-switch'></span>\n");
+    response->println("      </label>\n");
+    response->println("    </div>\n");
+    response->println("  </td>\n");
 
-    html.concat("  <td>\n");
-    sprintf(buffer, "      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).GetAutoOff());
-    html.concat(buffer);
-    html.concat("  </td>\n");
+    response->println("  <td>\n");
+    response->printf("      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).GetAutoOff());
+    response->println("  </td>\n");
     
-    html.concat("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
+    response->println("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
 
-    html.concat("  <td>\n");
-    sprintf(buffer, "    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).GetActive()?"On":"Off"));
-    html.concat(buffer);
-    html.concat("  </td>\n");
+    response->println("  <td>\n");
+    response->printf("    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).GetActive()?"On":"Off"));
+    response->println("  </td>\n");
 
-    html.concat("</tr>\n");
-    server->sendContent(html.c_str()); html = "";
+    response->println("</tr>\n");
   }
-  html.concat("</tbody>\n");
-  html.concat("</table>\n");
-  html.concat("</form>\n\n<br />\n");
-  html.concat("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
-  html.concat("  <input type='text' id='json' name='json' />\n");
-  html.concat("  <input type='submit' value='Speichern' />\n");
-  html.concat("</form>\n\n");
-
-  server->sendContent(html.c_str()); html = "";
+  response->println("</tbody>\n");
+  response->println("</table>\n");
+  response->println("</form>\n\n<br />\n");
+  response->println("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  response->println("  <input type='text' id='json' name='json' />\n");
+  response->println("  <input type='submit' value='Speichern' />\n");
+  response->println("</form>\n\n");
 }
 
-void valveStructure::getWebJsParameter(String* html) {
-  char buffer[200] = {0};
-  memset(buffer, 0, sizeof(buffer));
-
+void valveStructure::getWebJsParameter(AsyncResponseStream *response) {
+  
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-  sprintf(buffer, "const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, (Config->Enabled1Wire()?Config->GetPin1Wire() + 200:0));
-  html->concat(buffer);
+  response->printf("const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, (Config->Enabled1Wire()?Config->GetPin1Wire() + 200:0));
 
   // anhand gefundener pcf Devices die verfügbaren Ports bereit stellen
   //const pcf_found = [65,72];
-  html->concat("const availablePorts = [");
+  response->println("const availablePorts = [");
   uint8_t count=0;
   for (uint8_t p=1; p<=254; p++) {
     if (ValveHW->IsValidPort(p) && (I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p)) || ValveHW->GetI2CAddress(p) == 0x01) && (!Config->EnabledOled() || Config->GetI2cOLED()!=ValveHW->GetI2CAddress(p))) {
       // i2cDetect muss den ic2Port finden oder es ist 0x01 OneWire 
       //ohne die OLED i2c Adresse
-      sprintf(buffer, "%s%d", (count>0?",":"") , p);
-      html->concat(buffer);
+      response->printf("%s%d", (count>0?",":"") , p);
       count++;
     }
   }
-  html->concat("];\n");
+  response->println("];\n");
 
   //konfigurierte Ports / Namen
   //const configuredPorts = [ {port:65, name:"Ventil1"}, {port:67, name:"Ventil2"}]
-  html->concat("const configuredPorts = [");
+  response->println("const configuredPorts = [");
   for(int i=0; i < Valves->size(); i++) {
-    sprintf(buffer, "{port:%d, name:'%s'}%s", Valves->at(i).GetPort1() ,Valves->at(i).subtopic.c_str(), (i<Valves->size()-1?",":""));
-    html->concat(buffer);
+    response->printf("{port:%d, name:'%s'}%s", Valves->at(i).GetPort1() ,Valves->at(i).subtopic.c_str(), (i<Valves->size()-1?",":""));
   }
-  html->concat("];\n");
+  response->println("];\n");
 }

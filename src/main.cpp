@@ -1,7 +1,7 @@
-#pragma once
 
 /* getestet mit ESP8266 Board Library 2.6.3 | 2.7.1  */
 /* getestet mit ESP32 Board Library 1.0.4  */
+/* Arduino JSON Library 5.13.5 ist zwingend notwendig, nicht kompatibel mit Version 6.x */ 
 
 /*#include <Wire.h>
   #include "PCF8574.h"
@@ -28,6 +28,9 @@
 #include "sensor.h"
 #include "oled.h"
 
+AsyncWebServer server(80);
+DNSServer dns;
+
 i2cdetect* I2Cdetect = NULL;
 BaseConfig* Config = NULL;
 valveRelation* ValveRel = NULL;
@@ -46,6 +49,26 @@ MyWebServer* mywebserver = NULL;
     5 -> max details
 */
 //#define debugmode 4  --> in der WebUI -> Basisconfig einstellbar
+
+void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
+  String msg;
+  Serial.print("Message arrived ["); Serial.print(topic); Serial.print("] ");
+
+  for (int i = 0; i < length; i++) {
+    msg.concat((char)payload[i]);
+  }
+  Serial.print("Message: "); Serial.println(msg.c_str());
+
+  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str()) > 0) {
+    LevelSensor->SetLvl(atoi(msg.c_str()));
+  }
+  else if (strstr(topic, "/raw") ||  strstr(topic, "/level") ||  strstr(topic, "/mem") ||  strstr(topic, "/rssi")) {
+    /*SensorMeldungen - ignore!*/
+  }
+  else {
+    VStruct->ReceiveMQTT((String)topic, atoi(msg.c_str()));
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -72,8 +95,7 @@ void setup() {
   oled->Enable(Config->EnabledOled());
 
   Serial.println("Starting Wifi and MQTT");
-  mqtt = new MQTT(Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttRoot().c_str());
-  mqtt->SetOled(oled);
+  mqtt = new MQTT(&server, &dns, Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttBasePath().c_str(), Config->GetMqttRoot().c_str());
   mqtt->setCallback(myMQTTCallBack);
 
   Serial.println("Starting I2CDetect");
@@ -90,29 +112,9 @@ void setup() {
   VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
 
   Serial.println("Starting WebServer");
-  mywebserver = new MyWebServer();
+  mywebserver = new MyWebServer(&server, &dns);
 
   //VStruct->OnForTimer("Valve1", 10); // Test
-}
-
-void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
-  String msg;
-  Serial.print("Message arrived ["); Serial.print(topic); Serial.print("] ");
-
-  for (int i = 0; i < length; i++) {
-    msg.concat((char)payload[i]);
-  }
-  Serial.print("Message: "); Serial.println(msg.c_str());
-
-  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str()) > 0) {
-    LevelSensor->SetLvl(atoi(msg.c_str()));
-  }
-  else if (strstr(topic, "/raw") ||  strstr(topic, "/level") ||  strstr(topic, "/mem") ||  strstr(topic, "/rssi")) {
-    /*SensorMeldungen - ignore!*/
-  }
-  else {
-    VStruct->ReceiveMQTT((String)topic, atoi(msg.c_str()));
-  }
 }
 
 void loop() {

@@ -20,7 +20,7 @@ class ow2408 {
     uint8_t    findDevices();
     const uint8_t& GetCountDevices() const {return device_count;}
     
-    void        GetWebContent1Wire(WM_WebServer* server);
+    void        GetWebContent1Wire(AsyncResponseStream *response);
   private:
     DS2408* ow;
     Devices devices;

@@ -83,41 +83,31 @@ bool ow2408::isValidPort(uint8_t port)  {
   return true; 
 }
 
-void ow2408::GetWebContent1Wire(WM_WebServer* server) {
-  char buffer[200] = {0};
-  memset(buffer, 0, sizeof(buffer));
-  String html = "";
-
-  html.concat("<table id='maintable' class='editorDemoTable'>\n");
-  html.concat("<thead>\n");
-  html.concat("<tr>\n");
-  html.concat("<td style='width: 25px;'>Nr</td>\n");
-  html.concat("<td style='width: 75px;'>Typ</td>\n");
-  html.concat("<td style='width:150px;'>ID</td>\n");
-  html.concat("<td style='width:  80px;'>Port</td>\n");
-  html.concat("</tr>\n");
-  html.concat("</thead>\n");
-  server->sendContent(html.c_str()); html = "";
-
+void ow2408::GetWebContent1Wire(AsyncResponseStream *response) {
+  response->println("<table id='maintable' class='editorDemoTable'>\n");
+  response->println("<thead>\n");
+  response->println("<tr>\n");
+  response->println("<td style='width: 25px;'>Nr</td>\n");
+  response->println("<td style='width: 75px;'>Typ</td>\n");
+  response->println("<td style='width:150px;'>ID</td>\n");
+  response->println("<td style='width:  80px;'>Port</td>\n");
+  response->println("</tr>\n");
+  response->println("</thead>\n");
+  
   for(uint8_t i=0; i<this->device_count; i++) {
-    html.concat("<tr>\n");
-    sprintf(buffer, "  <td>%d</td>\n", i+1);
-    html.concat(buffer);
-    html.concat("  <td>DS2408</td>\n");
-    sprintf(buffer, "  <td>%s</td>\n", this->print_device(i).c_str());
-    html.concat(buffer);
-
-    html.concat("  <td><table>\n");
+    response->println("<tr>\n");
+    response->printf("  <td>%d</td>\n", i+1);
+    response->println("  <td>DS2408</td>\n");
+    response->printf("  <td>%s</td>\n", this->print_device(i).c_str());
+    
+    response->println("  <td><table>\n");
     for(uint8_t j=0; j<8; j++) {
-      sprintf(buffer, "    <tr><td>Port %d -> %d</td></tr>\n", j, 140+(i*8)+j);
-      html.concat(buffer);
+      response->printf("    <tr><td>Port %d -> %d</td></tr>\n", j, 140+(i*8)+j);
     }
-    html.concat("</table></td>\n");
+    response->println("</table></td>\n");
 
-    html.concat("</tr>\n");
-    server->sendContent(html.c_str()); html = "";
+    response->println("</tr>\n");
   }
 
-  html.concat("</table>\n");
-  server->sendContent(html.c_str()); html = "";
+  response->println("</table>\n");
 }

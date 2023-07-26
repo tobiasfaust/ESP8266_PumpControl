@@ -4,7 +4,7 @@
 #include "CommonLibs.h"
 #include <vector>
 #include <ArduinoJson.h>
-#include "MQTT.h"
+#include "mqtt.h"
 
 extern MQTT* mqtt;
 
@@ -33,7 +33,7 @@ class valveRelation {
     
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(WM_WebServer* server);
+    void      GetWebContent(AsyncResponseStream *response);
     
   private:
     std::vector<relation_t>* _relationen  = NULL;
