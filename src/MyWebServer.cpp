@@ -43,7 +43,6 @@ void MyWebServer::handle_update_response(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handle_update_progress(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-  uint32_t free_space = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
   if(!index){
       Serial.printf("Update Start: %s\n", filename.c_str());
       //Update.runAsync(true);
@@ -127,7 +126,7 @@ void MyWebServer::handleReboot(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handleReset(AsyncWebServerRequest *request) {
-  SPIFFS.format();
+  LittleFS.format();
   this->handleReboot(request);
 }
 
@@ -288,7 +287,7 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
       jsonReturn["accepted"] = 1;  
   } else {
     if (Config->GetDebugLevel() >=1) {
-      snprintf(buffer, sizeof(buffer), "Ajax Command unknown: %s", action);
+      snprintf(buffer, sizeof(buffer), "Ajax Command unknown: %s", action.c_str());
       Serial.println(buffer);
     }
   }

@@ -168,7 +168,7 @@ void sensor::StoreJsonConfig(String* json) {
   JsonObject root = doc.as<JsonObject>();
 
   if (!root.isNull()) {
-    File configFile = SPIFFS.open("/SensorConfig.json", "w");
+    File configFile = LittleFS.open("/SensorConfig.json", "w");
     if (!configFile) {
       if (Config->GetDebugLevel() >=0) {Serial.println("failed to open SensorConfig.json file for writing");}
     } else {  
@@ -198,10 +198,10 @@ void sensor::LoadJsonConfig() {
   
   mqtt->ClearSubscriptions(MQTT::SENSOR);
   
-  if (SPIFFS.exists("/SensorConfig.json")) {
+  if (LittleFS.exists("/SensorConfig.json")) {
     //file exists, reading and loading
     Serial.println("reading config file");
-    File configFile = SPIFFS.open("/SensorConfig.json", "r");
+    File configFile = LittleFS.open("/SensorConfig.json", "r");
     if (configFile) {
       Serial.println("opened config file");
       //size_t size = configFile.size();

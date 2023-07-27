@@ -32,6 +32,9 @@ extern i2cdetect* I2Cdetect;
 
 class MyWebServer {
 
+  AsyncWebServer* server;
+  DNSServer* dns;
+
   enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, ONEWIRE, RELATIONS};
   
   public:
@@ -40,12 +43,8 @@ class MyWebServer {
     void      loop();
 
   private:
-    
     bool      DoReboot;
-
-    AsyncWebServer* server;
-    DNSServer* dns;
-        
+    
     void      handle_update_page(AsyncWebServerRequest *request);
     void      handle_update_progress(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);    
     void      handle_update_response(AsyncWebServerRequest *request);

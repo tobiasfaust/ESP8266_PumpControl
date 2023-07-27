@@ -76,7 +76,7 @@ void valveRelation::StoreJsonConfig(String* json) {
   JsonObject root = doc.as<JsonObject>();
 
   if (!root.isNull()) {
-    File configFile = SPIFFS.open("/Relations.json", "w");
+    File configFile = LittleFS.open("/Relations.json", "w");
     if (!configFile) {
       if (Config->GetDebugLevel() >=0) {Serial.println("failed to open Relations.json file for writing");}
     } else {  
@@ -104,10 +104,10 @@ void valveRelation::LoadJsonConfig() {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
 
-  if (SPIFFS.exists("/Relations.json")) {
+  if (LittleFS.exists("/Relations.json")) {
     //file exists, reading and loading
     Serial.println("reading Relations.json file");
-    File configFile = SPIFFS.open("/Relations.json", "r");
+    File configFile = LittleFS.open("/Relations.json", "r");
     if (configFile) {
       Serial.println("opened Relations.json file");
       //size_t size = configFile.size();

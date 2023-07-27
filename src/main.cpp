@@ -54,7 +54,7 @@ void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   String msg;
   if (Config->GetDebugLevel() >= 4) { Serial.printf("Message arrived [%s]\n", topic); }
 
-  for (int i = 0; i < length; i++) {
+  for (u_int16_t i = 0; i < length; i++) {
     msg.concat((char)payload[i]);
   }
   Serial.print("Message: "); Serial.println(msg.c_str());
@@ -76,14 +76,14 @@ void setup() {
   Serial.println("ready");
 
   #ifdef ESP8266
-    SPIFFS.begin();
+    LittleFS.begin();
   #elif ESP32
-    SPIFFS.begin(true); // true: format SPIFFS/NVS if mount fails
+    LittleFS.begin(true); // true: format LittleFS/NVS if mount fails
   #endif
   
   // Flash Write Issue
   // https://github.com/esp8266/Arduino/issues/4061#issuecomment-428007580
-  //SPIFFS.format();
+  //LittleFS.format();
 
   Config = new BaseConfig();
 

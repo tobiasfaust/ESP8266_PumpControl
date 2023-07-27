@@ -138,7 +138,7 @@ void valveStructure::StoreJsonConfig(String* json) {
   JsonObject root = doc.as<JsonObject>();
 
   if (!root.isNull()) {
-    File configFile = SPIFFS.open("/VentilConfig.json", "w");
+    File configFile = LittleFS.open("/VentilConfig.json", "w");
     if (!configFile) {
       if (Config->GetDebugLevel() >=0) {Serial.println("failed to open VentilConfig.json file for writing");}
     } else {  
@@ -162,10 +162,10 @@ void valveStructure::LoadJsonConfig() {
   memset(buffer, 0, sizeof(buffer));
   bool loadDefaultConfig = false;
   
-  if (SPIFFS.exists("/VentilConfig.json")) {
+  if (LittleFS.exists("/VentilConfig.json")) {
     //file exists, reading and loading
     Serial.println("reading config file");
-    File configFile = SPIFFS.open("/VentilConfig.json", "r");
+    File configFile = LittleFS.open("/VentilConfig.json", "r");
     if (configFile) {
       Serial.println("opened config file");
       //size_t size = configFile.size();

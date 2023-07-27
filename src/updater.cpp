@@ -190,7 +190,7 @@ void updater::StoreJsonConfig(release_t* r) {
   json["stage"]         = this->Stage2String(r->stage);
   json["download-url"]  = r->downloadURL.c_str();
     
-  File configFile = SPIFFS.open("/ESPUpdate.json", "w");
+  File configFile = LittleFS.open("/ESPUpdate.json", "w");
   if (!configFile) {
     Serial.println("failed to open ESPUpdate.json file for writing");
   }
@@ -201,14 +201,13 @@ void updater::StoreJsonConfig(release_t* r) {
 
 void updater::LoadJsonConfig() {
   bool loadDefaultConfig = false;
-  if (SPIFFS.exists("/ESPUpdate.json")) {
+  if (LittleFS.exists("/ESPUpdate.json")) {
     //file exists, reading and loading
     Serial.println("reading ESPUpdate.json file");
-    File configFile = SPIFFS.open("/ESPUpdate.json", "r");
+    File configFile = LittleFS.open("/ESPUpdate.json", "r");
     if (configFile) {
       Serial.println("opened ESPUpdate.json file");
-      //size_t size = configFile.size();
-
+      
       StaticJsonDocument<512> json; // TODO Use computed size??
       DeserializationError error = deserializeJson(json, configFile);
       

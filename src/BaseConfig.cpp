@@ -13,7 +13,7 @@ void BaseConfig::StoreJsonConfig(String* json) {
   JsonObject root = doc.as<JsonObject>();
 
   if (!root.isNull()) {
-    File configFile = SPIFFS.open("/BaseConfig.json", "w");
+    File configFile = LittleFS.open("/BaseConfig.json", "w");
     if (!configFile) {
       if (this->GetDebugLevel() >=0) {Serial.println("failed to open BaseConfig.json file for writing");}
     } else {  
@@ -34,10 +34,10 @@ void BaseConfig::StoreJsonConfig(String* json) {
 
 void BaseConfig::LoadJsonConfig() {
   bool loadDefaultConfig = false;
-  if (SPIFFS.exists("/BaseConfig.json")) {
+  if (LittleFS.exists("/BaseConfig.json")) {
     //file exists, reading and loading
     Serial.println("reading BaseConfig.json file");
-    File configFile = SPIFFS.open("/BaseConfig.json", "r");
+    File configFile = LittleFS.open("/BaseConfig.json", "r");
     if (configFile) {
       Serial.println("opened BaseConfig.json file");
       
