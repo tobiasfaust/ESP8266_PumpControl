@@ -96,9 +96,15 @@ void MyWebServer::handleCSS(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handleJS(AsyncWebServerRequest *request) {
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", JAVASCRIPT);
+  AsyncResponseStream *response = request->beginResponseStream("text/javascript");
   response->addHeader("Server","ESP Async Web Server");
-  request->send(response); 
+  response->print(ESPGPIO);
+  response->print(ESPANALOG);
+  response->print(JAVASCRIPT);
+  request->send(response);
+  //AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", JAVASCRIPT);
+  //response->addHeader("Server","ESP Async Web Server");
+  //request->send(response); 
 }
 
 void MyWebServer::handleJsAjax(AsyncWebServerRequest *request) {
@@ -108,7 +114,7 @@ void MyWebServer::handleJsAjax(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handleJSParam(AsyncWebServerRequest *request) {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
+  AsyncResponseStream *response = request->beginResponseStream("text/javascript");
   response->addHeader("Server","ESP Async Web Server");
 
   VStruct->getWebJsParameter(response);
@@ -200,9 +206,11 @@ void MyWebServer::ReceiveJSONConfiguration(AsyncWebServerRequest *request, page_
   }
 
   String targetPage = "/";
-  Serial.print(F("json empfangen: "));
-  Serial.println(FPSTR(json.c_str()));  
-  
+  if (Config->GetDebugLevel() >= 3) {
+    Serial.print(F("json empfangen: "));
+    Serial.println(FPSTR(json.c_str()));  
+  }
+
   if (page==BASECONFIG)       { Config->StoreJsonConfig(&json);   targetPage = "/BaseConfig"; }
   if (page==VENTILE)          { VStruct->StoreJsonConfig(&json);  targetPage = "/VentilConfig"; }
   if (page==SENSOR)           { LevelSensor->StoreJsonConfig(&json); targetPage = "/SensorConfig"; }

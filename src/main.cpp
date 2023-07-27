@@ -52,7 +52,7 @@ MyWebServer* mywebserver = NULL;
 
 void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   String msg;
-  Serial.print("Message arrived ["); Serial.print(topic); Serial.print("] ");
+  if (Config->GetDebugLevel() >= 4) { Serial.printf("Message arrived [%s]\n", topic); }
 
   for (int i = 0; i < length; i++) {
     msg.concat((char)payload[i]);

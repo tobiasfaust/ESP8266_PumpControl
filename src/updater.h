@@ -4,6 +4,7 @@
 #include "CommonLibs.h"
 #include <vector>
 #include "ArduinoJson.h"
+#include <StreamUtils.h>
 #include "_Release.h"
 
 #ifdef ESP8266
@@ -49,6 +50,7 @@ class updater {
     String      GetUpdateErrorString();
     stage_t     String2Stage(String s);
     String      Stage2String(stage_t s);
+    void        SetDebugLevel(uint8_t value);
 
   private:
     //BearSSL::WiFiClientSecure* client;
@@ -64,7 +66,9 @@ class updater {
     void        StoreJsonConfig(release_t* r);
     release_t   getLatestRelease();
     void        printRelease(release_t* r);
-    
+    const uint8_t& GetDebugLevel()   const {return debuglevel;}
+
+    uint8_t     debuglevel;
     bool        DoUpdate = false;
     bool        automode;
     bool        updateError;

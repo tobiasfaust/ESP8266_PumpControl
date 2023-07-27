@@ -100,12 +100,12 @@ void valveRelation::LoadJsonConfig() {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
 
-  if (SPIFFS.exists("/BaseConfig.json")) {
+  if (SPIFFS.exists("/Relations.json")) {
     //file exists, reading and loading
-    Serial.println("reading config file");
-    File configFile = SPIFFS.open("/BaseConfig.json", "r");
+    Serial.println("reading Relations.json file");
+    File configFile = SPIFFS.open("/Relations.json", "r");
     if (configFile) {
-      Serial.println("opened config file");
+      Serial.println("opened Relations.json file");
       //size_t size = configFile.size();
 
       StaticJsonDocument<512> doc; // TODO Use computed size??

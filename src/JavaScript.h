@@ -23,24 +23,24 @@ const gpio = [  {port: 204, name:'D24'},
                ];
       )=====";
   const char ESPANALOG[] PROGMEM = R"=====(
-const gpioanalog = [  {port: 236, name:'ADC1_CH0 – GPIO36'},
-                  {port: 237, name:'ADC1_CH1 – GPIO37'},
-                  {port: 238, name:'ADC1_CH2 – GPIO38'},
-                  {port: 239, name:'ADC1_CH3 – GPIO39'},
-                  {port: 232, name:'ADC1_CH4 – GPIO32'},
-                  {port: 233, name:'ADC1_CH5-  GPIO33'},
-                  {port: 234, name:'ADC1_CH6 – GPIO34'},
-                  {port: 235, name:'ADC1_CH7 – GPIO35'},
-                  {port: 204, name:'ADC2_CH0 – GPIO4'},
-                  {port: 200, name:'ADC2_CH1 – GPIO0'},
-                  {port: 202, name:'ADC2_CH2 – GPIO2'},
-                  {port: 215, name:'ADC2_CH3 – GPIO15'},
-                  {port: 213, name:'ADC2_CH4 – GPIO13'},
-                  {port: 212, name:'ADC2_CH5 – GPIO12'},
-                  {port: 214, name:'ADC2_CH6 – GPIO14'},
-                  {port: 227, name:'ADC2_CH7 – GPIO27'},
-                  {port: 225, name:'ADC2_CH8 – GPIO25'},
-                  {port: 226, name:'ADC2_CH9 – GPIO26'}
+const gpioanalog = [  {port: 236, name:'ADC1_CH0 - GPIO36'},
+                  {port: 237, name:'ADC1_CH1 - GPIO37'},
+                  {port: 238, name:'ADC1_CH2 - GPIO38'},
+                  {port: 239, name:'ADC1_CH3 - GPIO39'},
+                  {port: 232, name:'ADC1_CH4 - GPIO32'},
+                  {port: 233, name:'ADC1_CH5 - GPIO33'},
+                  {port: 234, name:'ADC1_CH6 - GPIO34'},
+                  {port: 235, name:'ADC1_CH7 - GPIO35'},
+                  {port: 204, name:'ADC2_CH0 - GPIO4'},
+                  {port: 200, name:'ADC2_CH1 - GPIO0'},
+                  {port: 202, name:'ADC2_CH2 - GPIO2'},
+                  {port: 215, name:'ADC2_CH3 - GPIO15'},
+                  {port: 213, name:'ADC2_CH4 - GPIO13'},
+                  {port: 212, name:'ADC2_CH5 - GPIO12'},
+                  {port: 214, name:'ADC2_CH6 - GPIO14'},
+                  {port: 227, name:'ADC2_CH7 - GPIO27'},
+                  {port: 225, name:'ADC2_CH8 - GPIO25'},
+                  {port: 226, name:'ADC2_CH9 - GPIO26'}
                ];
       )=====";
      

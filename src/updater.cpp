@@ -1,12 +1,16 @@
 #include "updater.h"
 
-updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600) {
+updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600), debuglevel(3) {
   this->releases = new std::vector<release_t>;
   client = new WiFiClient;
   httpUpdate = new WM_httpUpdate;
   
   this->lastupdate = millis();
   this->LoadJsonConfig();
+}
+
+void updater::SetDebugLevel(uint8_t value) {
+  this->debuglevel = value;
 }
 
 void updater::setIndexJson(String url) {
@@ -134,33 +138,42 @@ void updater::parseJson(String* json) {
   #elif ESP32
     String arch = "ESP32";
   #endif
-  
-  StaticJsonDocument<512> doc;
-  DeserializationError error = deserializeJson(doc, *json);
 
-  JsonArray root = doc.as<JsonArray>();
+  StringStream stream{*json};
+  stream.find("[");
 
-  if (!error) {
-    //root.printTo(Serial);
-    for (JsonArray::iterator i=root.begin(); i!=root.end(); ++i) {
-      JsonObject o = i->as<JsonObject>();
+  do {
+    StaticJsonDocument<1012> elem;
+    DeserializationError error = deserializeJson(elem, stream); 
+
+    if (!error) {
+      // Print the result
+      if (this->GetDebugLevel() >=4) {Serial.println("parsing JSON ok"); }
+      if (this->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);}
+    
       release_t r;
-      if (o.containsKey("name"))           { r.name    = o["name"].as<String>();}
-      if (o.containsKey("version"))        { r.version = o["version"].as<String>();}
-      if (o.containsKey("number"))         { r.number  = o["number"].as<uint32_t>();}
-      if (o.containsKey("subversion"))     { r.subversion  = o["subversion"].as<uint32_t>();}
-      if (o.containsKey("stage"))          { r.stage   = this->String2Stage(o["stage"].as<String>());}
-      if (o.containsKey("download-url"))   { r.downloadURL = o["download-url"].as<String>();}    
-      if (o.containsKey("arch") && o["arch"] == arch) {
+      if (elem.containsKey("name"))           { r.name    = elem["name"].as<String>();}
+      if (elem.containsKey("version"))        { r.version = elem["version"].as<String>();}
+      if (elem.containsKey("number"))         { r.number  = elem["number"].as<uint32_t>();}
+      if (elem.containsKey("subversion"))     { r.subversion  = elem["subversion"].as<uint32_t>();}
+      if (elem.containsKey("stage"))          { r.stage   = this->String2Stage(elem["stage"].as<String>());}
+      if (elem.containsKey("download-url"))   { r.downloadURL = elem["download-url"].as<String>();}    
+      
+      if (elem.containsKey("arch") && elem["arch"] == arch) {
           this->releases->push_back(r);
       }
-      
-      //if (Config->GetDebugLevel() >=3) 
+        
+      if (this->GetDebugLevel() >=3) {
         this->printRelease(&r); 
+      }
+      
+    } else {
+      if (this->GetDebugLevel() >=1) {
+        Serial.printf("Cannot parse the update-url json in updater.cpp: %s\n", error.c_str());
+      }
     }
-  } else {
-    Serial.println("Cannot parse the json");
-  }   
+
+  } while (stream.findUntil(",","]"));  
 }
 
 void updater::StoreJsonConfig(release_t* r) {
@@ -185,19 +198,19 @@ void updater::StoreJsonConfig(release_t* r) {
 
 void updater::LoadJsonConfig() {
   bool loadDefaultConfig = false;
-  if (SPIFFS.exists("/BaseConfig.json")) {
+  if (SPIFFS.exists("/ESPUpdate.json")) {
     //file exists, reading and loading
-    Serial.println("reading config file");
-    File configFile = SPIFFS.open("/BaseConfig.json", "r");
+    Serial.println("reading ESPUpdate.json file");
+    File configFile = SPIFFS.open("/ESPUpdate.json", "r");
     if (configFile) {
-      Serial.println("opened config file");
+      Serial.println("opened ESPUpdate.json file");
       //size_t size = configFile.size();
 
       StaticJsonDocument<512> json; // TODO Use computed size??
       DeserializationError error = deserializeJson(json, configFile);
       
       if (!error) {
-        serializeJsonPretty(json, Serial);
+        if(this->GetDebugLevel() >=3) { serializeJsonPretty(json, Serial); }
         
         release_t r;
         if (json.containsKey("name"))          { r.name       = json["name"].as<String>();}
@@ -208,7 +221,7 @@ void updater::LoadJsonConfig() {
         if (json.containsKey("download-url"))  { r.downloadURL= json["download-url"].as<String>();}
         this->currentRelease = r;
       } else {
-        Serial.println("failed to load ESPUpdate config, load default config");
+        Serial.println("failed to load ESPUpdate.json config, load default config");
         loadDefaultConfig = true;
       }
     }
