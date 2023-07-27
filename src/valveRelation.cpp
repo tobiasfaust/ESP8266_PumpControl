@@ -80,7 +80,11 @@ void valveRelation::StoreJsonConfig(String* json) {
     if (!configFile) {
       if (Config->GetDebugLevel() >=0) {Serial.println("failed to open Relations.json file for writing");}
     } else {  
-      serializeJsonPretty(doc, Serial);
+      if (Config->GetDebugLevel() >= 3) {
+        serializeJsonPretty(doc, Serial); 
+        Serial.println();
+      }
+
       if (serializeJson(doc, configFile) == 0) {
         if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed to write to file"));}
       }
@@ -112,8 +116,10 @@ void valveRelation::LoadJsonConfig() {
       DeserializationError error = deserializeJson(doc, configFile);
       
       if (!error) {
-        serializeJsonPretty(doc, Serial);
-        
+        if (Config->GetDebugLevel() >= 3) {
+          serializeJsonPretty(doc, Serial);
+          Serial.println();
+        }        
         uint8_t count = 0;
         if (doc.containsKey("count")) { count = doc["count"].as<int>(); }
         if(count == 0) {

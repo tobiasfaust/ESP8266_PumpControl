@@ -17,7 +17,10 @@ void BaseConfig::StoreJsonConfig(String* json) {
     if (!configFile) {
       if (this->GetDebugLevel() >=0) {Serial.println("failed to open BaseConfig.json file for writing");}
     } else {  
-      if (Config->GetDebugLevel() >= 3) { serializeJsonPretty(doc, Serial); }
+      if (this->GetDebugLevel() >= 3) { 
+        serializeJsonPretty(doc, Serial); 
+        Serial.println();
+      }
 
       if (serializeJson(doc, configFile) == 0) {
         if (this->GetDebugLevel() >=0) {Serial.println(F("Failed to write to file"));}
@@ -43,7 +46,10 @@ void BaseConfig::LoadJsonConfig() {
       DeserializationError error = deserializeJson(json, configFile);
 
       if (!error) {
-        serializeJsonPretty(json, Serial);
+        if (this->GetDebugLevel() >= 3) {
+          serializeJsonPretty(json, Serial); 
+          Serial.println();
+        }
 
         if (json.containsKey("mqttroot"))         { this->mqtt_root = json["mqttroot"].as<String>();} else {this->mqtt_root = "PumpControl";}
         if (json.containsKey("mqttserver"))       { this->mqtt_server = json["mqttserver"].as<String>();} else {this->mqtt_server = "test.mosquitto.org";}

@@ -102,9 +102,6 @@ void MyWebServer::handleJS(AsyncWebServerRequest *request) {
   response->print(ESPANALOG);
   response->print(JAVASCRIPT);
   request->send(response);
-  //AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", JAVASCRIPT);
-  //response->addHeader("Server","ESP Async Web Server");
-  //request->send(response); 
 }
 
 void MyWebServer::handleJsAjax(AsyncWebServerRequest *request) {
@@ -293,11 +290,12 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
     if (Config->GetDebugLevel() >=1) {
       snprintf(buffer, sizeof(buffer), "Ajax Command unknown: %s", action);
       Serial.println(buffer);
+    }
   }
-    serializeJson(jsonReturn, ret);
-    response->print(ret);
-  }
-
+  
+  serializeJson(jsonReturn, ret);
+  response->print(ret);
+  
   if (Config->GetDebugLevel() >=4) { Serial.print("Ajax Json Antwort: "); Serial.println(ret); }
   
   

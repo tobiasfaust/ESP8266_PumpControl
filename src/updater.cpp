@@ -149,7 +149,10 @@ void updater::parseJson(String* json) {
     if (!error) {
       // Print the result
       if (this->GetDebugLevel() >=4) {Serial.println("parsing JSON ok"); }
-      if (this->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);}
+      if (this->GetDebugLevel() >=5) {
+        serializeJsonPretty(elem, Serial);
+        Serial.println();
+      }
     
       release_t r;
       if (elem.containsKey("name"))           { r.name    = elem["name"].as<String>();}
@@ -166,7 +169,7 @@ void updater::parseJson(String* json) {
       if (this->GetDebugLevel() >=3) {
         this->printRelease(&r); 
       }
-      
+
     } else {
       if (this->GetDebugLevel() >=1) {
         Serial.printf("Cannot parse the update-url json in updater.cpp: %s\n", error.c_str());
@@ -210,7 +213,10 @@ void updater::LoadJsonConfig() {
       DeserializationError error = deserializeJson(json, configFile);
       
       if (!error) {
-        if(this->GetDebugLevel() >=3) { serializeJsonPretty(json, Serial); }
+        if(this->GetDebugLevel() >=3) { 
+          serializeJsonPretty(json, Serial); 
+          Serial.println();
+        }
         
         release_t r;
         if (json.containsKey("name"))          { r.name       = json["name"].as<String>();}

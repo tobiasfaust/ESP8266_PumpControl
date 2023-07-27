@@ -142,7 +142,11 @@ void valveStructure::StoreJsonConfig(String* json) {
     if (!configFile) {
       if (Config->GetDebugLevel() >=0) {Serial.println("failed to open VentilConfig.json file for writing");}
     } else {  
-      serializeJsonPretty(doc, Serial);
+      if (Config->GetDebugLevel() >= 3) {
+        serializeJsonPretty(doc, Serial); 
+        Serial.println();
+      }
+
       if (serializeJson(doc, configFile) == 0) {
         if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed to write to file"));}
       }
@@ -170,8 +174,10 @@ void valveStructure::LoadJsonConfig() {
       DeserializationError error = deserializeJson(json, configFile);
       
       if (!error) {
-        serializeJsonPretty(json, Serial);
-        
+        if (Config->GetDebugLevel() >=3 ) {
+          serializeJsonPretty(json, Serial); 
+          Serial.println();
+        }
         uint8_t count = 0;
         if (json.containsKey("count")) { count = json["count"].as<int>(); }
         if(count == 0) {
