@@ -215,16 +215,16 @@ void sensor::LoadJsonConfig() {
           Serial.println();
         }
         
-        if (json.containsKey("measurecycle"))         { this->measurecycle = _max(atoi(json["measurecycle"]), 10);}
-        if (json.containsKey("measureDistMin"))       { this->measureDistMin = atoi(json["measureDistMin"]);}
-        if (json.containsKey("measureDistMax"))       { this->measureDistMax = atoi(json["measureDistMax"]);}
-        if (json.containsKey("pinhcsr04trigger"))     { this->pinTrigger = atoi(json["pinhcsr04trigger"]) - 200;}
-        if (json.containsKey("pinhcsr04echo"))        { this->pinEcho = atoi(json["pinhcsr04echo"]) - 200;}
-        if (json.containsKey("pinanalog"))              {this->pinAnalog = atoi(json["pinanalog"]) - 200;} else {this->pinAnalog = pinAnalogDefault; }
-        if (json.containsKey("treshold_min"))         { this->threshold_min = atoi(json["treshold_min"]);}
-        if (json.containsKey("treshold_max"))         { this->threshold_max = atoi(json["treshold_max"]);}
+        if (json.containsKey("measurecycle"))         { this->measurecycle = _max(json["measurecycle"].as<int>(), 10);}
+        if (json.containsKey("measureDistMin"))       { this->measureDistMin = json["measureDistMin"].as<int>();}
+        if (json.containsKey("measureDistMax"))       { this->measureDistMax = json["measureDistMax"].as<int>();}
+        if (json.containsKey("pinhcsr04trigger"))     { this->pinTrigger = json["pinhcsr04trigger"].as<int>() - 200;}
+        if (json.containsKey("pinhcsr04echo"))        { this->pinEcho = json["pinhcsr04echo"].as<int>() - 200;}
+        if (json.containsKey("pinanalog"))              {this->pinAnalog = json["pinanalog"].as<int>() - 200;} else {this->pinAnalog = pinAnalogDefault; }
+        if (json.containsKey("treshold_min"))         { this->threshold_min = json["treshold_min"].as<int>();}
+        if (json.containsKey("treshold_max"))         { this->threshold_max = json["treshold_max"].as<int>();}
         if (json.containsKey("ads1115_i2c"))          { this->ads1115_i2c = strtoul(json["ads1115_i2c"], NULL, 16);} // hex convert to dec 
-        if (json.containsKey("ads1115_port"))          { this->ads1115_port = atoi(json["ads1115_port"]);}
+        if (json.containsKey("ads1115_port"))          { this->ads1115_port = json["ads1115_port"].as<int>();}
         if (json.containsKey("externalSensor"))       { this->externalSensor = json["externalSensor"].as<String>();}
         if(strcmp(json["selection"],"analog")==0)        { init_analog(this->pinAnalog); }
           else if(strcmp(json["selection"],"hcsr04")==0) { init_hcsr04(this->pinTrigger, this->pinEcho); }

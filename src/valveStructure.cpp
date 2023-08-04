@@ -133,101 +133,95 @@ uint8_t valveStructure::Refresh1WireDevices() {
 }
 
 void valveStructure::StoreJsonConfig(String* json) {
-  StaticJsonDocument<512> doc;
-  deserializeJson(doc, *json);
-  JsonObject root = doc.as<JsonObject>();
-
-  if (!root.isNull()) {
-    File configFile = LittleFS.open("/VentilConfig.json", "w");
-    if (!configFile) {
-      if (Config->GetDebugLevel() >=0) {Serial.println("failed to open VentilConfig.json file for writing");}
-    } else {  
-      if (Config->GetDebugLevel() >= 3) {
-        serializeJsonPretty(doc, Serial); 
-        Serial.println();
-      }
-
-      if (serializeJson(doc, configFile) == 0) {
-        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed to write to file"));}
-      }
-      configFile.close();
-  
-      LoadJsonConfig();
+  File configFile = LittleFS.open("/VentilConfig.json", "w");
+  if (!configFile) {
+    if (Config->GetDebugLevel() >=0) {Serial.println("failed to open VentilConfig.json file for writing");}
+  } else {  
+    
+    if (!configFile.print(*json)) {
+        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing VentilConfig.json to file"));}
     }
+
+    configFile.close();
+  
+    LoadJsonConfig();
   }
 }
 
 void valveStructure::LoadJsonConfig() {
-  char buffer[100] = {0};
+  char buffer[100] = {0}; 
   memset(buffer, 0, sizeof(buffer));
   bool loadDefaultConfig = false;
-  
+  uint8_t counter = 0;
+
+  Valves->clear();
+
   if (LittleFS.exists("/VentilConfig.json")) {
     //file exists, reading and loading
-    Serial.println("reading config file");
+    if (Config->GetDebugLevel() >=3) Serial.println("reading VentilConfig.json file....");
     File configFile = LittleFS.open("/VentilConfig.json", "r");
     if (configFile) {
-      Serial.println("opened config file");
-      //size_t size = configFile.size();
+      if (Config->GetDebugLevel() >=3) Serial.println("VentilConfig.json is now open");
 
-      StaticJsonDocument<512> json; // TODO Use computed size??
-      DeserializationError error = deserializeJson(json, configFile);
-      
-      if (!error) {
-        if (Config->GetDebugLevel() >=3 ) {
-          serializeJsonPretty(json, Serial); 
-          Serial.println();
-        }
-        uint8_t count = 0;
-        if (json.containsKey("count")) { count = json["count"].as<int>(); }
-        if(count == 0) {
-          if (Config->GetDebugLevel() >=2) { Serial.println("something went wrong with Ventilconfig, load default config"); }
+      ReadBufferingStream stream{configFile, 64};
+      stream.find("\"data\":[");
+      do {
+        StaticJsonDocument<512> elem;
+        DeserializationError error = deserializeJson(elem, stream); 
+
+        if (error) {
           loadDefaultConfig = true;
-        }
-        
-        for (uint8_t i=0; i<count; i++) {
+          if (Config->GetDebugLevel() >=1) {
+            Serial.printf("Failed to parse VentilConfig.json data: %s, load default config\n", error.c_str()); 
+          } 
+        } else {
+          // Print the result
+          if (Config->GetDebugLevel() >=4) {Serial.println("parsing JSON ok"); }
+          if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
+
           valve myValve;
-          
-          sprintf(buffer, "pcfport_%d_0", i);
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.AddPort1(this->ValveHW, json[buffer].as<int>()); }
-
-          sprintf(buffer, "type_%d", i);
-          if (json.containsKey(buffer)) {myValve.SetValveType(json[buffer].as<String>()); }
-          
-          sprintf(buffer, "active_%d", i);
-          if (json[buffer] && json[buffer] == 1) {myValve.SetActive(true);} else {myValve.SetActive(false);}
             
-          sprintf(buffer, "mqtttopic_%d", i);
-          if (json.containsKey(buffer)) {myValve.subtopic = json[buffer].as<String>();}
- 
-          sprintf(buffer, "pcfport_%d_1", i);
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.AddPort2(ValveHW, json[buffer].as<int>());}
+          sprintf(buffer, "pcfport_%d_0", counter);
+          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { myValve.AddPort1(this->ValveHW, elem[buffer].as<int>()); }
+
+          sprintf(buffer, "type_%d", counter);
+          if (elem.containsKey(buffer)) {myValve.SetValveType(elem[buffer].as<String>()); }
             
-          sprintf(buffer, "imp_%d_0", i); //impulsbreite für Port 1
-          if (json.containsKey(buffer)) { myValve.port1ms = max(10, min(json[buffer].as<int>(), 999));}
-          
-          sprintf(buffer, "imp_%d_1", i); //impulsbreite für Port 2
-          if (json.containsKey(buffer)) { myValve.port2ms = max(10, min(json[buffer].as<int>(), 999));}
+          sprintf(buffer, "active_%d", counter);
+          if (elem[buffer] && elem[buffer] == 1) {myValve.SetActive(true);} else {myValve.SetActive(false);}
+              
+          sprintf(buffer, "mqtttopic_%d", counter);
+          if (elem.containsKey(buffer)) {myValve.subtopic = elem[buffer].as<String>();}
+  
+          sprintf(buffer, "pcfport_%d_1", counter);
+          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { myValve.AddPort2(ValveHW, elem[buffer].as<int>());}
+              
+          sprintf(buffer, "imp_%d_0", counter); //impulsbreite für Port 1
+          if (elem.containsKey(buffer)) { myValve.port1ms = _max(10, _min(elem[buffer].as<int>(), 999));}
+            
+          sprintf(buffer, "imp_%d_1", counter); //impulsbreite für Port 2
+          if (elem.containsKey(buffer)) { myValve.port2ms = _max(10, _min(elem[buffer].as<int>(), 999));}
 
-          sprintf(buffer, "reverse_%d", i);
-          if (json[buffer] && json[buffer] == 1) {myValve.SetReverse(true);} else {myValve.SetReverse(false);}
+          sprintf(buffer, "reverse_%d", counter);
+          if (elem[buffer] && elem[buffer] == 1) {myValve.SetReverse(true);} else {myValve.SetReverse(false);}
 
-          sprintf(buffer, "autooff_%d", i);
-          if (json.containsKey(buffer) && json[buffer].as<int>() > 0) { myValve.SetAutoOff(json[buffer].as<int>()); }
-          
+          sprintf(buffer, "autooff_%d", counter);
+          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { myValve.SetAutoOff(elem[buffer].as<int>()); }
+            
           Valves->push_back(myValve);
+          counter++;
         }
-        
-      } else {
-        loadDefaultConfig = true;
-      }
+
+      } while (stream.findUntil(",","]"));
     } else {
       loadDefaultConfig = true;
+      if (Config->GetDebugLevel() >=1) {Serial.println("failed to load VentilConfig.json, load default config");}
     }
   } else {
     loadDefaultConfig = true;
+    if (Config->GetDebugLevel() >=3) {Serial.println("VentilConfig.json File not exists, load default config");}
   }
-
+  
   if (loadDefaultConfig) {
     if (Config->GetDebugLevel() >=3) { Serial.println("lade Ventile DefaultConfig"); }
     valve myValve;
@@ -235,6 +229,9 @@ void valveStructure::LoadJsonConfig() {
     Valves->push_back(myValve);
     myValve.init(ValveHW, 203, "Valve2");
     Valves->push_back(myValve);
+  }
+  if (Config->GetDebugLevel() >=3) {
+    Serial.printf("%d valves are now loaded \n", Valves->size());
   }
 }
 
@@ -259,6 +256,7 @@ void valveStructure::GetWebContent(AsyncResponseStream *response) {
   response->println("<td style='width: 25px;'>Action</td>\n");
   response->println("</tr>\n");
   response->println("</thead>\n");
+  response->println("</tbody>\n");
 
   for(uint8_t i=0; i<Valves->size(); i++) {
     response->println("<tr>\n");
@@ -328,7 +326,7 @@ void valveStructure::GetWebContent(AsyncResponseStream *response) {
   response->println("</tbody>\n");
   response->println("</table>\n");
   response->println("</form>\n\n<br />\n");
-  response->println("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  response->println("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>\n");
   response->println("  <input type='text' id='json' name='json' />\n");
   response->println("  <input type='submit' value='Speichern' />\n");
   response->println("</form>\n\n");
@@ -357,7 +355,7 @@ void valveStructure::getWebJsParameter(AsyncResponseStream *response) {
   //konfigurierte Ports / Namen
   //const configuredPorts = [ {port:65, name:"Ventil1"}, {port:67, name:"Ventil2"}]
   response->println("const configuredPorts = [");
-  for(int i=0; i < Valves->size(); i++) {
+  for(uint8_t i=0; i < Valves->size(); i++) {
     response->printf("{port:%d, name:'%s'}%s", Valves->at(i).GetPort1() ,Valves->at(i).subtopic.c_str(), (i<Valves->size()-1?",":""));
   }
   response->println("];\n");

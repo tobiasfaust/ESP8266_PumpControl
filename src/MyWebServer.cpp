@@ -83,7 +83,6 @@ void MyWebServer::handleRoot(AsyncWebServerRequest *request) {
   response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   response->addHeader("Pragma", "no-cache");
   response->addHeader("Expires", "-1");
-  
   this->getPageHeader(response, ROOT);
   this->getPage_Status(response);
   this->getPageFooter(response);
@@ -242,7 +241,7 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
 
     if (jsonGet.containsKey("action"))   {action = jsonGet["action"].as<String>();}
     if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
-    if (jsonGet.containsKey("port"))     { port = atoi(jsonGet["port"]); }
+    if (jsonGet.containsKey("port"))     { port = jsonGet["port"].as<int>(); }
   
   } else { RaiseError = true; }
 
@@ -317,41 +316,42 @@ void MyWebServer::getPageHeader(AsyncResponseStream *response, page_t pageactive
   response->println("   </td>");
 
   response->println("   <td colspan='4' style='color:#CCCCCC;'>");
-  response->printf("   <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
+  response->printf("      <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
   response->println("   </td>");
 
   response->println("   <td colspan='5'>");
-  response->printf("     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
+  response->printf ("     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
   response->println("   </td>");
   response->println(" </tr>");
 
   response->println(" <tr>");
   response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf("   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");
+  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");
   response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf("   <td class='navi %s' style='width: 100px'><a href='/BaseConfig'>Basis Config</a></td>\n", (pageactive==BASECONFIG)?"navi_active":"");
+  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/BaseConfig'>Basis Config</a></td>\n", (pageactive==BASECONFIG)?"navi_active":"");
   response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf("   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==SENSOR)?"navi_active":"");
+  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==SENSOR)?"navi_active":"");
   response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf("   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
+  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
   
   if (Config->Enabled1Wire()) {
       response->println("   <td class='navi' style='width: 50px'></td>");
-      response->printf("   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
+      response->printf ("   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
   }
   
   response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf("   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
+  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
   response->println("   <td class='navi' style='width: 50px'></td>");
   response->println("   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>");
   response->println("   <td class='navi' style='width: 50px'></td>");
   response->println(" </tr>");
-  response->println("  <tr>");
+  response->println(" <tr>");
   response->println("   <td colspan='13'>");
   response->println("   <p />");
 }
 
 void MyWebServer::getPageFooter(AsyncResponseStream *response) {
+  response->println(" </tr>");
   response->println("</table>");
   response->println("<div id='ErrorText' class='errortext'></div>");
   response->println("</body>");
@@ -364,89 +364,91 @@ void MyWebServer::getPage_Status(AsyncResponseStream *response) {
   
   response->println("<table class='editorDemoTable'>");
   response->println("<thead>");
-  response->println("<tr>");
-  response->println("<td style='width: 250px;'>Name</td>");
-  response->println("<td style='width: 200px;'>Wert</td>");
-  response->println("</tr>");
+  response->println("  <tr>");
+  response->println("    <td style='width: 250px;'>Name</td>");
+  response->println("    <td style='width: 200px;'>Wert</td>");
+  response->println("  </tr>");
   response->println("</thead>");
   response->println("<tbody>");
 
   response->println("<tr>");
-  response->println("<td>IP-Adresse:</td>");
-  response->printf("<td>%s</td>\n", WiFi.localIP().toString().c_str());
+  response->println("  <td>IP-Adresse:</td>");
+  response->printf ("  <td>%s</td>\n", WiFi.localIP().toString().c_str());
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>WiFi Name:</td>");
-  response->printf("<td>%s</td>\n", WiFi.SSID().c_str());
+  response->println("      <td>WiFi Name:</td>");
+  response->printf ("      <td>%s</td>\n", WiFi.SSID().c_str());
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>i2c Bus:");
+  response->println("  <td>i2c Bus:");
     //https://fdossena.com/?p=html5cool/buttons/i.frag
-  response->println("<a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>");
-  response->println("</td>");
-  response->println("<td><div id='showI2C'>");
-  response->printf("%s \n", I2Cdetect->i2cGetAddresses().c_str());
-  response->println("</div></td>");
+  response->println("  <a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>");
+  response->println("  </td>");
+  response->println("  <td><div id='showI2C'>");
+  response->printf ("%s \n", I2Cdetect->i2cGetAddresses().c_str());
+  response->println("  </div></td>");
   response->println("</tr>");
 
   if (Config->Enabled1Wire()) {
     response->println("<tr>");
-    response->println("<td>gefundene 1Wire Controller (Devices):");
-    response->println("<a href='#' onclick=\"Refresh1Wire('show1Wire')\" class='ButtonRefresh'>&#8634;</a>");
-    response->println("</td>");
-    response->println("<td><div id='show1Wire'>");
-    response->printf("%d (%d)", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
-    response->println("</div></td>");
+    response->println("  <td>gefundene 1Wire Controller (Devices):");
+    response->println("  <a href='#' onclick=\"Refresh1Wire('show1Wire')\" class='ButtonRefresh'>&#8634;</a>");
+    response->println("  </td>");
+    response->println("  <td><div id='show1Wire'>");
+    response->printf ("%d (%d)", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
+    response->println("  </div></td>");
     response->println("</tr>");
   }
   
   response->println("<tr>");
-  response->println("<td>MAC:</td>");
-  response->printf("<td>%s</td>\n", WiFi.macAddress().c_str());
+  response->println("  <td>MAC:</td>");
+  response->printf ("  <td>%s</td>\n", WiFi.macAddress().c_str());
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>WiFi RSSI:</td>");
-  response->printf("<td>%d</td>\n", WiFi.RSSI());
+  response->println("  <td>WiFi RSSI:</td>");
+  response->printf ("  <td>%d</td>\n", WiFi.RSSI());
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>MQTT Status:</td>");
-  response->printf("<td>%s</td>\n", (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected"));
+  response->println("  <td>MQTT Status:</td>");
+  response->printf ("  <td>%s</td>\n", (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected"));
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>Uptime:</td>");
-  response->printf("<td>%lu Days, %lu Hours, %lu Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
+  response->println("  <td>Uptime:</td>");
+  response->printf ("  <td>%lu Days, %lu Hours, %lu Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>Free Heap Memory:</td>");
-  response->printf("<td>%d</td>\n", ESP.getFreeHeap()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
+  response->println("  <td>Free Heap Memory:</td>");
+  response->printf ("  <td>%d</td>\n", ESP.getFreeHeap()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
   response->println("</tr>");
 
   response->println("<tr>");
-  response->println("<td>aktuell geöffnete Ventile</td>");
+  response->println("  <td>aktuell geöffnete Ventile</td>");
   response->println("<td>");
 
   count = VStruct->CountActiveThreads();
   if (count > 0) {
     response->printf("Es sind %d Ventile offen", count);
-  } else { response->println("alle Ventile geschlossen"); }
+  } else { 
+    response->println("alle Ventile geschlossen"); 
+  }
   response->println("</td></tr>");
 
   if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) {  
     response->println("<tr>");
     response->println("<td>Sensor RAW Value:</td>");
-    response->printf("<td>%d</td>\n", LevelSensor->GetRaw());
+    response->printf ("  <td>%d</td>\n", LevelSensor->GetRaw());
     response->println("</tr>");
   }
   if (LevelSensor->GetType() != NONE) {  
     response->println("<tr>");
-    response->println("<td>Füllstand in %:</td>");
-    response->printf("<td>%d %%</td>\n", LevelSensor->GetLvl());
+    response->println("  <td>Füllstand in %:</td>");
+    response->printf ("  <td>%d %%</td>\n", LevelSensor->GetLvl());
     response->println("</tr>");
   }
 

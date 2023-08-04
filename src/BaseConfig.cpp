@@ -8,7 +8,7 @@ BaseConfig::BaseConfig(): debuglevel(3) {
 
 void BaseConfig::StoreJsonConfig(String* json) {
 
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<1024> doc;
   deserializeJson(doc, *json);
   JsonObject root = doc.as<JsonObject>();
 
@@ -41,8 +41,8 @@ void BaseConfig::LoadJsonConfig() {
     if (configFile) {
       Serial.println("opened BaseConfig.json file");
       
-      StaticJsonDocument<1024> json; // TODO Use computed size??
-      //DynamicJsonDocument json(512);
+      //StaticJsonDocument<1024> json; // TODO Use computed size??
+      DynamicJsonDocument json(1024);
       DeserializationError error = deserializeJson(json, configFile);
 
       if (!error) {
@@ -66,7 +66,7 @@ void BaseConfig::LoadJsonConfig() {
         if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}} else {this->enable_oled = false;}
         if (json.containsKey("sel_1wire"))        { if (strcmp(json["sel_1wire"], "none")==0) { this->enable_1wire=false;} else {this->enable_1wire=true;}} else {this->enable_1wire = false;}
         if (json.containsKey("sel_3wege"))        { if (strcmp(json["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}} else {this->enable_3wege = false;}
-        if (json.containsKey("sel_update"))       { if (strcmp(json["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}} else {this->enable_autoupdate = true;}
+        if (json.containsKey("sel_update"))       { if (strcmp(json["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}} else {this->enable_autoupdate = false;}
         if (json.containsKey("autoupdate_url"))   { this->autoupdate_url = json["autoupdate_url"].as<String>(); }                   
         if (json.containsKey("autoupdate_stage")) { if (json["autoupdate_stage"] == "PROD") { this->autoupdate_stage = (stage_t)PROD; }
                                                     if (json["autoupdate_stage"] == "PRE")  { this->autoupdate_stage = (stage_t)PRE; }
@@ -106,7 +106,7 @@ void BaseConfig::LoadJsonConfig() {
     this->enable_3wege = false;
     this->ventil3wege_port = 0;
     this->max_parallel = 0;
-    this->enable_autoupdate = true;
+    this->enable_autoupdate = false;
     this->autoupdate_stage = (stage_t)PROD;
 
     loadDefaultConfig = false; //set back
@@ -129,7 +129,6 @@ void BaseConfig::LoadJsonConfig() {
   if(this->mqtt_basepath.endsWith("/")) {
     this->mqtt_basepath = this->mqtt_basepath.substring(0, this->mqtt_basepath.length()-1); 
   }
-  
 }
 
 String BaseConfig::GetReleaseName() {

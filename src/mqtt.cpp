@@ -20,9 +20,9 @@ MQTT::MQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint1
   WiFi.setHostname(mqtt_root.c_str());
   Serial.println("WiFi Start");
   
-  if (!wifiManager->autoConnect(("AP_" + mqtt_root).c_str(), "MbMQTTGtw") ) {
+  if (!wifiManager->autoConnect(("AP_" + mqtt_root).c_str(), "password") ) {
     Serial.println("failed to connect and start configPortal");
-    wifiManager->startConfigPortal(("AP_" + mqtt_root).c_str(), "MbMQTTGtw");
+    wifiManager->startConfigPortal(("AP_" + mqtt_root).c_str(), "password");
   }
   
   Serial.print("WiFi connected with local IP: ");

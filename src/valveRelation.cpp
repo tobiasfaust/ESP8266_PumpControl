@@ -71,27 +71,18 @@ uint8_t valveRelation::CountActiveSubscribers(uint8_t ActorPort) {
 }
 
 void valveRelation::StoreJsonConfig(String* json) {
-  StaticJsonDocument<512> doc;
-  deserializeJson(doc, *json);
-  JsonObject root = doc.as<JsonObject>();
-
-  if (!root.isNull()) {
-    File configFile = LittleFS.open("/Relations.json", "w");
-    if (!configFile) {
-      if (Config->GetDebugLevel() >=0) {Serial.println("failed to open Relations.json file for writing");}
-    } else {  
-      if (Config->GetDebugLevel() >= 3) {
-        serializeJsonPretty(doc, Serial); 
-        Serial.println();
-      }
-
-      if (serializeJson(doc, configFile) == 0) {
-        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed to write to file"));}
-      }
-      configFile.close();
-  
-      LoadJsonConfig();
+  File configFile = LittleFS.open("/Relations.json", "w");
+  if (!configFile) {
+    if (Config->GetDebugLevel() >=0) {Serial.println("failed to open Relations.json file for writing");}
+  } else {  
+    
+    if (!configFile.print(*json)) {
+        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing Relations.json to file"));}
     }
+
+    configFile.close();
+  
+    LoadJsonConfig();
   }
 }
 
@@ -101,67 +92,71 @@ void valveRelation::LoadJsonConfig() {
   mqtt->ClearSubscriptions(MQTT::RELATION);
   
   bool loadDefaultConfig = false;
+  uint8_t counter = 0;
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
 
   if (LittleFS.exists("/Relations.json")) {
     //file exists, reading and loading
-    Serial.println("reading Relations.json file");
+    if (Config->GetDebugLevel() >=3) Serial.println("reading Relations.json file....");
     File configFile = LittleFS.open("/Relations.json", "r");
     if (configFile) {
-      Serial.println("opened Relations.json file");
-      //size_t size = configFile.size();
+      if (Config->GetDebugLevel() >=3) Serial.println("Relations.json is now open");
 
-      StaticJsonDocument<512> doc; // TODO Use computed size??
-      DeserializationError error = deserializeJson(doc, configFile);
-      
-      if (!error) {
-        if (Config->GetDebugLevel() >= 3) {
-          serializeJsonPretty(doc, Serial);
-          Serial.println();
-        }        
-        uint8_t count = 0;
-        if (doc.containsKey("count")) { count = doc["count"].as<int>(); }
-        if(count == 0) {
-          Serial.println("something went wrong with Relations.json config, load default config");
+      ReadBufferingStream stream{configFile, 64};
+      stream.find("\"data\":[");
+      do {
+        StaticJsonDocument<512> elem;
+        DeserializationError error = deserializeJson(elem, stream); 
+
+        if (error) {
           loadDefaultConfig = true;
-        }
-        
-        for (uint8_t i=0; i<count; i++) {
+          if (Config->GetDebugLevel() >=1) {
+            Serial.printf("Failed to parse Relations.json data: %s, load default config\n", error.c_str()); 
+          } 
+        } else {
+          // Print the result
+          if (Config->GetDebugLevel() >=4) {Serial.println("parsing JSON ok"); }
+          if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
+
           bool enabled = false;
           bool EnableByBypass = false;
           String SubTopic = "";
           uint8_t Port = 0;
           
-          sprintf(buffer, "active_%d", i);
-          if (doc[buffer] && doc[buffer] == 1) {enabled = true;} else {enabled = false;}
+          sprintf(buffer, "active_%d", counter);
+          if (elem[buffer] && elem[buffer] == 1) {enabled = true;} else {enabled = false;}
             
-          sprintf(buffer, "mqtttopic_%d", i);
-          if (doc.containsKey(buffer)) {SubTopic = doc[buffer].as<String>();}
+          sprintf(buffer, "mqtttopic_%d", counter);
+          if (elem.containsKey(buffer)) {SubTopic = elem[buffer].as<String>();}
  
-          sprintf(buffer, "port_%d", i);
-          if (doc.containsKey(buffer) && doc[buffer].as<int>() > 0) { Port = doc[buffer].as<int>();}
+          sprintf(buffer, "port_%d", counter);
+          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { Port = elem[buffer].as<int>();}
 
-          sprintf(buffer, "EnableByBypass_%d", i);
-          if (doc[buffer] && doc[buffer] == 1) {EnableByBypass = true;} else {EnableByBypass = false;}
+          sprintf(buffer, "EnableByBypass_%d", counter);
+          if (elem[buffer] && elem[buffer] == 1) {EnableByBypass = true;} else {EnableByBypass = false;}
 
-          AddRelation(enabled, SubTopic, Port, EnableByBypass);
+          this->AddRelation(enabled, SubTopic, Port, EnableByBypass);
+          counter++;
         }
-        
-      } else {
-        loadDefaultConfig = true;
-      }
+
+      } while (stream.findUntil(",","]"));
     } else {
       loadDefaultConfig = true;
+      if (Config->GetDebugLevel() >=1) {Serial.println("failed to load Relations.json, load default config");}
     }
   } else {
     loadDefaultConfig = true;
+    if (Config->GetDebugLevel() >=3) {Serial.println("Relations.json File not exists, load default config");}
   }
-
+  
   if (loadDefaultConfig) {
-    Serial.println("lade Relations DefaultConfig");
-    AddRelation(false, "testhost/TestValve1", 203, false);
-    AddRelation(false, "testhost/TestValve2", 203, false);
+    if (Config->GetDebugLevel() >=3) { Serial.println("load Relations DefaultConfig"); }
+    this->AddRelation(false, "testhost/TestValve1", 203, false);
+    this->AddRelation(false, "testhost/TestValve2", 204, false);
+  }
+  if (Config->GetDebugLevel() >=3) {
+    Serial.printf("%d relations are now loaded \n", _relationen->size());
   }
 }
 
@@ -215,7 +210,7 @@ void valveRelation::GetWebContent(AsyncResponseStream *response) {
   response->println("</tbody>");
   response->println("</table>");
   response->println("</form><br />");
-  response->println("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>");
+  response->println("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>");
   response->println("  <input type='text' id='json' name='json' />");
   response->println("  <input type='submit' value='Speichern' />");
   response->println("</form>");

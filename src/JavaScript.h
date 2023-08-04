@@ -69,6 +69,7 @@ const gpioanalog = [  {port: 200, name:'A0'}
 
 const char JAVASCRIPT[] PROGMEM = R"=====(
 //############ DO NOT CHANGE BELOW ###################
+// https://jsfiddle.net/tobiasfaust/akyv4ju8/
 
 window.addEventListener('load', init, false);
 function init() {
@@ -242,15 +243,17 @@ function chg_type(id) {
     showBiVal(_td, num, false);
     showNormal(_td, num, true); 
   } 
-  table = _td.parentNode.parentNode;
+  table = GetParentObject(_td, 'TABLE');
   validate_identifiers(table.id);
 }
 
-function delrow(btn) {
-  table = btn.parentNode.parentNode.parentNode;
-  if (btn.parentNode.parentNode.rowIndex != 1) {
+function delrow(object) {
+  var table = GetParentObject(object, 'TABLE');
+  var rowIndex = GetParentObject(object, 'TR').rowIndex;
+  if (rowIndex != 1) {
     // erste Zeile ist das Template, darf nicht entfernt werden
-    table.removeChild(btn.parentNode.parentNode);
+    //table.removeChild(GetParentObject(object, 'TR'));
+    table.deleteRow(rowIndex)
     validate_identifiers(table.id);
   }
 }
@@ -322,30 +325,87 @@ function checkVentilConfig(SubmitForm) {
   return true;
 }
 
-function onSubmit(DataForm, SubmitForm){
-  // erstelle json String
-  var formData = {};
+/*******************************
+return the first parant object of tagName, e.g. TR
+*******************************/
+function GetParentObject(object, TargetTagName) {
+  if (object.tagName == TargetTagName) {return object;}
+  else if (object.parentNode === null) { return false;}
+  else { return GetParentObject(object.parentNode, TargetTagName); }
+}
+
+/*******************************
+return true, if object is not hidden and visible 
+*******************************/
+function ObjectIsVisible(object) {
+  if (object.parentNode === null) {return true;}
+  else if (object.style.display == 'none') { return false;}
+  else { return ObjectIsVisible(object.parentNode); }
+}
+
+/*******************************
+separator: 
+regex of item ID to identify first element in row
+  - if set, returned json is an array, all elements per row, example: "^myonoffswitch.*"
+  - if emty, all elements at one level together
+*******************************/
+function onSubmit(DataForm, SubmitForm, separator=''){
+  // init json Objects
+  var formData, tempData; 
+  
+  if (separator.length == 0) { formData =  {}; }
+  else { formData =  {data: []}; }
+  tempData = {};
+
+	var count = 0;
   ShowError('');
   
   var elems = document.getElementById(DataForm).elements; 
   for(var i = 0; i < elems.length; i++){ 
     if(elems[i].name && elems[i].value) {
-      if (elems[i].style.display == 'none') {continue;}
-      if (elems[i].parentNode.tagName == 'DIV' && elems[i].parentNode.style.display == 'none') {continue;}
-      if (elems[i].parentNode.parentNode.tagName == 'TR' && elems[i].parentNode.parentNode.style.display == 'none') {continue;}
+      //if (elems[i].style.display == 'none') {continue;}
+      //if (elems[i].parentNode.tagName == 'DIV' && elems[i].parentNode.style.display == 'none') {continue;}
+      //if (elems[i].parentNode.parentNode.tagName == 'TR' && elems[i].parentNode.parentNode.style.display == 'none') {continue;}
+      if (!ObjectIsVisible(elems[i])) { continue; }
+      
+      // tempData -> formData if new row (first named element (-> match) in row)
+      if (separator.length > 0 && elems[i].id.match(separator) && Object.keys(tempData).length > 0) {
+      	formData.data.push(tempData);
+        count += Object.keys(tempData).length;
+        tempData = {};
+      } else if (separator.length == 0 && Object.keys(tempData).length > 0) {
+        formData[Object.keys(tempData)[0]] = tempData[Object.keys(tempData)[0]];
+        count += Object.keys(tempData).length;
+        tempData = {};
+      }
       
       if (elems[i].type == "checkbox") {
-        formData[elems[i].name] = (elems[i].checked==true?1:0);
-      } else if (elems[i].id.match(/^Alle.*/) || elems[i].id.match(/^GpioPin.*/) || elems[i].id.match(/^AnalogPin.*/) || elems[i].type == "number") {
-        formData[elems[i].name] = parseInt(elems[i].value);
+        tempData[elems[i].name] = (elems[i].checked==true?1:0);
+      } else if (elems[i].id.match(/^Alle.*/) || 
+                 elems[i].id.match(/^GpioPin.*/) || 
+                 elems[i].id.match(/^AnalogPin.*/) || 
+                 elems[i].type == "number") {
+        tempData[elems[i].name] = parseInt(elems[i].value); 
       } else if (elems[i].type == "radio") {
-        if (elems[i].checked==true) {formData[elems[i].name] = elems[i].value;}
+        if (elems[i].checked==true) {tempData[elems[i].name] = elems[i].value;}
       } else {
-        formData[elems[i].name] = elems[i].value;
+        tempData[elems[i].name] = elems[i].value;
       }
     }
   } 
-  formData["count"] = document.getElementById(DataForm).getElementsByClassName('editorDemoTable')[0].rows.length -1;
+  
+  // ende elements
+  if (separator.length > 0 && Object.keys(tempData).length > 0) {
+    formData.data.push(tempData);
+    count += Object.keys(tempData).length;
+    tempData = {};
+  } else if (separator.length == 0 && Object.keys(tempData).length > 0) {
+    formData[Object.keys(tempData)[0]] = tempData[Object.keys(tempData)[0]];
+    count += Object.keys(tempData).length;
+    tempData = {};
+  }        
+  
+  formData["count"] = count;
   json = document.getElementById(SubmitForm).querySelectorAll("input[name='json']");
 
   if (json[0].value.length <= 3) {
@@ -368,6 +428,7 @@ function radioselection(a,b) {
     if(document.getElementById(b[j])) {document.getElementById(b[j]).style.display = 'none';}
   }
 }
+
 
 )=====";
 

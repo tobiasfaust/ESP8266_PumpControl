@@ -1,3 +1,10 @@
+Release 3.0.0:
+  - Change to Async Webserver
+  - Change ArduinoJson version 5.x to 6.x
+  - change project vom Arduino-IDE to PlatformIO
+  - reduce memory usage for handling json configs
+  - currently only ESP32 supported !!!!!!!
+
 Release 2.5.3:
   - Bug: Oled Typ selectionbox in GUI will now list correct
   - Bug: Reverse function works now as expected
