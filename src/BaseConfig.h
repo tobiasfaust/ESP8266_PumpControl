@@ -9,6 +9,8 @@
 #include "ArduinoJson.h"
 #include "updater.h"
 
+#define TT(...) Config->handleOneHtmlRow(currentRow++, processedRows, len, maxLen, buffer, __VA_ARGS__)
+
 class BaseConfig {
 
   public:
@@ -16,6 +18,7 @@ class BaseConfig {
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
     void      GetWebContent(AsyncResponseStream *response);
+    size_t    GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     void      loop();
 
     const uint8_t& GetPinSDA()      const {return pin_sda;}
@@ -40,6 +43,14 @@ class BaseConfig {
     String    GetReleaseName();
     void      InstallRelease(uint32_t ReleaseNumber);
     void      RefreshReleases();
+
+    void handleOneHtmlRow(const size_t& curRow, 
+       std::shared_ptr<uint16_t> processedRows, 
+       size_t& len, 
+       const size_t& maxLen, 
+       uint8_t* buffer, 
+       const char* str, 
+       ...);
     
   private:
     String    mqtt_server;

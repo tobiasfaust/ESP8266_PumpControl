@@ -7,8 +7,6 @@
   #include "WProgram.h"
 #endif
 
-#pragma once
-
 //#if defined(ESP8266) || defined(ESP32)
 //  #define min(x,y) _min(x,y)
 //#endif

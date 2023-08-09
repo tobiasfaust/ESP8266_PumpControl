@@ -23,12 +23,17 @@
 #include "valveStructure.h"
 #include "valveRelation.h"
 
-extern BaseConfig* Config;
 extern MQTT* mqtt;
 extern sensor* LevelSensor;
 extern valveStructure* VStruct;
 extern valveRelation* ValveRel;
 extern i2cdetect* I2Cdetect;
+
+#ifdef ESP8266
+  #define ESPGPIO "gpio_esp8266.js"
+#elif ESP32
+  #define ESPGPIO "gpio_esp32.js"
+#endif
 
 class MyWebServer {
 
@@ -68,6 +73,10 @@ class MyWebServer {
     void      getPageHeader(AsyncResponseStream *response, page_t pageactive);
     void      getPageFooter(AsyncResponseStream *response);
     
+    size_t    getPageHeader2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive);
+    size_t    getPageFooter2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+    size_t    getPageStatus2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+
     void      getPage_Status(AsyncResponseStream *response);
   
 };
