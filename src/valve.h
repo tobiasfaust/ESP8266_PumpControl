@@ -5,8 +5,6 @@
 #include "valveHardware.h"
 #include "mqtt.h"
 
-extern MQTT* mqtt;
-
 class valve {
 
   enum vType_t {NONE, BISTABIL, NORMAL};

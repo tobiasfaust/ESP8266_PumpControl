@@ -10,6 +10,8 @@ def git_repo():
     repo = os.path.basename(output).strip().decode()
     print('-D GIT_REPO=\\"%s\\"' % repo);
 
+
+
 if __name__ == '__main__':
     globals()[sys.argv[1]]()
 

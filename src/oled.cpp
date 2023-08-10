@@ -14,9 +14,12 @@ void OLED::init(uint8_t sda, uint8_t scl, uint8_t i2cAddress) {
   
   ssd = new OLEDWrapper(this->pin_sda, this->pin_scl, this->i2cAddress);
   
-  this->ssd->init();
-  this->ssd->flipScreenVertically();
-  if (Config->GetDebugLevel() >=3) Serial.println("OLED Ready");
+  if (this->ssd->init()) {
+    this->ssd->flipScreenVertically();
+    if (Config->GetDebugLevel() >=3) Serial.println("OLED Ready");
+  } else {
+    if (Config->GetDebugLevel() >=1) Serial.println("OLED failed to initialize");
+  }
   this->enabled = false;
 }
 
@@ -35,7 +38,7 @@ void OLED::loop() {
      this->init(Config->GetPinSDA(), Config->GetPinSCL(), Config->GetI2cOLED());
      this->type = Config->GetOledType();
   }
-  
+
 }
 
 void OLED::SetIP(String ip) {

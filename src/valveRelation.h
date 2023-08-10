@@ -6,8 +6,6 @@
 #include <ArduinoJson.h>
 #include "mqtt.h"
 
-extern MQTT* mqtt;
-
 class valveRelation {
 
   typedef struct {
@@ -33,7 +31,7 @@ class valveRelation {
     
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(AsyncResponseStream *response);
+    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     
   private:
     std::vector<relation_t>* _relationen  = NULL;

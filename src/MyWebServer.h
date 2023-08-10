@@ -23,7 +23,6 @@
 #include "valveStructure.h"
 #include "valveRelation.h"
 
-extern MQTT* mqtt;
 extern sensor* LevelSensor;
 extern valveStructure* VStruct;
 extern valveRelation* ValveRel;
@@ -73,9 +72,9 @@ class MyWebServer {
     void      getPageHeader(AsyncResponseStream *response, page_t pageactive);
     void      getPageFooter(AsyncResponseStream *response);
     
-    size_t    getPageHeader2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive);
-    size_t    getPageFooter2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
-    size_t    getPageStatus2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+    void    getPageHeader(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive);
+    void    getPageFooter(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+    void    getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
 
     void      getPage_Status(AsyncResponseStream *response);
   

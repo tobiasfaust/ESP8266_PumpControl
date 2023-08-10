@@ -166,7 +166,7 @@ void valveStructure::LoadJsonConfig() {
       ReadBufferingStream stream{configFile, 64};
       stream.find("\"data\":[");
       do {
-        StaticJsonDocument<512> elem;
+        DynamicJsonDocument elem(512);
         DeserializationError error = deserializeJson(elem, stream); 
 
         if (error) {
@@ -235,101 +235,101 @@ void valveStructure::LoadJsonConfig() {
   }
 }
 
-void valveStructure::GetWebContent1Wire(AsyncResponseStream *response) {
-   if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(response); }
+void valveStructure::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+  if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen); }
 }
 
-void valveStructure::GetWebContent(AsyncResponseStream *response) {
-  response->println("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
-  response->println("<form id='DataForm'>\n");
-  response->println("<table id='maintable' class='editorDemoTable'>\n");
-  response->println("<thead>\n");
-  response->println("<tr>\n");
-  response->println("<td style='width: 25px;'>Nr</td>\n");
-  response->println("<td style='width: 25px;'>Active</td>\n");
-  response->println("<td style='width: 250px;'>MQTT SubTopic</td>\n");
-  response->println("<td style='width: 210 px;'>Port</td>\n");
-  response->println("<td style='width: 80px;'>Type</td>\n");
-  response->println("<td style='width: 80px;'>Reverse</td>\n");
-  response->println("<td style='width: 80px;'>AutoOff</td>\n");
-  response->println("<td style='width: 25px;'>Delete</td>\n");
-  response->println("<td style='width: 25px;'>Action</td>\n");
-  response->println("</tr>\n");
-  response->println("</thead>\n");
-  response->println("</tbody>\n");
+void valveStructure::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+  WEB("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
+  WEB("<form id='DataForm'>\n");
+  WEB("<table id='maintable' class='editorDemoTable'>\n");
+  WEB("<thead>\n");
+  WEB("<tr>\n");
+  WEB("<td style='width: 25px;'>Nr</td>\n");
+  WEB("<td style='width: 25px;'>Active</td>\n");
+  WEB("<td style='width: 250px;'>MQTT SubTopic</td>\n");
+  WEB("<td style='width: 210 px;'>Port</td>\n");
+  WEB("<td style='width: 80px;'>Type</td>\n");
+  WEB("<td style='width: 80px;'>Reverse</td>\n");
+  WEB("<td style='width: 80px;'>AutoOff</td>\n");
+  WEB("<td style='width: 25px;'>Delete</td>\n");
+  WEB("<td style='width: 25px;'>Action</td>\n");
+  WEB("</tr>\n");
+  WEB("</thead>\n");
+  WEB("</tbody>\n");
 
   for(uint8_t i=0; i<Valves->size(); i++) {
-    response->println("<tr>\n");
-    response->printf("  <td>%d</td>\n", i+1);
-    response->println("  <td>\n");
-    response->println("    <div class='onoffswitch'>\n");
-    response->printf("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetEnabled()?"checked":""));
-    response->printf("      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
-    response->println("        <span class='onoffswitch-inner'></span>\n");
-    response->println("        <span class='onoffswitch-switch'></span>\n");
-    response->println("      </label>\n");
-    response->println("    </div>\n");
-    response->println("  </td>\n");
+    WEB("<tr>\n");
+    WEB("  <td>%d</td>\n", i+1);
+    WEB("  <td>\n");
+    WEB("    <div class='onoffswitch'>\n");
+    WEB("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetEnabled()?"checked":""));
+    WEB("      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
+    WEB("        <span class='onoffswitch-inner'></span>\n");
+    WEB("        <span class='onoffswitch-switch'></span>\n");
+    WEB("      </label>\n");
+    WEB("    </div>\n");
+    WEB("  </td>\n");
     
-    response->printf("  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
-    response->printf("  <td id='tdport_%d'>\n", i);
+    WEB("  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
+    WEB("  <td id='tdport_%d'>\n", i);
     
     if (Valves->at(i).GetValveType() == "b") {
-      response->printf("    <div id='PortA_%d'>\n", i);
-      response->println("    <div class='inline'>\n");
-      response->printf("      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
-      response->println("      <label>for</label>\n");
-      response->printf("      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
-      response->println("      <label>ms</label>\n");
-      response->println("    </div>\n");
+      WEB("    <div id='PortA_%d'>\n", i);
+      WEB("    <div class='inline'>\n");
+      WEB("      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
+      WEB("      <label>for</label>\n");
+      WEB("      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
+      WEB("      <label>ms</label>\n");
+      WEB("    </div>\n");
       
-      response->printf("    <div id='PortB_%d'>\n", i);
-      response->println("      <div class='inline'>\n");
-      response->printf("      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
-      response->println("      <label>for</label>\n");
-      response->printf("      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
-      response->println("      <label>ms</label>\n");
-      response->println("    </div>\n");
+      WEB("    <div id='PortB_%d'>\n", i);
+      WEB("      <div class='inline'>\n");
+      WEB("      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
+      WEB("      <label>for</label>\n");
+      WEB("      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
+      WEB("      <label>ms</label>\n");
+      WEB("    </div>\n");
     } else if (Valves->at(i).GetValveType() == "n") {
-      response->printf("    <div id='Port_%d'>\n", i);
-      response->printf("      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
-      response->println("    </div>\n");
+      WEB("    <div id='Port_%d'>\n", i);
+      WEB("      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
+      WEB("    </div>\n");
     } 
-    response->println("  </td>\n");
-    response->println("  <td>\n");
-    response->printf("    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
-    response->printf("    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
-    response->println("  </td>\n");
+    WEB("  </td>\n");
+    WEB("  <td>\n");
+    WEB("    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
+    WEB("    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
+    WEB("  </td>\n");
 
-    response->println("  <td>\n");
-    response->println("    <div class='onoffswitch'>\n");
-    response->printf("      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).GetReverse()?"checked":""));
-    response->printf("      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
-    response->println("        <span class='onoffswitch-inner'></span>\n");
-    response->println("        <span class='onoffswitch-switch'></span>\n");
-    response->println("      </label>\n");
-    response->println("    </div>\n");
-    response->println("  </td>\n");
+    WEB("  <td>\n");
+    WEB("    <div class='onoffswitch'>\n");
+    WEB("      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).GetReverse()?"checked":""));
+    WEB("      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
+    WEB("        <span class='onoffswitch-inner'></span>\n");
+    WEB("        <span class='onoffswitch-switch'></span>\n");
+    WEB("      </label>\n");
+    WEB("    </div>\n");
+    WEB("  </td>\n");
 
-    response->println("  <td>\n");
-    response->printf("      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).GetAutoOff());
-    response->println("  </td>\n");
+    WEB("  <td>\n");
+    WEB("      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).GetAutoOff());
+    WEB("  </td>\n");
     
-    response->println("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
+    WEB("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
 
-    response->println("  <td>\n");
-    response->printf("    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).GetActive()?"On":"Off"));
-    response->println("  </td>\n");
+    WEB("  <td>\n");
+    WEB("    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).GetActive()?"On":"Off"));
+    WEB("  </td>\n");
 
-    response->println("</tr>\n");
+    WEB("</tr>\n");
   }
-  response->println("</tbody>\n");
-  response->println("</table>\n");
-  response->println("</form>\n\n<br />\n");
-  response->println("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>\n");
-  response->println("  <input type='text' id='json' name='json' />\n");
-  response->println("  <input type='submit' value='Speichern' />\n");
-  response->println("</form>\n\n");
+  WEB("</tbody>\n");
+  WEB("</table>\n");
+  WEB("</form>\n\n<br />\n");
+  WEB("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>\n");
+  WEB("  <input type='text' id='json' name='json' />\n");
+  WEB("  <input type='submit' value='Speichern' />\n");
+  WEB("</form>\n\n");
 }
 
 void valveStructure::getWebJsParameter(AsyncResponseStream *response) {

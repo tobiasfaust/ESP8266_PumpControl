@@ -1,5 +1,35 @@
 #include "mqtt.h"
 
+MyMQTT::MyMQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint16_t port, String basepath, String root): MQTT(server, dns, MqttServer, port, basepath, root) {
+
+}
+void MyMQTT::SetOled(OLED* oled) {
+  this->oled=oled;  
+}
+
+void MyMQTT::loop() {
+  MQTT::loop();
+  if (WiFi.status() == WL_CONNECTED) {
+    if(this->oled) {
+      this->oled->SetIP(WiFi.localIP().toString());
+      this->oled->SetRSSI(WiFi.RSSI());
+      this->oled->SetSSID(WiFi.SSID());
+      this->oled->SetWiFiConnected(true);
+    }
+  } else {
+    if(this->oled) this->oled->SetWiFiConnected(false);
+  }
+}
+
+void MyMQTT::reconnect() {
+  MQTT::reconnect();
+  if(this->oled) this->oled->SetMqttConnected(MQTT::GetConnectStatusMqtt());
+}
+
+
+
+
+
 MQTT::MQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint16_t port, String basepath, String root): server(server), dns(dns) { 
   this->mqtt_basepath = basepath;
   this->mqtt_root = root;
@@ -146,6 +176,7 @@ void MQTT::Subscribe(String topic, MqttSubscriptionType_t identifier) {
 }
 
 void MQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
+  //TODO: memory leak? besser komplett löschen und neu aufsetzen, siehe valveRelation::DelSubscriber()
   for ( uint8_t i=0; i< this->subscriptions->size(); i++) {
     if (mqtt->connected() && this->subscriptions->at(i).active == true && this->subscriptions->at(i).identifier == identifier) { 
       this->mqtt->unsubscribe(this->subscriptions->at(i).subscription.c_str()); 

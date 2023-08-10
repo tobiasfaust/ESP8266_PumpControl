@@ -53,6 +53,9 @@ class MQTT {
     const bool&       GetConnectStatusWifi()      const {return ConnectStatusWifi;}
     const bool&       GetConnectStatusMqtt()      const {return ConnectStatusMqtt;}
 
+  protected:
+    void              reconnect();
+
   private:
     AsyncWebServer*   server;
     DNSServer*        dns;
@@ -61,11 +64,9 @@ class MQTT {
     AsyncWiFiManager* wifiManager;
 
     CALLBACK_FUNCTION;
-    void              reconnect();
     void              callback(char* topic, byte* payload, unsigned int length);
     
     std::vector<subscription_t>* subscriptions = NULL;
-    OLED* oled;
 
     String            mqtt_root = "";
     String            mqtt_basepath = "";
@@ -76,6 +77,20 @@ class MQTT {
   
 };
 
-extern MQTT* mqtt;
+class MyMQTT: public virtual MQTT {
+  
+  public:
+    MyMQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint16_t port, String basepath, String root);
+  
+    void    SetOled(OLED* oled);
+    void    loop();
+    void    reconnect();
+
+  private:
+    OLED* oled;
+
+};
+
+extern MyMQTT* mqtt;
 
 #endif

@@ -9,7 +9,6 @@
 #include "BaseConfig.h"
 #include "oled.h"
 
-extern MQTT* mqtt;
 extern valveStructure* VStruct;
 extern BaseConfig* Config;
 
@@ -30,7 +29,7 @@ class sensor {
     void      SetLvl(uint8_t lvl);
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(AsyncResponseStream *response);
+    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     
     const uint16_t& GetRaw() const {return raw;}
     const uint8_t&  GetLvl() const {return level; }

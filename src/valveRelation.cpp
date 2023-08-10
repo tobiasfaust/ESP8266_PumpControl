@@ -41,6 +41,7 @@ bool valveRelation::CheckEnabledByBypass(uint8_t ActorPort, String TriggerTopic)
   return false;
 }
 
+/*aufgrund einer Relation wurde ein Ventil geöffnet, merken in _subscriber */
 void valveRelation::AddSubscriber(uint8_t ActorPort, String TriggerTopic) {
   subscriber_t s;
   s.TriggerTopic = TriggerTopic;
@@ -48,9 +49,9 @@ void valveRelation::AddSubscriber(uint8_t ActorPort, String TriggerTopic) {
   _subscriber->push_back(s); 
 }
 
+/*aufgrund einer Relation wurde ein Ventil wieder geschlossen, löschen aus  _subscriber */
 void valveRelation::DelSubscriber(String TriggerTopic) {
   //lösche TriggerTopic auf dem ActorPort
-// --> hier tritt eine out-of-range exception auf
   std::vector<subscriber_t> t;
   for (uint8_t i=0; i<_subscriber->size(); i++) {
     if (_subscriber->at(i).TriggerTopic != TriggerTopic) { t.push_back(_subscriber->at(i)); }
@@ -60,6 +61,8 @@ void valveRelation::DelSubscriber(String TriggerTopic) {
   for (uint8_t i=0; i<t.size(); i++) {
     _subscriber->push_back(t.at(i));
   }
+
+  _subscriber->shrink_to_fit();
 }
 
 uint8_t valveRelation::CountActiveSubscribers(uint8_t ActorPort) {
@@ -73,15 +76,13 @@ uint8_t valveRelation::CountActiveSubscribers(uint8_t ActorPort) {
 void valveRelation::StoreJsonConfig(String* json) {
   File configFile = LittleFS.open("/Relations.json", "w");
   if (!configFile) {
-    if (Config->GetDebugLevel() >=0) {Serial.println("failed to open Relations.json file for writing");}
+    if (Config->GetDebugLevel() >=0) {Serial.print(F("failed to open Relations.json file for writing"));}
   } else {  
-    
+
     if (!configFile.print(*json)) {
         if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing Relations.json to file"));}
     }
-
     configFile.close();
-  
     LoadJsonConfig();
   }
 }
@@ -90,7 +91,7 @@ void valveRelation::LoadJsonConfig() {
   _relationen->clear(); // leere den Valve Vector bevor neu befüllt wird
   _subscriber->clear();
   mqtt->ClearSubscriptions(MQTT::RELATION);
-  
+
   bool loadDefaultConfig = false;
   uint8_t counter = 0;
   char buffer[100] = {0};
@@ -106,7 +107,7 @@ void valveRelation::LoadJsonConfig() {
       ReadBufferingStream stream{configFile, 64};
       stream.find("\"data\":[");
       do {
-        StaticJsonDocument<512> elem;
+        DynamicJsonDocument elem(512);
         DeserializationError error = deserializeJson(elem, stream); 
 
         if (error) {
@@ -118,18 +119,19 @@ void valveRelation::LoadJsonConfig() {
           // Print the result
           if (Config->GetDebugLevel() >=4) {Serial.println("parsing JSON ok"); }
           if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
+          counter++;
 
           bool enabled = false;
           bool EnableByBypass = false;
-          String SubTopic = "";
+          String SubTopic = (char*)0;
           uint8_t Port = 0;
-          
+
           sprintf(buffer, "active_%d", counter);
           if (elem[buffer] && elem[buffer] == 1) {enabled = true;} else {enabled = false;}
-            
+
           sprintf(buffer, "mqtttopic_%d", counter);
           if (elem.containsKey(buffer)) {SubTopic = elem[buffer].as<String>();}
- 
+
           sprintf(buffer, "port_%d", counter);
           if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { Port = elem[buffer].as<int>();}
 
@@ -158,60 +160,61 @@ void valveRelation::LoadJsonConfig() {
   if (Config->GetDebugLevel() >=3) {
     Serial.printf("%d relations are now loaded \n", _relationen->size());
   }
+  _relationen->shrink_to_fit();
 }
 
-void valveRelation::GetWebContent(AsyncResponseStream *response) {
-  response->println("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>");
-  response->println("<form id='DataForm'>");
-  response->println("<table id='maintable' class='editorDemoTable'>");
-  response->println("<thead>");
-  response->println("<tr>");
-  response->println("<td style='width: 25px;'>Nr</td>");
-  response->println("<td style='width: 25px;'>Active</td>");
-  response->println("<td style='width: 250px;'>Trigger Topic</td>");
-  response->println("<td style='width: 250px;'>Port</td>");
-  response->println("<td style='width: 25px;'>Enable if Bypass</td>");
-  response->println("<td style='width: 25px;'>Delete</td>");
+void valveRelation::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+  WEB("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>");
+  WEB("<form id='DataForm'>");
+  WEB("<table id='maintable' class='editorDemoTable'>");
+  WEB("<thead>");
+  WEB("<tr>");
+  WEB("<td style='width: 25px;'>Nr</td>");
+  WEB("<td style='width: 25px;'>Active</td>");
+  WEB("<td style='width: 250px;'>Trigger Topic</td>");
+  WEB("<td style='width: 250px;'>Port</td>");
+  WEB("<td style='width: 25px;'>Enable if Bypass</td>");
+  WEB("<td style='width: 25px;'>Delete</td>");
 
-  response->println("</tr>");
-  response->println("</thead>");
-  response->println("<tbody>");
+  WEB("</tr>");
+  WEB("</thead>");
+  WEB("<tbody>");
 
   for (uint8_t i=0; i< _relationen->size(); i++) {
-    response->println("<tr>");
-    response->printf("  <td>%d</td>", i+1);
-    response->println("  <td>");
-    response->println("    <div class='onoffswitch'>");
-    response->printf("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>", i, i, (_relationen->at(i).enabled?"checked":""));
-    response->printf("      <label class='onoffswitch-label' for='myonoffswitch_%d'>", i);
-    response->println("        <span class='onoffswitch-inner'></span>");
-    response->println("        <span class='onoffswitch-switch'></span>");
-    response->println("      </label>");
-    response->println("    </div>");
-    response->println("  </td>");
+    WEB("<tr>");
+    WEB("  <td>%d</td>", i+1);
+    WEB("  <td>");
+    WEB("    <div class='onoffswitch'>");
+    WEB("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>", i, i, (_relationen->at(i).enabled?"checked":""));
+    WEB("      <label class='onoffswitch-label' for='myonoffswitch_%d'>", i);
+    WEB("        <span class='onoffswitch-inner'></span>");
+    WEB("        <span class='onoffswitch-switch'></span>");
+    WEB("      </label>");
+    WEB("    </div>");
+    WEB("  </td>");
 
-    response->printf("  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>", i, i, _relationen->at(i).TriggerTopic.c_str());
-    response->printf("  <td><input id='ConfiguredPorts_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>", i, i, _relationen->at(i).ActorPort);
+    WEB("  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>", i, i, _relationen->at(i).TriggerTopic.c_str());
+    WEB("  <td><input id='ConfiguredPorts_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>", i, i, _relationen->at(i).ActorPort);
     
-    response->println("  <td>");
-    response->println("    <div class='onoffswitch'>");
-    response->printf("      <input type='checkbox' name='EnableByBypass_%d' class='onoffswitch-checkbox' id='BypassOnOffSwitch_%d' %s>", i, i, (_relationen->at(i).EnableByBypass?"checked":""));
-    response->printf("      <label class='onoffswitch-label' for='BypassOnOffSwitch_%d'>", i);
-    response->println("        <span class='onoffswitch-inner'></span>");
-    response->println("        <span class='onoffswitch-switch'></span>");
-    response->println("      </label>");
-    response->println("    </div>");
-    response->println("  </td>");
+    WEB("  <td>");
+    WEB("    <div class='onoffswitch'>");
+    WEB("      <input type='checkbox' name='EnableByBypass_%d' class='onoffswitch-checkbox' id='BypassOnOffSwitch_%d' %s>", i, i, (_relationen->at(i).EnableByBypass?"checked":""));
+    WEB("      <label class='onoffswitch-label' for='BypassOnOffSwitch_%d'>", i);
+    WEB("        <span class='onoffswitch-inner'></span>");
+    WEB("        <span class='onoffswitch-switch'></span>");
+    WEB("      </label>");
+    WEB("    </div>");
+    WEB("  </td>");
         
-    response->println("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>");
-    response->println("</tr>");
+    WEB("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>");
+    WEB("</tr>");
   }
 
-  response->println("</tbody>");
-  response->println("</table>");
-  response->println("</form><br />");
-  response->println("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>");
-  response->println("  <input type='text' id='json' name='json' />");
-  response->println("  <input type='submit' value='Speichern' />");
-  response->println("</form>");
+  WEB("</tbody>");
+  WEB("</table>");
+  WEB("</form><br />");
+  WEB("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>");
+  WEB("  <input type='text' id='json' name='json' />");
+  WEB("  <input type='submit' value='Speichern' />");
+  WEB("</form>");
 }

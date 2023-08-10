@@ -12,7 +12,6 @@
 #include "JavaScript.h"
 
 extern BaseConfig* Config;
-extern MQTT* mqtt;
 extern valveRelation* ValveRel;
 extern i2cdetect* I2Cdetect;
 
@@ -34,12 +33,12 @@ class valveStructure {
     
     void      StoreJsonConfig(String* json);
     void      LoadJsonConfig();
-    void      GetWebContent(AsyncResponseStream *response);
-    void      GetWebContent1Wire(AsyncResponseStream *response);
+    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+    void      GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     void      getWebJsParameter(AsyncResponseStream *response);
     void      ReceiveMQTT(String topic, int value);
-    uint8_t Get1WireCountDevices();
-    uint8_t Refresh1WireDevices();
+    uint8_t   Get1WireCountDevices();
+    uint8_t   Refresh1WireDevices();
     
   private:
     //void      addValve(uint8_t Port, String SubTopic);

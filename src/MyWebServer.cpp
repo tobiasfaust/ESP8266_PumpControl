@@ -87,9 +87,9 @@ void MyWebServer::handleRoot(AsyncWebServerRequest *request) {
     size_t currentRow = 0;
     maxLen = maxLen >> 1; // prevent memory issues
 
-    this->getPageHeader2(buffer, processedRows, currentRow, len, maxLen, ROOT);
-    this->getPageStatus2(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter2(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, ROOT);
+    this->getPageStatus(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
     
     return len;
 	});
@@ -110,16 +110,6 @@ void MyWebServer::handleJS(AsyncWebServerRequest *request) {
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", JAVASCRIPT);
   response->addHeader("Server","ESP Async Web Server");
   request->send(response); 
-
-  //response->addHeader("Server","ESP Async Web Server");
-  //Serial.println("Start handle ESPGPIO");
-  //request->send_P(200, "text/html", ESPGPIO);
-  //Serial.println("Start handle ESPANALOG");
-  //request->send_P(200, "text/html", ESPANALOG);
-  //Serial.println("Start handle JAVASCRIPT");
-  //request->send_P(200, "text/html", JAVASCRIPT);
-  //Serial.println("End Response");
-  //request->send(response);
 }
 
 void MyWebServer::handleJsAjax(AsyncWebServerRequest *request) {
@@ -167,9 +157,9 @@ void MyWebServer::handleBaseConfig(AsyncWebServerRequest *request) {
     size_t currentRow = 0;
     maxLen = maxLen >> 1; // prevent memory issues
 
-    this->getPageHeader2(buffer, processedRows, currentRow, len, maxLen, BASECONFIG);
+    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, BASECONFIG);
     Config->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter2(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
     
     return len;
 	});
@@ -181,56 +171,95 @@ void MyWebServer::handleBaseConfig(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handleVentilConfig(AsyncWebServerRequest *request) {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
-  response->addHeader("Server","ESP Async Web Server");
+  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
+  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+    size_t len = 0;
+    size_t currentRow = 0;
+    maxLen = maxLen >> 1; // prevent memory issues
 
-  this->getPageHeader(response, VENTILE);
-  VStruct->GetWebContent(response);
-  this->getPageFooter(response);
-  request->send(response);
+    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, VENTILE);
+    VStruct->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
+    
+    return len;
+	});
+  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  response->addHeader("Pragma", "no-cache");
+  response->addHeader("Expires", "-1");
+	request->send(response);
 }
 
 void MyWebServer::handle1WireConfig(AsyncWebServerRequest *request) {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
-  response->addHeader("Server","ESP Async Web Server");
+  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
+  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+    size_t len = 0;
+    size_t currentRow = 0;
+    maxLen = maxLen >> 1; // prevent memory issues
 
-  this->getPageHeader(response, ONEWIRE);
-  VStruct->GetWebContent1Wire(response);
-  this->getPageFooter(response);
-  request->send(response);
+    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, ONEWIRE);
+    VStruct->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
+    
+    return len;
+	});
+  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  response->addHeader("Pragma", "no-cache");
+  response->addHeader("Expires", "-1");
+	request->send(response);
 }
 
 void MyWebServer::handleSensorConfig(AsyncWebServerRequest *request) {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
-  response->addHeader("Server","ESP Async Web Server");
+  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
+  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+    size_t len = 0;
+    size_t currentRow = 0;
+    maxLen = maxLen >> 1; // prevent memory issues
 
-  this->getPageHeader(response, SENSOR);
-  LevelSensor->GetWebContent(response);
-  this->getPageFooter(response);
-  request->send(response);
+    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, SENSOR);
+    LevelSensor->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
+    
+    return len;
+	});
+  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  response->addHeader("Pragma", "no-cache");
+  response->addHeader("Expires", "-1");
+	request->send(response);
 }
 
 void MyWebServer::handleRelations(AsyncWebServerRequest *request) {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
-  response->addHeader("Server","ESP Async Web Server");
+  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
+  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+    size_t len = 0;
+    size_t currentRow = 0;
+    maxLen = maxLen >> 1; // prevent memory issues
 
-  this->getPageHeader(response, RELATIONS);
-  ValveRel->GetWebContent(response);
-  this->getPageFooter(response);
-  request->send(response);
+    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, RELATIONS);
+    ValveRel->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
+    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
+    
+    return len;
+	});
+  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  response->addHeader("Pragma", "no-cache");
+  response->addHeader("Expires", "-1");
+	request->send(response);
 }
 
 
 void MyWebServer::ReceiveJSONConfiguration(AsyncWebServerRequest *request, page_t page) {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
-  response->addHeader("Server","ESP Async Web Server");
+Serial.println("ReceiveJSONConfiguration");
+Serial.printf("ReceiveJSONConfiguration: 1 HEAP Memory: %d, Fragmentation: %d%% \n", ESP.getFreeHeap(), Config->getFragmentation());
   String json = "{}";
 
   if(request->hasArg("json")) {
     json = request->arg("json");
   }
 
-  String targetPage = "/";
+  String targetPage = (char*)0;
+  targetPage.reserve(20);
+  targetPage = "/";
+
   if (Config->GetDebugLevel() >= 3) {
     Serial.print(F("json empfangen: "));
     Serial.println(FPSTR(json.c_str()));  
@@ -242,6 +271,7 @@ void MyWebServer::ReceiveJSONConfiguration(AsyncWebServerRequest *request, page_
   if (page==RELATIONS)        { ValveRel->StoreJsonConfig(&json); targetPage = "/Relations"; }
 
   request->redirect(targetPage);
+Serial.printf("ReceiveJSONConfiguration: 9 HEAP Memory: %d, Fragmentation: %d%% \n", ESP.getFreeHeap(), Config->getFragmentation());
 }
 
 void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
@@ -260,10 +290,10 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
     json = request->arg("json");
   }
 
-  StaticJsonDocument<512> jsonGet; // TODO Use computed size??
+  DynamicJsonDocument jsonGet(512);
   DeserializationError error = deserializeJson(jsonGet, json.c_str());
 
-  StaticJsonDocument<256> jsonReturn;
+  DynamicJsonDocument jsonReturn(256);
 
   if (Config->GetDebugLevel() >=4) { Serial.print("Ajax Json Empfangen: "); }
   if (!error) {
@@ -330,244 +360,182 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
   request->send(response);
 }
 
-size_t MyWebServer::getPageHeader2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive) {
-  TT("<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'/>\n");
-  TT("<meta charset='utf-8'>\n");
-  TT("<link rel='stylesheet' type='text/css' href='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/style.css'>\n");
-  TT("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/javascript.js'></script>\n");
-  TT("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/jsajax.js'></script>\n");
-  TT("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/" ESPGPIO "'></script>\n");
-  TT("<script language='javascript' type='text/javascript' src='/parameter.js'></script>\n");
-  TT("<title>Bewässerungssteuerung</title></head>\n");
-  TT("<body>\n");
-  TT("<table>\n");
-  TT("  <tr>\n");
-  TT("   <td colspan='4'>\n");
-  TT("     <h2>Konfiguration</h2>\n");
-  TT("   </td>\n");
+void MyWebServer::getPageHeader(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive) {
+  WEB("<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'/>\n");
+  WEB("<meta charset='utf-8'>\n");
+  WEB("<link rel='stylesheet' type='text/css' href='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/style.css'>\n");
+  WEB("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/javascript.js'></script>\n");
+  WEB("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/jsajax.js'></script>\n");
+  WEB("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/" ESPGPIO "'></script>\n");
+  WEB("<script language='javascript' type='text/javascript' src='/parameter.js'></script>\n");
+  WEB("<title>Bewässerungssteuerung</title></head>\n");
+  WEB("<body>\n");
+  WEB("<table>\n");
+  WEB("  <tr>\n");
+  WEB("   <td colspan='4'>\n");
+  WEB("     <h2>Konfiguration</h2>\n");
+  WEB("   </td>\n");
 
-  TT("   <td colspan='4' style='color:#CCCCCC;'>\n");
-  TT("      <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
-  TT("   </td>\n");
+  WEB("   <td colspan='4' style='color:#CCCCCC;'>\n");
+  WEB("      <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
+  WEB("   </td>\n");
 
-  TT("   <td colspan='5'>\n");
-  TT("     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s\n", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
-  TT("   </td>\n");
-  TT(" </tr>\n");
+  WEB("   <td colspan='5'>\n");
+  WEB("     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s\n", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
+  WEB("   </td>\n");
+  WEB(" </tr>\n");
 
-  TT(" <tr>\n");
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT("   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT("   <td class='navi %s' style='width: 100px'><a href='/BaseConfig'>Basis Config</a></td>\n", (pageactive==BASECONFIG)?"navi_active":"");
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT("   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==SENSOR)?"navi_active":"");
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT("   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
+  WEB(" <tr>\n");
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB("   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB("   <td class='navi %s' style='width: 100px'><a href='/BaseConfig'>Basis Config</a></td>\n", (pageactive==BASECONFIG)?"navi_active":"");
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB("   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==SENSOR)?"navi_active":"");
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB("   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
   
   if (Config->Enabled1Wire()) {
-      TT("   <td class='navi' style='width: 50px'></td>\n");
-      TT("   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
+      WEB("   <td class='navi' style='width: 50px'></td>\n");
+      WEB("   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
   }
   
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT("   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT("   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>\n");
-  TT("   <td class='navi' style='width: 50px'></td>\n");
-  TT(" </tr>\n");
-  TT(" <tr>\n");
-  TT("   <td colspan='13'>\n");
-  TT("   <p />\n");
-  
-  return len;
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB("   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB("   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>\n");
+  WEB("   <td class='navi' style='width: 50px'></td>\n");
+  WEB(" </tr>\n");
+  WEB(" <tr>\n");
+  WEB("   <td colspan='13'>\n");
+  WEB("   <p />\n");
 }
 
-size_t MyWebServer::getPageFooter2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  TT("   </td>\n");
-  TT(" </tr>\n");
-  TT("</table>\n");
-  TT("<div id='ErrorText' class='errortext'></div>\n");
-  TT("</body>\n");
-  TT("</html>\n");
-  return len;
+void MyWebServer::getPageFooter(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+  WEB("   </td>\n");
+  WEB(" </tr>\n");
+  WEB("</table>\n");
+  WEB("<div id='ErrorText' class='errortext'></div>\n");
+  WEB("</body>\n");
+  WEB("</html>\n");
 }
 
-void MyWebServer::getPageHeader(AsyncResponseStream *response, page_t pageactive) {
-  response->println("<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'/>");
-  response->println("<meta charset='utf-8'>");
-  //response->println("<link rel='stylesheet' type='text/css' href='/style.css'>");
-  //response->println("<script language='javascript' type='text/javascript' src='/parameter.js'></script>");
-  response->println("<script language='javascript' type='text/javascript' src='/javascript.js'></script>");
-  //response->println("<script language='javascript' type='text/javascript' src='/jsajax.js'></script>");
-  response->println("<title>Bewässerungssteuerung</title></head>");
-  response->println("<body>");
-  response->println("<table>");
-  response->println("  <tr>");
-  response->println("   <td colspan='4'>");
-  response->println("     <h2>Konfiguration</h2>");
-  response->println("   </td>");
-
-  response->println("   <td colspan='4' style='color:#CCCCCC;'>");
-  response->printf("      <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
-  response->println("   </td>");
-
-  response->println("   <td colspan='5'>");
-  response->printf ("     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
-  response->println("   </td>");
-  response->println(" </tr>");
-
-  response->println(" <tr>");
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/BaseConfig'>Basis Config</a></td>\n", (pageactive==BASECONFIG)?"navi_active":"");
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==SENSOR)?"navi_active":"");
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
-  
-  if (Config->Enabled1Wire()) {
-      response->println("   <td class='navi' style='width: 50px'></td>");
-      response->printf ("   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
-  }
-  
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->printf ("   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->println("   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>");
-  response->println("   <td class='navi' style='width: 50px'></td>");
-  response->println(" </tr>");
-  response->println(" <tr>");
-  response->println("   <td colspan='13'>");
-  response->println("   <p />");
-}
-
-void MyWebServer::getPageFooter(AsyncResponseStream *response) {
-  response->println(" </tr>");
-  response->println("</table>");
-  response->println("<div id='ErrorText' class='errortext'></div>");
-  response->println("</body>");
-  response->println("</html>");
-}
-
-size_t MyWebServer::getPageStatus2(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+void MyWebServer::getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
   uint8_t count = 0;
   uptime::calculateUptime();
   
-  TT("<table class='editorDemoTable'>\n");
-  TT("<thead>\n");
-  TT("  <tr>\n");
-  TT("    <td style='width: 250px;'>Name</td>\n");
-  TT("    <td style='width: 200px;'>Wert</td>\n");
-  TT("  </tr>\n");
-  TT("</thead>\n");
-  TT("<tbody>\n");
+  WEB("<table class='editorDemoTable'>\n");
+  WEB("<thead>\n");
+  WEB("  <tr>\n");
+  WEB("    <td style='width: 250px;'>Name</td>\n");
+  WEB("    <td style='width: 200px;'>Wert</td>\n");
+  WEB("  </tr>\n");
+  WEB("</thead>\n");
+  WEB("<tbody>\n");
 
-  TT("<tr>\n");
-  TT("  <td>IP-Adresse:</td>\n");
-  TT("  <td>%s</td>\n", WiFi.localIP().toString().c_str());
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>IP-Adresse:</td>\n");
+  WEB("  <td>%s</td>\n", WiFi.localIP().toString().c_str());
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>WiFi Name:</td>\n");
-  TT("  <td>%s</td>\n", WiFi.SSID().c_str());
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>WiFi Name:</td>\n");
+  WEB("  <td>%s</td>\n", WiFi.SSID().c_str());
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>i2c Bus:\n");
+  WEB("<tr>\n");
+  WEB("  <td>i2c Bus:\n");
     //https://fdossena.com/?p=html5cool/buttons/i.frag
-  TT("  <a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>\n");
-  TT("  </td>\n");
-  TT("  <td><div id='showI2C'>\n");
-  TT("%s \n", I2Cdetect->i2cGetAddresses().c_str());
-  TT("  </div></td>\n");
-  TT("</tr>\n");
+  WEB("  <a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>\n");
+  WEB("  </td>\n");
+  WEB("  <td><div id='showI2C'>\n");
+  WEB("%s \n", I2Cdetect->i2cGetAddresses().c_str());
+  WEB("  </div></td>\n");
+  WEB("</tr>\n");
 
   if (Config->Enabled1Wire()) {
-    TT("<tr>\n");
-    TT("  <td>gefundene 1Wire Controller (Devices):\n");
-    TT("    <a href='#' onclick=\"Refresh1Wire('show1Wire')\" class='ButtonRefresh'>&#8634;</a>\n");
-    TT("  </td>\n");
-    TT("  <td><div id='show1Wire'>");
-    TT("%d (%d)", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
-    TT("  </div></td>\n");
-    TT("</tr>\n");
+    WEB("<tr>\n");
+    WEB("  <td>gefundene 1Wire Controller (Devices):\n");
+    WEB("    <a href='#' onclick=\"Refresh1Wire('show1Wire')\" class='ButtonRefresh'>&#8634;</a>\n");
+    WEB("  </td>\n");
+    WEB("  <td><div id='show1Wire'>");
+    WEB("%d (%d)", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
+    WEB("  </div></td>\n");
+    WEB("</tr>\n");
   }
   
-  TT("<tr>\n");
-  TT("  <td>MAC:</td>\n");
-  TT("  <td>%s</td>\n", WiFi.macAddress().c_str());
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>MAC:</td>\n");
+  WEB("  <td>%s</td>\n", WiFi.macAddress().c_str());
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>WiFi RSSI:</td>\n");
-  TT("  <td>%d</td>\n", WiFi.RSSI());
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>WiFi RSSI:</td>\n");
+  WEB("  <td>%d</td>\n", WiFi.RSSI());
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>MQTT Status:</td>\n");
-  TT("  <td>%s</td>\n", (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected"));
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>MQTT Status:</td>\n");
+  WEB("  <td>%s</td>\n", (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected"));
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>Uptime:</td>\n");
-  TT("  <td>%lu Days, %lu Hours, %lu Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>Uptime:</td>\n");
+  WEB("  <td>%lu Days, %lu Hours, %lu Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>Free Heap Memory:</td>\n");
-  TT("  <td>%d</td>\n", ESP.getFreeHeap()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>Free Heap Memory:</td>\n");
+  WEB("  <td>%d Bytes (%d%% Fragmentation)</td>\n", ESP.getFreeHeap(), Config->getFragmentation()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>aktuell geöffnete Ventile</td>\n");
-  TT("  <td>\n");
+  WEB("<tr>\n");
+  WEB("  <td>aktuell geöffnete Ventile</td>\n");
+  WEB("  <td>\n");
 
   count = VStruct->CountActiveThreads();
   if (count > 0) {
-    TT("  Es sind %d Ventile offen\n", count);
+    WEB("  Es sind %d Ventile offen\n", count);
   } else { 
-    TT("  alle Ventile geschlossen\n"); 
+    WEB("  alle Ventile geschlossen\n"); 
   }
-  TT("  </td>\n");
-  TT("</tr>\n");
+  WEB("  </td>\n");
+  WEB("</tr>\n");
 
   if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) {  
-    TT("<tr>\n");
-    TT("  <td>Sensor RAW Value:</td>\n");
-    TT("  <td>%d</td>\n", LevelSensor->GetRaw());
-    TT("</tr>\n");
+    WEB("<tr>\n");
+    WEB("  <td>Sensor RAW Value:</td>\n");
+    WEB("  <td>%d</td>\n", LevelSensor->GetRaw());
+    WEB("</tr>\n");
   }
   if (LevelSensor->GetType() != NONE) {  
-    TT("<tr>\n");
-    TT("  <td>Füllstand in %:</td>\n");
-    TT("  <td>%d %%</td>\n", LevelSensor->GetLvl());
-    TT("</tr>\n");
+    WEB("<tr>\n");
+    WEB("  <td>Füllstand in %:</td>\n");
+    WEB("  <td>%d %%</td>\n", LevelSensor->GetLvl());
+    WEB("</tr>\n");
   }
 
-  TT("<tr>\n");
-  TT("  <td>Firmware Update</td>\n");
-  TT("  <td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>Firmware Update</td>\n");
+  WEB("  <td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>Device Reboot</td>\n");
-  TT("  <td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>Device Reboot</td>\n");
+  WEB("  <td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>Werkszustand herstellen (ohne WiFi)</td>\n");
-  TT("  <td><form action='reset'><input class='button' type='submit' value='Reset' /></form></td>\n");
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>Werkszustand herstellen (ohne WiFi)</td>\n");
+  WEB("  <td><form action='reset'><input class='button' type='submit' value='Reset' /></form></td>\n");
+  WEB("</tr>\n");
 
-  TT("<tr>\n");
-  TT("  <td>WiFi Zugangsdaten entfernen</td>\n");
-  TT("  <td><form action='wifireset'><input class='button' type='submit' value='WifiReset' /></form></td>\n");
-  TT("</tr>\n");
+  WEB("<tr>\n");
+  WEB("  <td>WiFi Zugangsdaten entfernen</td>\n");
+  WEB("  <td><form action='wifireset'><input class='button' type='submit' value='WifiReset' /></form></td>\n");
+  WEB("</tr>\n");
   
-  TT("</tbody>\n");
-  TT("</table>\n");   
-return len;
+  WEB("</tbody>\n");
+  WEB("</table>\n");   
 }
 

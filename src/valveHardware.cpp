@@ -397,8 +397,8 @@ void valveHardware::PortMapping(PortMap_t* Map) {
   }
 }
 
-void valveHardware::GetWebContent1Wire(AsyncResponseStream *response) {
+void valveHardware::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
   HWdev_t* t = getI2CDevice(0x01);
   ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
-  MyDS2408->GetWebContent1Wire(response);
+  MyDS2408->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen);
 }

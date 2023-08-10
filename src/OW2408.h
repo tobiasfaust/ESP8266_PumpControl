@@ -19,8 +19,9 @@ class ow2408 {
     bool        isValidPort(uint8_t port);
     uint8_t    findDevices();
     const uint8_t& GetCountDevices() const {return device_count;}
-    
-    void        GetWebContent1Wire(AsyncResponseStream *response);
+  
+    void        GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+
   private:
     DS2408* ow;
     Devices devices;

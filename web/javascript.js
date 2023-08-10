@@ -277,7 +277,7 @@ function ObjectIsVisible(object) {
 separator: 
 regex of item ID to identify first element in row
   - if set, returned json is an array, all elements per row, example: "^myonoffswitch.*"
-  - if emty, all elements at one level together
+  - if emty, all elements at one level together, ONLY for small json´s (->memory issue)
 *******************************/
 function onSubmit(DataForm, SubmitForm, separator=''){
   // init json Objects

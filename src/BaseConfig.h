@@ -9,7 +9,7 @@
 #include "ArduinoJson.h"
 #include "updater.h"
 
-#define TT(...) Config->handleOneHtmlRow(currentRow++, processedRows, len, maxLen, buffer, __VA_ARGS__)
+#define WEB(...) Config->handleOneHtmlRow(currentRow++, processedRows, len, maxLen, buffer, __VA_ARGS__)
 
 class BaseConfig {
 
@@ -17,8 +17,7 @@ class BaseConfig {
     BaseConfig();
     void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(AsyncResponseStream *response);
-    size_t    GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     void      loop();
 
     const uint8_t& GetPinSDA()      const {return pin_sda;}
@@ -44,6 +43,10 @@ class BaseConfig {
     void      InstallRelease(uint32_t ReleaseNumber);
     void      RefreshReleases();
 
+    size_t    getTotalAvailableMemory();
+    size_t    getLargestAvailableBlock();
+    size_t    getFragmentation();
+    
     void handleOneHtmlRow(const size_t& curRow, 
        std::shared_ptr<uint16_t> processedRows, 
        size_t& len, 

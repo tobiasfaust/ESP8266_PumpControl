@@ -34,20 +34,20 @@ class valveHardware {
   public:
     valveHardware(uint8_t sda, uint8_t scl);
     
-    bool    RegisterPort(HWdev_t*& dev, uint8_t Port);
-    bool    RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse);
+    bool      RegisterPort(HWdev_t*& dev, uint8_t Port);
+    bool      RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse);
 
     void      add1WireDevice(uint8_t pin_1wire);
     void      SetPort(HWdev_t* dev, uint8_t Port, bool state, bool reverse);
     void      SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, bool reverse, uint16_t duration);
     bool      IsValidPort(uint8_t Port);
-    uint8_t  GetI2CAddress(uint8_t Port);
+    uint8_t   GetI2CAddress(uint8_t Port);
     
-    void      GetWebContent1Wire(AsyncResponseStream *response);
+    void      GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     
     bool      Get1WireActive(); // ist 1wire initialisiert?
-    uint8_t  Get1WireCountDevices();
-    uint8_t  Refresh1WireDevices();
+    uint8_t   Get1WireCountDevices();
+    uint8_t   Refresh1WireDevices();
     
     const uint8_t& GetPin1wire()      const {return pin_1wire;}
     

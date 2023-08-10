@@ -13,7 +13,7 @@ i2cdetect* I2Cdetect = NULL;
 BaseConfig* Config = NULL;
 valveRelation* ValveRel = NULL;
 valveStructure* VStruct = NULL;
-MQTT* mqtt = NULL;
+MyMQTT* mqtt = NULL;
 sensor* LevelSensor = NULL;
 OLED* oled = NULL;
 MyWebServer* mywebserver = NULL;
@@ -73,7 +73,8 @@ void setup() {
   oled->Enable(Config->EnabledOled());
 
   Serial.println("Starting Wifi and MQTT");
-  mqtt = new MQTT(&server, &dns, Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttBasePath().c_str(), Config->GetMqttRoot().c_str());
+  mqtt = new MyMQTT(&server, &dns, Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttBasePath().c_str(), Config->GetMqttRoot().c_str());
+  mqtt->SetOled(oled);
   mqtt->setCallback(myMQTTCallBack);
 
   Serial.println("Starting I2CDetect");
