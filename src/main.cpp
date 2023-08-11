@@ -73,7 +73,14 @@ void setup() {
   oled->Enable(Config->EnabledOled());
 
   Serial.println("Starting Wifi and MQTT");
-  mqtt = new MyMQTT(&server, &dns, Config->GetMqttServer().c_str(), Config->GetMqttPort(), Config->GetMqttBasePath().c_str(), Config->GetMqttRoot().c_str());
+  mqtt = new MyMQTT(&server, &dns, 
+                    Config->GetMqttServer().c_str(), 
+                    Config->GetMqttPort(), 
+                    Config->GetMqttBasePath().c_str(), 
+                    Config->GetMqttRoot().c_str(),
+                    (char*)"AP_PumpControl",
+                    (char*)"password"
+                  );
   mqtt->SetOled(oled);
   mqtt->setCallback(myMQTTCallBack);
 

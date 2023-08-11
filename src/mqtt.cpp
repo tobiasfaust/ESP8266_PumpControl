@@ -1,8 +1,11 @@
 #include "mqtt.h"
 
-MyMQTT::MyMQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint16_t port, String basepath, String root): MQTT(server, dns, MqttServer, port, basepath, root) {
-
+MyMQTT::MyMQTT(AsyncWebServer* server, DNSServer *dns, const char* MqttServer, uint16_t MqttPort, String MqttBasepath, String MqttRoot, char* APName, char* APpassword): 
+  MQTT(server, dns, MqttServer, MqttPort, MqttBasepath, MqttRoot, APName, APpassword) {
+  
+  this->subscriptions = new std::vector<subscription_t>{};
 }
+
 void MyMQTT::SetOled(OLED* oled) {
   this->oled=oled;  
 }
@@ -24,17 +27,56 @@ void MyMQTT::loop() {
 void MyMQTT::reconnect() {
   MQTT::reconnect();
   if(this->oled) this->oled->SetMqttConnected(MQTT::GetConnectStatusMqtt());
+
+  if(mqtt->connected()) {
+    // ... and resubscribe if needed
+    for (uint8_t i=0; i< this->subscriptions->size(); i++) {
+      if (this->subscriptions->at(i).active == true) {
+        this->mqtt->subscribe(this->subscriptions->at(i).subscription.c_str()); 
+        Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(this->subscriptions->at(i).subscription.c_str()));
+      }
+    }
+  }
 }
 
+/*******************************************************
+ * subscribe to a special topic (without /# at end)
+*******************************************************/
+void MyMQTT::Subscribe(String topic, MqttSubscriptionType_t identifier) {
+  char buffer[100] = {0};
+  memset(buffer, 0, sizeof(buffer));
+  subscription_t sub = {};
+  snprintf(buffer, sizeof(buffer), "%s/#", topic.c_str());
+  sub.subscription = buffer;
+  sub.identifier = identifier;
+  sub.active = true;
+  this->subscriptions->push_back(sub);
+  if (mqtt->connected()) {mqtt->subscribe(sub.subscription.c_str()); Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(sub.subscription.c_str()));}
+}
 
+void MyMQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
+  //TODO: memory leak? besser komplett löschen und neu aufsetzen, siehe valveRelation::DelSubscriber()
+  for ( uint8_t i=0; i< this->subscriptions->size(); i++) {
+    if (mqtt->connected() && this->subscriptions->at(i).active == true && this->subscriptions->at(i).identifier == identifier) { 
+      this->mqtt->unsubscribe(this->subscriptions->at(i).subscription.c_str()); 
+    }
+    if (this->subscriptions->at(i).identifier == identifier) { 
+      this->subscriptions->at(i).active = false;
+    }
+  }
+  this->subscriptions->clear();
+  this->subscriptions->shrink_to_fit();
+}
 
+/*
+* #####################################################################
+* #####################################################################
+*/
 
-
-MQTT::MQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint16_t port, String basepath, String root): server(server), dns(dns) { 
-  this->mqtt_basepath = basepath;
-  this->mqtt_root = root;
+MQTT::MQTT(AsyncWebServer* server, DNSServer *dns, const char* MqttServer, uint16_t MqttPort, String MqttBasepath, String MqttRoot, char* APName, char* APpassword): 
+server(server), dns(dns), mqtt_root(MqttRoot), mqtt_basepath(MqttBasepath) { 
   
-  this->subscriptions = new std::vector<subscription_t>{};
+  this->subscriptions = new std::vector<String>{};
 
   espClient = WiFiClient();
   WiFi.mode(WIFI_STA); 
@@ -47,21 +89,21 @@ MQTT::MQTT(AsyncWebServer* server, DNSServer* dns, const char* MqttServer, uint1
 
   wifiManager->setConnectTimeout(60);
   wifiManager->setConfigPortalTimeout(300);
-  WiFi.setHostname(mqtt_root.c_str());
+  WiFi.setHostname(this->mqtt_root.c_str());
   Serial.println("WiFi Start");
   
-  if (!wifiManager->autoConnect(("AP_" + mqtt_root).c_str(), "password") ) {
+  if (!wifiManager->autoConnect(APName, APpassword) ) {
     Serial.println("failed to connect and start configPortal");
-    wifiManager->startConfigPortal(("AP_" + mqtt_root).c_str(), "password");
+    wifiManager->startConfigPortal(APName, APpassword);
   }
   
   Serial.print("WiFi connected with local IP: ");
   Serial.println(WiFi.localIP());
   //WiFi.printDiag(Serial);
 
-  Serial.print("Starting MQTT ("); Serial.print(MqttServer); Serial.print(":");Serial.print(port);Serial.println(")");
+  Serial.print("Starting MQTT ("); Serial.print(MqttServer); Serial.print(":");Serial.print(MqttPort);Serial.println(")");
   this->mqtt->setClient(espClient);
-  this->mqtt->setServer(MqttServer, port);
+  this->mqtt->setServer(MqttServer, MqttPort);
   this->mqtt->setCallback([this] (char* topic, byte* payload, unsigned int length) { this->callback(topic, payload, length); });
 }
 
@@ -88,10 +130,8 @@ void MQTT::reconnect() {
     
     // ... and resubscribe if needed
     for (uint8_t i=0; i< this->subscriptions->size(); i++) {
-      if (this->subscriptions->at(i).active == true) {
-        this->mqtt->subscribe(this->subscriptions->at(i).subscription.c_str()); 
-        Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(this->subscriptions->at(i).subscription.c_str()));
-      }
+      this->mqtt->subscribe(this->subscriptions->at(i).c_str()); 
+      Serial.print("MQTT Subscribed to: "); Serial.println(this->subscriptions->at(i).c_str());
     }
 
   } else {
@@ -163,28 +203,29 @@ void MQTT::setCallback(CALLBACK_FUNCTION) {
 /*******************************************************
  * subscribe to a special topic (without /# at end)
 *******************************************************/
-void MQTT::Subscribe(String topic, MqttSubscriptionType_t identifier) {
+void MQTT::Subscribe(String topic) {
   char buffer[100] = {0};
   memset(buffer, 0, sizeof(buffer));
-  subscription_t sub = {};
+  
   snprintf(buffer, sizeof(buffer), "%s/#", topic.c_str());
-  sub.subscription = buffer;
-  sub.identifier = identifier;
-  sub.active = true;
-  this->subscriptions->push_back(sub);
-  if (mqtt->connected()) {mqtt->subscribe(sub.subscription.c_str()); Serial.print(F("MQTT Subscribed to: ")); Serial.println(FPSTR(sub.subscription.c_str()));}
-}
-
-void MQTT::ClearSubscriptions(MqttSubscriptionType_t identifier) {
-  //TODO: memory leak? besser komplett löschen und neu aufsetzen, siehe valveRelation::DelSubscriber()
-  for ( uint8_t i=0; i< this->subscriptions->size(); i++) {
-    if (mqtt->connected() && this->subscriptions->at(i).active == true && this->subscriptions->at(i).identifier == identifier) { 
-      this->mqtt->unsubscribe(this->subscriptions->at(i).subscription.c_str()); 
-    }
-    if (this->subscriptions->at(i).identifier == identifier) { 
-      this->subscriptions->at(i).active = false;
+  this->subscriptions->push_back(buffer);
+  if (this->mqtt->connected()) {
+    this->mqtt->subscribe(buffer); 
+    if (Config->GetDebugLevel() >=3) {
+      Serial.print(F("MQTT now subscribed to: ")); 
+      Serial.println(buffer);
     }
   }
+}
+
+void MQTT::ClearSubscriptions() {
+  for ( uint8_t i=0; i< this->subscriptions->size(); i++) {
+    if (mqtt->connected()) { 
+      mqtt->unsubscribe(this->subscriptions->at(i).c_str()); 
+    }
+  }
+  this->subscriptions->clear();
+  this->subscriptions->shrink_to_fit();
 }
 
 void MQTT::loop() {

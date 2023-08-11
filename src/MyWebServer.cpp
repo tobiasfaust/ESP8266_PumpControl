@@ -248,8 +248,6 @@ void MyWebServer::handleRelations(AsyncWebServerRequest *request) {
 
 
 void MyWebServer::ReceiveJSONConfiguration(AsyncWebServerRequest *request, page_t page) {
-Serial.println("ReceiveJSONConfiguration");
-Serial.printf("ReceiveJSONConfiguration: 1 HEAP Memory: %d, Fragmentation: %d%% \n", ESP.getFreeHeap(), Config->getFragmentation());
   String json = "{}";
 
   if(request->hasArg("json")) {
@@ -271,7 +269,6 @@ Serial.printf("ReceiveJSONConfiguration: 1 HEAP Memory: %d, Fragmentation: %d%% 
   if (page==RELATIONS)        { ValveRel->StoreJsonConfig(&json); targetPage = "/Relations"; }
 
   request->redirect(targetPage);
-Serial.printf("ReceiveJSONConfiguration: 9 HEAP Memory: %d, Fragmentation: %d%% \n", ESP.getFreeHeap(), Config->getFragmentation());
 }
 
 void MyWebServer::handleAjax(AsyncWebServerRequest *request) {

@@ -14,7 +14,7 @@ void valveRelation::AddRelation(bool enabled, String TriggerTopic, uint8_t Port,
   rel.EnableByBypass = EnableByBypass;
   _relationen->push_back(rel);
 
-  if (enabled) { mqtt->Subscribe(TriggerTopic, MQTT::RELATION); }
+  if (enabled) { mqtt->Subscribe(TriggerTopic, MyMQTT::RELATION); }
 }
 
 void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String TriggerTopic) {
@@ -90,7 +90,7 @@ void valveRelation::StoreJsonConfig(String* json) {
 void valveRelation::LoadJsonConfig() {
   _relationen->clear(); // leere den Valve Vector bevor neu befüllt wird
   _subscriber->clear();
-  mqtt->ClearSubscriptions(MQTT::RELATION);
+  mqtt->ClearSubscriptions(MyMQTT::RELATION);
 
   bool loadDefaultConfig = false;
   uint8_t counter = 0;

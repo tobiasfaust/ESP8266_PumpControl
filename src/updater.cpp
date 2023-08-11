@@ -143,7 +143,7 @@ void updater::parseJson(String* json) {
   stream.find("[");
 
   do {
-    StaticJsonDocument<1012> elem;
+    DynamicJsonDocument elem(1024);
     DeserializationError error = deserializeJson(elem, stream); 
 
     if (!error) {
@@ -181,7 +181,7 @@ void updater::parseJson(String* json) {
 
 void updater::StoreJsonConfig(release_t* r) {
 
-  StaticJsonDocument<512> json; // TODO Use computed size??
+  DynamicJsonDocument json(512); // TODO Use computed size??
 
   json["name"]          = r->name.c_str();
   json["version"]       = r->version.c_str();
@@ -208,7 +208,7 @@ void updater::LoadJsonConfig() {
     if (configFile) {
       Serial.println("opened ESPUpdate.json file");
       
-      StaticJsonDocument<512> json; // TODO Use computed size??
+      DynamicJsonDocument json(512); // TODO Use computed size??
       DeserializationError error = deserializeJson(json, configFile);
       
       if (!error) {

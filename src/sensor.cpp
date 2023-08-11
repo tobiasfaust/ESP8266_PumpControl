@@ -22,7 +22,7 @@ void sensor::init_hcsr04(uint8_t pinTrigger, uint8_t pinEcho) {
 void sensor::init_extern(String externalSensor) {
   setSensorType(EXTERN);
   this->measurecycle = 10;
-  mqtt->Subscribe(externalSensor, MQTT::SENSOR);
+  mqtt->Subscribe(externalSensor, MyMQTT::SENSOR);
 }
 
 void sensor::init_ads1115(uint8_t i2c, uint8_t port) {
@@ -187,7 +187,7 @@ void sensor::LoadJsonConfig() {
     uint8_t pinAnalogDefault = 36; // ADC1_CH0 (GPIO 36) 
   #endif
   
-  mqtt->ClearSubscriptions(MQTT::SENSOR);
+  mqtt->ClearSubscriptions(MyMQTT::SENSOR);
   
   if (LittleFS.exists("/SensorConfig.json")) {
     //file exists, reading and loading
@@ -195,7 +195,6 @@ void sensor::LoadJsonConfig() {
     File configFile = LittleFS.open("/SensorConfig.json", "r");
     if (configFile) {
       Serial.println("opened config file");
-      //size_t size = configFile.size();
 
       DynamicJsonDocument json(512);
       DeserializationError error = deserializeJson(json, configFile);
@@ -257,7 +256,8 @@ void sensor::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedR
   WEB("  <td colspan='2'>\n");
   
   WEB("    <div class='inline'>\n");
-  WEB("    <input type='radio' id='sel0' name='selection' value='none' %s onclick=\"radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])\"/>", (this->Type==NONE)?"checked":"");
+  WEB("    <input type='radio' id='sel0' name='selection' value='none' %s ", (this->Type==NONE)?"checked":"");
+  WEB("onclick=\"radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])\"/>\n");
   WEB("    <label for='sel0'>keine Füllstandsmessung</label></div>\n");
   WEB("    \n");
   
