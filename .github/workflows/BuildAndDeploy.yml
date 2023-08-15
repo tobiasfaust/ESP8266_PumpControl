@@ -80,7 +80,7 @@ jobs:
           ENV_BINARYPATH: .pio/build/${{ matrix.variant }}/
           ENV_DESTPATH: "release"
           ENV_SUBVERSION: ${{ github.run_number }}
-          ENV_RELEASEFILE: src/_Release.h
+          ENV_RELEASEFILE: include/_Release.h
         run: |
           mkdir release 
           chmod +x .github/workflows/generateJSON.sh
