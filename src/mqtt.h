@@ -8,14 +8,6 @@
 #include "oled.h"
 #include "BaseConfig.h"
 
-#ifdef ESP8266
-  //#define SetHostName(x) wifi_station_set_hostname(x);
-  #define WIFI_getChipId() ESP.getChipId() 
-#elif ESP32
-  //#define SetHostName(x) WiFi.getHostname(x); --> MQTT.cpp TODO
-  #define WIFI_getChipId() (uint32_t)ESP.getEfuseMac()   // Unterschied zu ESP.getFlashChipId() ???
-#endif
-
 #if defined(ESP8266) || defined(ESP32)
   #include <functional>
   #define CALLBACK_FUNCTION std::function<void(char*, uint8_t*, unsigned int)> MyCallback

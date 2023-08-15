@@ -27,4 +27,14 @@
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
 
+
+#ifdef ESP8266
+  #define ESP_getChipId() ESP.getChipId() 
+  #define ESP_GetMaxFreeAvailableBlock() ESP.getMaxFreeBlockSize()
+#elif ESP32
+  #define ESP_getChipId() (uint32_t)ESP.getEfuseMac()   // Unterschied zu ESP.getFlashChipId() ???
+  #define ESP_GetMaxFreeAvailableBlock() ESP.getMaxAllocHeap()
+#endif
+
+
 #endif

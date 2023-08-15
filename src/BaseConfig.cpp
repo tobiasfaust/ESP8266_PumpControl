@@ -177,17 +177,9 @@ void BaseConfig::handleOneHtmlRow(const size_t& curRow,
   //Serial.printf("Ende XX mit len: %d\n", len);
 }
 
-size_t BaseConfig::getTotalAvailableMemory() {
-  return ESP.getFreeHeap();
-}
-
-size_t BaseConfig::getLargestAvailableBlock() {
-  return ESP.getMaxFreeBlockSize();
-}
-
 /* https://cpp4arduino.com/2018/11/06/what-is-heap-fragmentation.html*/
 size_t BaseConfig::getFragmentation() {
-  return 100 - this->getLargestAvailableBlock() * 100 / getTotalAvailableMemory();
+  return 100 - ESP_GetMaxFreeAvailableBlock() * 100 / ESP.getFreeHeap();
 }
 
 void BaseConfig::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {

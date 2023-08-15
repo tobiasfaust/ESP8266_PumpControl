@@ -43,8 +43,6 @@ class BaseConfig {
     void      InstallRelease(uint32_t ReleaseNumber);
     void      RefreshReleases();
 
-    size_t    getTotalAvailableMemory();
-    size_t    getLargestAvailableBlock();
     size_t    getFragmentation();
     
     void handleOneHtmlRow(const size_t& curRow, 
