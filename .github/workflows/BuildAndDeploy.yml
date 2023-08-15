@@ -26,12 +26,15 @@ jobs:
     strategy:
       matrix:
         variant:
+          - firmware_ESP8266
           - firmware_ESP32
           - firmware_ESP32-S2
           - firmware_ESP32-S3
           - firmware_ESP32-C3
 
         include:
+          - variant: firmware_ESP8266
+            architecture: ESP8266
           - variant: firmware_ESP32
             architecture: ESP32
           - variant: firmware_ESP32-S2
