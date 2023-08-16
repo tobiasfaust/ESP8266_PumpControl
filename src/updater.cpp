@@ -2,7 +2,7 @@
 
 updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600), debuglevel(3) {
   this->releases = new std::vector<release_t>;
-  client = new WiFiClient;
+  this->WifiClient = new WiFiClient;
   httpUpdate = new WM_httpUpdate;
   
   this->lastupdate = millis();
@@ -112,8 +112,7 @@ String* updater::getURLPath(String* url) {
 
 void updater::downloadJson() {
   HTTPClient http;
-  
-  if (http.begin(*client, this->json_url)) { 
+  if (http.begin(*(this->WifiClient), this->json_url)) { 
     int httpCode = http.GET();
     if (httpCode > 0) {
       //Serial.printf("[HTTP] GET... code: %d\n", httpCode);
@@ -263,7 +262,7 @@ void updater::InstallRelease(uint32_t ReleaseNumber) {
   Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
   //httpUpdate->setLedPin(LED_BUILTIN, LOW);
   
-  t_httpUpdate_return ret = httpUpdate->update(*client, this->currentRelease.downloadURL);
+  t_httpUpdate_return ret = httpUpdate->update(*(this->WifiClient), this->currentRelease.downloadURL);
   switch (ret) {
     case HTTP_UPDATE_FAILED:
       Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate->getLastError(), httpUpdate->getLastErrorString().c_str());

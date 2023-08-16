@@ -54,8 +54,8 @@ class updater {
 
   private:
     //BearSSL::WiFiClientSecure* client;
-    WiFiClient* client;
-    WM_httpUpdate* httpUpdate;
+    WiFiClient*     WifiClient;
+    WM_httpUpdate*  httpUpdate;
     
     void        Update();
     void        downloadJson();
