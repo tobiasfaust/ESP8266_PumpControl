@@ -3,11 +3,17 @@
 
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
-#include <ADS1115_WE.h>  
 #include "mqtt.h"
 #include "valveStructure.h"
 #include "BaseConfig.h"
-#include "oled.h"
+
+#ifdef USE_ADS1115
+  #include <ADS1115_WE.h> 
+#endif
+
+#ifdef USE_OLED
+  #include "oled.h"
+#endif
 
 extern valveStructure* VStruct;
 extern BaseConfig* Config;
@@ -19,11 +25,13 @@ class sensor {
   public:
     sensor();
     void      init_hcsr04(uint8_t pinTrigger, uint8_t pinEcho);
-    void      init_ads1115(uint8_t i2c, uint8_t port);
     void      init_extern(String externalSensor);
     void      init_analog(uint8_t pinAnalog) ;
     
-    void      SetOled(OLED* oled);
+    #ifdef USE_ADS1115
+      void      init_ads1115(uint8_t i2c, uint8_t port);
+    #endif
+
     void      setSensorType(sensorType_t t);
     void      loop();
     void      SetLvl(uint8_t lvl);
@@ -38,13 +46,19 @@ class sensor {
     const uint8_t& GetThresholdMax()const {return threshold_max;}
     const String&  GetExternalSensor() const {return externalSensor;}
  
+    #ifdef USE_OLED
+      void      SetOled(OLED* oled);
+    #endif
+
   private:
     void      loop_analog();
     void      loop_hcsr04();
-    void      loop_ads1115();
-    uint16_t readADS1115Channel(ADS1115_MUX channel);
     
-    OLED*    oled;
+    #ifdef USE_ADS1115
+      uint16_t  readADS1115Channel(ADS1115_MUX channel);
+      void      loop_ads1115();
+    #endif
+
     sensorType_t   Type;
     void* Device;
     
@@ -64,6 +78,10 @@ class sensor {
     String    externalSensor;
     
     unsigned long previousMillis = 0;
+
+    #ifdef USE_OLED
+      OLED*    oled;
+    #endif
     
 };
 

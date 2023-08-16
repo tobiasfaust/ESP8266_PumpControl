@@ -332,10 +332,14 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
   } else if (action && strcmp(action.c_str(), "RefreshReleases")==0) {
       Config->RefreshReleases();  
       jsonReturn["accepted"] = 1;  
+
+#ifdef USE_I2C
   } else if (action && strcmp(action.c_str(), "RefreshI2C")==0) {
       I2Cdetect->i2cScan();  
       jsonReturn["NewState"] = I2Cdetect->i2cGetAddresses();
       jsonReturn["accepted"] = 1;  
+#endif
+
   } else if (action && strcmp(action.c_str(), "Refresh1Wire")==0) {
       uint8_t ret = VStruct->Refresh1WireDevices();  
       snprintf(buffer, sizeof(buffer), "%d (%d)", ret, ret * 8);
@@ -440,6 +444,7 @@ void MyWebServer::getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> proce
   WEB("  <td>%s</td>\n", WiFi.SSID().c_str());
   WEB("</tr>\n");
 
+#ifdef USE_I2C
   WEB("<tr>\n");
   WEB("  <td>i2c Bus:\n");
     //https://fdossena.com/?p=html5cool/buttons/i.frag
@@ -449,7 +454,8 @@ void MyWebServer::getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> proce
   WEB("%s \n", I2Cdetect->i2cGetAddresses().c_str());
   WEB("  </div></td>\n");
   WEB("</tr>\n");
-
+#endif
+#ifdef USE_ONEWIRE
   if (Config->Enabled1Wire()) {
     WEB("<tr>\n");
     WEB("  <td>gefundene 1Wire Controller (Devices):\n");
@@ -460,7 +466,8 @@ void MyWebServer::getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> proce
     WEB("  </div></td>\n");
     WEB("</tr>\n");
   }
-  
+#endif
+
   WEB("<tr>\n");
   WEB("  <td>MAC:</td>\n");
   WEB("  <td>%s</td>\n", WiFi.macAddress().c_str());

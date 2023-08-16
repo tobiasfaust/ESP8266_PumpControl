@@ -1,21 +1,29 @@
 #include <vector>
+#include "CommonLibs.h"
 #include "BaseConfig.h"
 #include "valveStructure.h"
 #include "mqtt.h"
 #include "MyWebServer.h"
 #include "sensor.h"
-#include "oled.h"
+
+#ifdef USE_OLED
+  #include "oled.h"
+  OLED* oled = NULL;
+#endif
+
+#ifdef USE_I2C
+  i2cdetect* I2Cdetect = NULL;
+#endif
 
 AsyncWebServer server(80);
 DNSServer dns;
 
-i2cdetect* I2Cdetect = NULL;
+
 BaseConfig* Config = NULL;
 valveRelation* ValveRel = NULL;
 valveStructure* VStruct = NULL;
 MyMQTT* mqtt = NULL;
 sensor* LevelSensor = NULL;
-OLED* oled = NULL;
 MyWebServer* mywebserver = NULL;
 
 /* debugmodes
@@ -65,12 +73,16 @@ void setup() {
 
   Config = new BaseConfig();
 
-  Serial.print(F("Starting WIRE at (SDA, SCL)): ")); Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
-  Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
+  #ifdef USE_I2C
+    Serial.print(F("Starting WIRE at (SDA, SCL)): ")); Serial.print(Config->GetPinSDA()); Serial.print(", "); Serial.println(Config->GetPinSCL());
+    Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
+  #endif
 
-  oled = new OLED();    
-  if (Config->EnabledOled() ) oled->init(Config->GetPinSDA(), Config->GetPinSCL(), Config->GetI2cOLED());
-  oled->Enable(Config->EnabledOled());
+  #ifdef USE_OLED
+    oled = new OLED();    
+    if (Config->EnabledOled() ) oled->init(Config->GetPinSDA(), Config->GetPinSCL(), Config->GetI2cOLED());
+    oled->Enable(Config->EnabledOled());
+  #endif
 
   Serial.println("Starting Wifi and MQTT");
   mqtt = new MyMQTT(&server, &dns, 
@@ -81,15 +93,23 @@ void setup() {
                     (char*)"AP_PumpControl",
                     (char*)"password"
                   );
-  mqtt->SetOled(oled);
+  
+  #ifdef USE_OLED
+    mqtt->SetOled(oled);
+  #endif
+
   mqtt->setCallback(myMQTTCallBack);
 
-  Serial.println("Starting I2CDetect");
-  I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSCL());
-
+  #ifdef USE_I2C
+    Serial.println("Starting I2CDetect");
+    I2Cdetect = new i2cdetect(Config->GetPinSDA(), Config->GetPinSCL());
+  #endif
+  
   Serial.println("Starting Sensor");
   LevelSensor = new sensor();
-  LevelSensor->SetOled(oled);
+  #ifdef USE_OLED
+    LevelSensor->SetOled(oled);
+  #endif
 
   Serial.println("Valve Relations");
   ValveRel = new valveRelation();
@@ -110,5 +130,8 @@ void loop() {
   LevelSensor->loop();
   mywebserver->loop();
   Config->loop();
-  oled->loop();  
+
+  #ifdef USE_OLED
+    oled->loop();  
+  #endif
 }

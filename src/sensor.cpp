@@ -42,26 +42,11 @@ void sensor::init_extern(String externalSensor) {
   mqtt->Subscribe(externalSensor, MyMQTT::SENSOR);
 }
 
-void sensor::init_ads1115(uint8_t i2c, uint8_t port) {
-  if (Config->GetDebugLevel() >=4) Serial.printf("Init ADS1115 at i2cAdress 0x%02x \n", i2c);
-  
-  this->ads1115_i2c = i2c;
-  this->ads1115_port = port;
-  setSensorType(ADS1115);
-  
-  ADS1115_WE* adc = new ADS1115_WE(0x48);
- 
-  if(!adc->init()){
-    Serial.printf("Could not connect to ADS1115 at i2cAdress 0x%02x \n", i2c );
-  } else {
-    adc->setVoltageRange_mV(ADS1115_RANGE_4096);
-    this->Device = adc;
-  }
-}
-
+#ifdef USE_OLED
 void sensor::SetOled(OLED* oled) {
   this->oled = oled;
 }
+#endif
 
 void sensor::setSensorType(sensorType_t t) {
   this->Type = t;
@@ -69,7 +54,9 @@ void sensor::setSensorType(sensorType_t t) {
 
 void sensor::SetLvl(uint8_t lvl) {
   this->level = lvl;
-  if(this->oled) this->oled->SetLevel(this->level);
+  #ifdef USE_OLED
+    if(this->oled) this->oled->SetLevel(this->level);
+  #endif
 }
 
 void sensor::loop_analog() {
@@ -111,54 +98,77 @@ void sensor::loop_hcsr04() {
   }
 }
 
-void sensor::loop_ads1115() {
-  this->raw = 0;
-  this->level = 0;
-
-  if (!this->Device) {
-    if (Config->GetDebugLevel() >=3) Serial.printf("Measure of analog Sensor ADS1115 port %d requested, but not ADS1115 found. Stop measure! \n", this->ads1115_port);
-  } else {
-
-    if (Config->GetDebugLevel() >=4) Serial.printf("start measure, use analog Sensor ADS1115 port: %d \n", this->ads1115_port);
+#ifdef USE_ADS1115
+  void sensor::init_ads1115(uint8_t i2c, uint8_t port) {
+    if (Config->GetDebugLevel() >=4) Serial.printf("Init ADS1115 at i2cAdress 0x%02x \n", i2c);
+    
+    this->ads1115_i2c = i2c;
+    this->ads1115_port = port;
+    setSensorType(ADS1115);
+    
+    ADS1115_WE* adc = new ADS1115_WE(0x48);
   
-    switch (this->ads1115_port) {
-      case 0:
-        this->raw = readADS1115Channel(ADS1115_COMP_0_GND);
-      break;
-      case 1:
-        this->raw = readADS1115Channel(ADS1115_COMP_1_GND);
-      break;
-      case 2:
-        this->raw = readADS1115Channel(ADS1115_COMP_2_GND);
-      break;
-      case 3:
-        this->raw = readADS1115Channel(ADS1115_COMP_3_GND);
-      break;
-      default:
-         Serial.printf("portnummer %d not available \n", this->ads1115_port);
-      break;
+    if(!adc->init()){
+      Serial.printf("Could not connect to ADS1115 at i2cAdress 0x%02x \n", i2c );
+    } else {
+      adc->setVoltageRange_mV(ADS1115_RANGE_4096);
+      this->Device = adc;
     }
-    this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
   }
-}
 
-uint16_t sensor::readADS1115Channel(ADS1115_MUX channel) {
-  int16_t raw = 0;
-  ADS1115_WE* adc = static_cast<ADS1115_WE*>(this->Device);
-  adc->setCompareChannels(channel);
-  adc->startSingleMeasurement();
-  while(adc->isBusy()){}
-  raw = adc->getResultWithRange(-4096,4096); 
-  return (uint16_t) abs(raw);
-}
+  void sensor::loop_ads1115() {
+    this->raw = 0;
+    this->level = 0;
+
+    if (!this->Device) {
+      if (Config->GetDebugLevel() >=3) Serial.printf("Measure of analog Sensor ADS1115 port %d requested, but not ADS1115 found. Stop measure! \n", this->ads1115_port);
+    } else {
+
+      if (Config->GetDebugLevel() >=4) Serial.printf("start measure, use analog Sensor ADS1115 port: %d \n", this->ads1115_port);
+    
+      switch (this->ads1115_port) {
+        case 0:
+          this->raw = readADS1115Channel(ADS1115_COMP_0_GND);
+        break;
+        case 1:
+          this->raw = readADS1115Channel(ADS1115_COMP_1_GND);
+        break;
+        case 2:
+          this->raw = readADS1115Channel(ADS1115_COMP_2_GND);
+        break;
+        case 3:
+          this->raw = readADS1115Channel(ADS1115_COMP_3_GND);
+        break;
+        default:
+          Serial.printf("portnummer %d not available \n", this->ads1115_port);
+        break;
+      }
+      this->level = map(this->raw, measureDistMin, measureDistMax, 0, 100); // 0-100%
+    }
+  }
+
+  uint16_t sensor::readADS1115Channel(ADS1115_MUX channel) {
+    int16_t raw = 0;
+    ADS1115_WE* adc = static_cast<ADS1115_WE*>(this->Device);
+    adc->setCompareChannels(channel);
+    adc->startSingleMeasurement();
+    while(adc->isBusy()){}
+    raw = adc->getResultWithRange(-4096,4096); 
+    return (uint16_t) abs(raw);
+  }
+#endif
 
 void sensor::loop() {
   if (millis() - this->previousMillis > this->measurecycle*1000) {
     this->previousMillis = millis();
    
     if (this->Type == ONBOARD_ANALOG) {loop_analog();}
-    if (this->Type == ADS1115) {loop_ads1115();}
+   
     if (this->Type == HCSR04) {loop_hcsr04();}
+
+    #ifdef USE_ADS1115
+      if (this->Type == ADS1115) {loop_ads1115();}
+    #endif
 
     if (this->Type != NONE && this->level !=0 && Config->Enabled3Wege()) {
       if (this->level < this->threshold_min) { VStruct->SetOn(Config->Get3WegePort()); }
@@ -169,10 +179,12 @@ void sensor::loop() {
       if (this->level > 0 ) { mqtt->Publish_Int((const char*)"level", (int)this->level, false); }
     }
     
+  #ifdef USE_OLED
     if (this->Type != NONE && this->Type != EXTERN) {
       if(this->oled) this->oled->SetLevel(this->level);
     }
-
+  #endif
+  
      if (this->Type != NONE && Config->GetDebugLevel() >=4) {
       Serial.printf("measured sensor raw value: %d \n", this->raw);
      }
@@ -235,8 +247,11 @@ void sensor::LoadJsonConfig() {
             { init_analog(this->pinAnalog); }
             else if(strcmp(elem["selection"].as<String>().c_str(),"hcsr04")==0)   { init_hcsr04(this->pinTrigger, this->pinEcho); }
             else if(strcmp(elem["selection"].as<String>().c_str(),"extern")==0)   { init_extern(this->externalSensor); }
-            else if(strcmp(elem["selection"].as<String>().c_str(),"ads1115")==0)  { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
             else if(strcmp(elem["selection"].as<String>().c_str(),"none")==0)     { this->Type=NONE; Serial.println(F("No LevelSensor requested")); } 
+            
+          #ifdef USE_ADS1115  
+            else if(strcmp(elem["selection"].as<String>().c_str(),"ads1115")==0)  { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
+          #endif
         }
       } while (stream.findUntil(",","]"));
     } else {
@@ -279,12 +294,14 @@ void sensor::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedR
   WEB("    <label for='sel2'>Füllstandsmessung mit Analogsignal am ESP</label></div>\n");
   WEB("    \n");
   
-  WEB("    <div class='inline'>\n");
-  WEB("    <input type='radio' id='sel3' name='selection' value='ads1115' %s ", (this->Type==ADS1115)?"checked":"");
-  WEB("onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2','ads1115_0','ads1115_1'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','analog_0'])\"/>\n");
-  WEB("    <label for='sel3'>Füllstandsmessung mit Analogsignal am ADS1115 </label></div>\n");
-  WEB("    \n");
-  
+  #ifdef USE_ADS1115
+    WEB("    <div class='inline'>\n");
+    WEB("    <input type='radio' id='sel3' name='selection' value='ads1115' %s ", (this->Type==ADS1115)?"checked":"");
+    WEB("onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2','ads1115_0','ads1115_1'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','analog_0'])\"/>\n");
+    WEB("    <label for='sel3'>Füllstandsmessung mit Analogsignal am ADS1115 </label></div>\n");
+    WEB("    \n");
+  #endif
+
   WEB("    <div class='inline'>\n");
   WEB("    <input type='radio' id='sel4' name='selection' value='extern' %s ", (this->Type==EXTERN)?"checked":"");
   WEB("onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_0','analog_1','analog_2','ads1115_0','ads1115_1'])\"/>\n");
@@ -323,15 +340,17 @@ void sensor::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedR
   WEB("<td><input min='0' size='15' id='AnalogPin_1' name='pinanalog' type='number' value='%d'/></td>\n", this->pinAnalog + 200);
   WEB("</tr>\n");
 
-  WEB("<tr class='%s' id='ads1115_0'>\n", (this->Type==ADS1115?"":"hide"));
-  WEB("<td>i2c Adresse des ADS1115</td>\n");
-  WEB("<td><input maxlength='2'  name='ads1115_i2c' type='text' value='%02x'/></td>\n", this->ads1115_i2c);
-  WEB("</tr>\n");
-  
-  WEB("<tr class='%s' id='ads1115_1'>\n", (this->Type==ADS1115?"":"hide"));
-  WEB("<td>Portnummer am ADS1115 bei dem das Signal anliegt</td>\n");
-  WEB("<td><input min='0' max='4' size='15'  name='ads1115_port' type='number' value='%d'/></td>\n", this->ads1115_port);
-  WEB("</tr>\n");
+  #ifdef USE_ADS1115
+    WEB("<tr class='%s' id='ads1115_0'>\n", (this->Type==ADS1115?"":"hide"));
+    WEB("<td>i2c Adresse des ADS1115</td>\n");
+    WEB("<td><input maxlength='2'  name='ads1115_i2c' type='text' value='%02x'/></td>\n", this->ads1115_i2c);
+    WEB("</tr>\n");
+    
+    WEB("<tr class='%s' id='ads1115_1'>\n", (this->Type==ADS1115?"":"hide"));
+    WEB("<td>Portnummer am ADS1115 bei dem das Signal anliegt</td>\n");
+    WEB("<td><input min='0' max='4' size='15'  name='ads1115_port' type='number' value='%d'/></td>\n", this->ads1115_port);
+    WEB("</tr>\n");
+  #endif
   
   #ifdef ESP32
     uint16_t maxAnalogRaw = 4096;

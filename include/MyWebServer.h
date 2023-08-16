@@ -26,7 +26,10 @@
 extern sensor* LevelSensor;
 extern valveStructure* VStruct;
 extern valveRelation* ValveRel;
-extern i2cdetect* I2Cdetect;
+
+#ifdef USE_I2C
+  extern i2cdetect* I2Cdetect;
+#endif
 
 #ifdef ESP8266
   #define ESPGPIO "gpio_esp8266.js"

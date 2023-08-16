@@ -4,7 +4,6 @@
 
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
-#include <i2cdetect.h>
 #include "BaseConfig.h"
 #include "valveRelation.h"
 #include "valve.h"
@@ -13,8 +12,11 @@
 
 extern BaseConfig* Config;
 extern valveRelation* ValveRel;
-extern i2cdetect* I2Cdetect;
 
+#ifdef USE_I2C
+  #include <i2cdetect.h>
+  extern i2cdetect* I2Cdetect;
+#endif
 
 class valveStructure {
 

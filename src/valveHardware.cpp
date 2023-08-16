@@ -23,58 +23,71 @@ valveHardware::valveHardware(uint8_t sda, uint8_t scl)
   }
 }
 
+#ifdef USE_ONEWIRE
+  void valveHardware::add1WireDevice(uint8_t pin_1wire) {
+    if (this->Get1WireActive() && this->pin_1wire != pin_1wire) {
+      HWdev_t* t = this->getI2CDevice(0x01);
+      ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+      MyDS2408->init(pin_1wire);
+      this->pin_1wire = pin_1wire;
+      if (Config->GetDebugLevel() >=3) { Serial.printf("1Wire Pin changed successfully, %d devices found\n", MyDS2408->GetCountDevices()); }
+    } 
+    else if (!this->Get1WireActive()) {    
+      ow2408* MyDS2408 = new ow2408();
+      MyDS2408->init(pin_1wire); 
+      this->pin_1wire = pin_1wire;
+      
+      HWdev_t t; 
+      t.Device = MyDS2408;
+      t.HWType=OW2408;
+      t.i2cAddress=0x01;
+      HWDevice->push_back(t);
 
-void valveHardware::add1WireDevice(uint8_t pin_1wire) {
-  if (this->Get1WireActive() && this->pin_1wire != pin_1wire) {
-    HWdev_t* t = this->getI2CDevice(0x01);
-    ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
-    MyDS2408->init(pin_1wire);
-    this->pin_1wire = pin_1wire;
-    if (Config->GetDebugLevel() >=3) { Serial.printf("1Wire Pin changed successfully, %d devices found\n", MyDS2408->GetCountDevices()); }
-  } 
-  else if (!this->Get1WireActive()) {    
-    ow2408* MyDS2408 = new ow2408();
-    MyDS2408->init(pin_1wire); 
-    this->pin_1wire = pin_1wire;
-    
-    HWdev_t t; 
-    t.Device = MyDS2408;
-    t.HWType=OW2408;
-    t.i2cAddress=0x01;
-    HWDevice->push_back(t);
-
-    if (Config->GetDebugLevel() >=3)  { Serial.printf("1Wire added successfully, %d devices found\n", MyDS2408->GetCountDevices()); }
-  } else {
-    if (Config->GetDebugLevel() >=5)  { Serial.println("1wire already present"); }
-  }
-}
-
-bool valveHardware::Get1WireActive() {
-  for (uint8_t i=0; i<HWDevice->size(); i++) {
-    if (HWDevice->at(i).i2cAddress == 0x01) {
-      return true;
+      if (Config->GetDebugLevel() >=3)  { Serial.printf("1Wire added successfully, %d devices found\n", MyDS2408->GetCountDevices()); }
+    } else {
+      if (Config->GetDebugLevel() >=5)  { Serial.println("1wire already present"); }
     }
   }
-  return false;
-}
 
-uint8_t valveHardware::Get1WireCountDevices() {
-  if (this->Get1WireActive()) {
-    HWdev_t* t = this->getI2CDevice(0x01);
-    ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
-    return MyDS2408->GetCountDevices();
+  bool valveHardware::Get1WireActive() {
+    for (uint8_t i=0; i<HWDevice->size(); i++) {
+      if (HWDevice->at(i).i2cAddress == 0x01) {
+        return true;
+      }
+    }
+    return false;
   }
-  else  return 0;
-}
 
-uint8_t valveHardware::Refresh1WireDevices() {
+  uint8_t valveHardware::Get1WireCountDevices() {
     if (this->Get1WireActive()) {
-    HWdev_t* t = this->getI2CDevice(0x01);
-    ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
-    return MyDS2408->findDevices();
+      HWdev_t* t = this->getI2CDevice(0x01);
+      ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+      return MyDS2408->GetCountDevices();
+    }
+    else  return 0;
   }
-  else  return 0;
+
+  uint8_t valveHardware::Refresh1WireDevices() {
+      if (this->Get1WireActive()) {
+      HWdev_t* t = this->getI2CDevice(0x01);
+      ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+      return MyDS2408->findDevices();
+    }
+    else  return 0;
+  }
+
+  void valveHardware::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+  HWdev_t* t = getI2CDevice(0x01);
+  ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
+  MyDS2408->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen);
 }
+#else
+  void valveHardware::add1WireDevice(uint8_t pin_1wire) {};
+  bool valveHardware::Get1WireActive() { return false;}
+  uint8_t valveHardware::Get1WireCountDevices() { return 0;}
+  uint8_t valveHardware::Refresh1WireDevices() { return 0; }
+  void valveHardware::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {};
+#endif
 
 void valveHardware::addI2CDevice(uint8_t i2cAddress) {
   if (!I2CIsPresent(i2cAddress)) {
@@ -121,15 +134,20 @@ HWdev_t* valveHardware::getI2CDevice(uint8_t i2cAddress) {
 }
 
 void valveHardware::ConnectHWdevice(HWdev_t* dev) {
+#ifdef USE_PCF8574
   if(dev->HWType == PCF) {
     PCF8574* pcf8574 = new PCF8574(dev->i2cAddress, this->pin_sda, this->pin_scl);
     pcf8574->begin();
     dev->Device = pcf8574;
-  } else if(dev->HWType == TB6612) {
+  } 
+#endif
+#ifdef USE_TB6612  
+  if(dev->HWType == TB6612) {
     tb6612* motor = new tb6612();
     motor->init(dev->i2cAddress); 
     dev->Device = motor;
   }
+#endif
 
  if (Config->GetDebugLevel() >=3) { 
     char buffer[100] = {0};
@@ -161,21 +179,29 @@ bool valveHardware::RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse) {
   if (PortMap.Port !=0) {
     addI2CDevice(PortMap.i2cAddress);
     dev = getI2CDevice(PortMap.i2cAddress);
-    
+  #ifdef USE_PCF8574
     if(dev->HWType == PCF) {
       PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device);
       pcf8574->pinMode(PortMap.internalPort, OUTPUT);
       pcf8574->digitalWrite(PortMap.internalPort, !state); // normal: HIGH
       success = true;
-    } else if (dev->HWType == TB6612) {
+    }
+  #endif
+  #ifdef USE_TB6612  
+    if (dev->HWType == TB6612) {
       tb6612* motor = static_cast<tb6612*>(dev->Device);
       motor->setOff(PortMap.internalPort);
       success = true;
-    } else if (dev->HWType == OW2408) {
+    } 
+  #endif
+  #ifdef USE_ONEWIRE  
+    if (dev->HWType == OW2408) {
       ow2408* MyDS2408 = static_cast<ow2408*>(dev->Device);
       MyDS2408->setPort(PortMap.internalPort, state);
       success = true;
-    } else if (dev->HWType == ONBOARD) {
+    }
+  #endif  
+    if (dev->HWType == ONBOARD) {
       pinMode(PortMap.internalPort, OUTPUT);
       digitalWrite(PortMap.internalPort, state); // normal: LOW
       success = true;
@@ -220,7 +246,8 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
   PortMapping(&PortMap1); PortMapping(&PortMap2); // need internalPort
 
   state = state ^ reverse;
-  
+
+#ifdef USE_PCF8574  
   if (dev->HWType == PCF) { //schaltet auf LOW
     PCF8574* pcf8574 = static_cast<PCF8574*>(dev->Device); // , pin_sda, pin_scl
     pcf8574->digitalWrite(PortMap1.internalPort, !state); // Normal: HIGH
@@ -230,7 +257,10 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
       pcf8574->digitalWrite(PortMap1.internalPort, state); 
       pcf8574->digitalWrite(PortMap2.internalPort, !state); 
     }
-  } else if (dev->HWType == TB6612) {
+  } 
+#endif
+#ifdef USE_TB6612  
+  if (dev->HWType == TB6612) {
     tb6612* motor = static_cast<tb6612*>(dev->Device);
     if (duration && duration > 0) {
       motor->setOn(PortMap1.internalPort, state);
@@ -238,7 +268,10 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
       motor->setOff(PortMap1.internalPort);
     } 
     // Port 2 nicht relevant
-  } else if (dev->HWType == OW2408) {
+  }
+#endif
+#ifdef USE_ONEWIRE  
+  if (dev->HWType == OW2408) {
     ow2408* MyDS2408 = static_cast<ow2408*>(dev->Device);
     MyDS2408->setPort(PortMap1.internalPort, state);
     if (Port2 && Port2 > 0) {
@@ -247,7 +280,10 @@ void valveHardware::SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool sta
       MyDS2408->setPort(PortMap1.internalPort, !state);
       MyDS2408->setPort(PortMap2.internalPort, state); // Normal: LOW
     }
-  } else if (dev->HWType == ONBOARD) {
+  }
+#endif
+
+  if (dev->HWType == ONBOARD) {
     digitalWrite(PortMap1.internalPort,  state); // Bistabil: set Direction
     if (Port2 && Port2 > 0) {
       digitalWrite(PortMap2.internalPort, true); // Bistabil: set ON
@@ -378,6 +414,8 @@ void valveHardware::PortMapping(PortMap_t* Map) {
     Map->HWType = TB6612;
   } else if (Map->Port >=140 && Map->Port <=199) {
     // nur die Ports anzeigen die auch wirklich vorhanden sind
+  
+  #ifdef USE_ONEWIRE  
     if (Config->Enabled1Wire() && this->I2CIsPresent(0x01)) {
       HWdev_t* t = this->getI2CDevice(0x01);
       ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
@@ -387,6 +425,8 @@ void valveHardware::PortMapping(PortMap_t* Map) {
         Map->HWType = OW2408;
       } else Map->Port = 0;
     } else Map->Port = 0;
+  #endif
+
   } else if (Map->Port >=200 && Map->Port <=250) {
     // interne GPIO
     Map->i2cAddress=0x00;
@@ -395,10 +435,4 @@ void valveHardware::PortMapping(PortMap_t* Map) {
   } else {
     Map->Port = 0;
   }
-}
-
-void valveHardware::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  HWdev_t* t = getI2CDevice(0x01);
-  ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
-  MyDS2408->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen);
 }

@@ -248,6 +248,7 @@ void BaseConfig::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> proces
   WEB("<td><input min='0' max='15' id='GpioPin_1' name='pinscl' type='number' value='%d'/></td>\n", this->pin_scl +200 );
   WEB("</tr>\n");
 
+#ifdef USE_ONEWIRE
   WEB("<tr>\n");
   WEB("  <td colspan='2'>\n");
 
@@ -266,7 +267,9 @@ void BaseConfig::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> proces
   WEB("<td>Welcher Pin nutzt 1Wire?</td>\n");
   WEB("<td><input min='0' max='15' id='GpioPin_3' name='pin1wire' type='number' value='%d'/></td>\n", this->pin_1wire +200 );
   WEB("</tr>\n");
+#endif
 
+#ifdef USE_OLED
   WEB("<tr>\n");
   WEB("  <td colspan='2'>\n");
 
@@ -293,7 +296,8 @@ void BaseConfig::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> proces
   WEB("  <option %s value='1'/>OLED SH1106</option>\n", (this->oled_type==1?"selected":""));
   WEB("</select></td>\n");
   WEB("</tr>\n");
-  
+#endif
+
   WEB("<tr>\n");
   WEB("  <td colspan='2'>\n");
   

@@ -5,8 +5,11 @@
 #include <PubSubClient.h>
 #include <ESPAsyncWiFiManager.h>    // https://github.com/alanswx/ESPAsyncWiFiManager
 #include <vector>
-#include "oled.h"
 #include "BaseConfig.h"
+
+#ifdef USE_OLED
+  #include "oled.h"
+#endif
 
 #if defined(ESP8266) || defined(ESP32)
   #include <functional>
@@ -73,16 +76,21 @@ class MyMQTT: public virtual MQTT {
 
     MyMQTT(AsyncWebServer* server, DNSServer *dns, const char* MqttServer, uint16_t MqttPort, String MqttBasepath, String MqttRoot, char* APName, char* APpassword);
   
-    void    SetOled(OLED* oled);
     void    loop();
     void    reconnect();
     void    Subscribe(String topic, MqttSubscriptionType_t identifier);
     void    ClearSubscriptions(MqttSubscriptionType_t identifier);
 
+    #ifdef USE_OLED
+      void    SetOled(OLED* oled);
+    #endif
+
   private:
-    OLED* oled;
     std::vector<subscription_t>* subscriptions = NULL;
 
+    #ifdef USE_OLED
+      OLED*    oled;
+    #endif
 };
 
 extern MyMQTT* mqtt;

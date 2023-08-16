@@ -5,6 +5,13 @@ Release 3.0.0:
   - reduce memory usage for handling json configs
   - derive custom mqtt handling from parent mqtt class
   - change SPIFFS to LitteFS
+  - ESP8266: remove Support as default for
+      - ADS1115
+      - PCF8574
+      - TB6612 
+      - ONEWIRE
+      - OLED
+    to save memory, posibble to enable via platformio.ini in section of ESP8266
 
 Release 2.5.3:
   - Bug: Oled Typ selectionbox in GUI will now list correct

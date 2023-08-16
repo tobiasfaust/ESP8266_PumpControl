@@ -6,28 +6,36 @@ MyMQTT::MyMQTT(AsyncWebServer* server, DNSServer *dns, const char* MqttServer, u
   this->subscriptions = new std::vector<subscription_t>{};
 }
 
+#ifdef USE_OLED
 void MyMQTT::SetOled(OLED* oled) {
   this->oled=oled;  
 }
+#endif
 
 void MyMQTT::loop() {
   MQTT::loop();
-  if (WiFi.status() == WL_CONNECTED) {
-    if(this->oled) {
-      this->oled->SetIP(WiFi.localIP().toString());
-      this->oled->SetRSSI(WiFi.RSSI());
-      this->oled->SetSSID(WiFi.SSID());
-      this->oled->SetWiFiConnected(true);
+  
+  #ifdef USE_OLED
+    if (WiFi.status() == WL_CONNECTED) {
+      if(this->oled) {
+        this->oled->SetIP(WiFi.localIP().toString());
+        this->oled->SetRSSI(WiFi.RSSI());
+        this->oled->SetSSID(WiFi.SSID());
+        this->oled->SetWiFiConnected(true);
+      }
+    } else {
+      if(this->oled) this->oled->SetWiFiConnected(false);
     }
-  } else {
-    if(this->oled) this->oled->SetWiFiConnected(false);
-  }
+  #endif
 }
 
 void MyMQTT::reconnect() {
   MQTT::reconnect();
-  if(this->oled) this->oled->SetMqttConnected(MQTT::GetConnectStatusMqtt());
-
+  
+  #ifdef USE_OLED
+    if(this->oled) this->oled->SetMqttConnected(MQTT::GetConnectStatusMqtt());
+  #endif
+  
   if(mqtt->connected()) {
     // ... and resubscribe if needed
     for (uint8_t i=0; i< this->subscriptions->size(); i++) {

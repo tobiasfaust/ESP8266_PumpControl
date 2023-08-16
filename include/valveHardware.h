@@ -5,9 +5,18 @@
 #include "BaseConfig.h"
 #include <vector>
 #include <Wire.h>
-#include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
-#include "TB6612.h"
-#include "OW2408.h"
+
+#ifdef USE_PCF8574
+  #include "PCF8574.h"     // https://github.com/xreef/PCF8574_library
+#endif
+
+#ifdef USE_TB6612
+  #include "TB6612.h"
+#endif
+
+#ifdef USE_ONEWIRE
+  #include "OW2408.h"
+#endif
 
 extern BaseConfig* Config;
 
