@@ -1,9 +1,10 @@
 Release 3.0.0:
-  - Change to Async Webserver
-  - Change ArduinoJson version 5.x to 6.x
+  - change to Async Webserver
+  - change ArduinoJson version 5.x to 6.x
   - change platform from Arduino-IDE to PlatformIO
   - reduce memory usage for handling json configs
   - derive custom mqtt handling from parent mqtt class
+  - change SPIFFS to LitteFS
 
 Release 2.5.3:
   - Bug: Oled Typ selectionbox in GUI will now list correct

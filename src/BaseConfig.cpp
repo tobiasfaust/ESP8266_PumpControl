@@ -1,6 +1,27 @@
 #include "BaseConfig.h"
 
-BaseConfig::BaseConfig(): debuglevel(3) {
+BaseConfig::BaseConfig(): 
+  mqtt_server ("test.mosquitto.org"),
+  mqtt_port(1883),
+  mqtt_root("PumpControl"),
+  mqtt_basepath("home/"),
+  mqtt_UseRandomClientID(true),
+  keepalive(0),
+  debuglevel(3),
+  pin_sda(5),
+  pin_scl(4),
+  pin_1wire(0),
+  enable_oled(false),
+  oled_type(0),
+  enable_1wire(false),
+  i2caddress_oled(60), //0x3C;
+  enable_3wege(false),
+  ventil3wege_port(0),
+  max_parallel(0),
+  enable_autoupdate(false),
+  autoupdate_stage((stage_t)PROD)
+  {
+  
   ESPUpdate = new updater;
   
   LoadJsonConfig();
@@ -9,11 +30,11 @@ BaseConfig::BaseConfig(): debuglevel(3) {
 void BaseConfig::StoreJsonConfig(String* json) {
   File configFile = LittleFS.open("/BaseConfig.json", "w");
   if (!configFile) {
-    if (Config->GetDebugLevel() >=0) {Serial.println("failed to open BaseConfig.json file for writing");}
+    if (this->GetDebugLevel() >=0) {Serial.println("failed to open BaseConfig.json file for writing");}
   } else {  
     
     if (!configFile.print(*json)) {
-        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing BaseConfig.json to file"));}
+        if (this->GetDebugLevel() >=0) {Serial.println(F("Failed writing BaseConfig.json to file"));}
     }
 
     configFile.close();
@@ -23,88 +44,58 @@ void BaseConfig::StoreJsonConfig(String* json) {
 }
 
 void BaseConfig::LoadJsonConfig() {
-  
-  
-  //TODO, umbau auf Arrays
-  
-  
-  
-  bool loadDefaultConfig = false;
   if (LittleFS.exists("/BaseConfig.json")) {
     //file exists, reading and loading
-    Serial.println("reading BaseConfig.json file");
+    Serial.println(F("reading BaseConfig.json file"));
     File configFile = LittleFS.open("/BaseConfig.json", "r");
     if (configFile) {
-      Serial.println("opened BaseConfig.json file");
-      
-      DynamicJsonDocument json(1024);
-      DeserializationError error = deserializeJson(json, configFile);
+      if (this->GetDebugLevel() >=3) Serial.println(F("BaseConfig.json is now open"));
+      ReadBufferingStream stream{configFile, 64};
+      stream.find("\"data\":[");
+      do {
 
-      if (!error) {
-        if (this->GetDebugLevel() >= 3) {
-          serializeJsonPretty(json, Serial); 
-          Serial.println();
+        DynamicJsonDocument elem(512);
+        DeserializationError error = deserializeJson(elem, stream); 
+        if (error) {
+          if (this->GetDebugLevel() >=1) {
+            Serial.printf("Failed to parse BaseConfig.json data: %s, load default config\n", error.c_str()); 
+          } 
+        } else {
+          // Print the result
+          if (this->GetDebugLevel() >=5) {Serial.println(F("parsing partial JSON of BaseConfig.json ok")); }
+          if (this->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
+          
+          if (elem.containsKey("mqttroot"))         { this->mqtt_root = elem["mqttroot"].as<String>();}
+          if (elem.containsKey("mqttserver"))       { this->mqtt_server = elem["mqttserver"].as<String>();}
+          if (elem.containsKey("mqttport"))         { this->mqtt_port = elem["mqttport"].as<int>();}
+          if (elem.containsKey("mqttuser"))         { this->mqtt_username = elem["mqttuser"].as<String>();}
+          if (elem.containsKey("mqttpass"))         { this->mqtt_password = elem["mqttpass"].as<String>();}
+          if (elem.containsKey("mqttbasepath"))     { this->mqtt_basepath = elem["mqttbasepath"].as<String>();}
+          if (elem.containsKey("sel_UseRandomClientID")){ if (strcmp(elem["sel_UseRandomClientID"], "none")==0) { this->mqtt_UseRandomClientID=false;} else {this->mqtt_UseRandomClientID=true;}}
+          if (elem.containsKey("keepalive"))        { if (elem["keepalive"].as<int>() == 0) { this->keepalive = 0;} else { this->keepalive = _max(elem["keepalive"].as<int>(), 10);}}
+          if (elem.containsKey("debuglevel"))       { this->debuglevel = _max(elem["debuglevel"].as<int>(), 0);}
+          if (elem.containsKey("pinsda"))           { this->pin_sda = (elem["pinsda"].as<int>()) - 200;}
+          if (elem.containsKey("pinscl"))           { this->pin_scl = (elem["pinscl"].as<int>()) - 200;}
+          if (elem.containsKey("pin1wire"))         { this->pin_1wire = (elem["pin1wire"].as<int>()) - 200;}
+          if (elem.containsKey("sel_oled"))         { if (strcmp(elem["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
+          if (elem.containsKey("sel_1wire"))        { if (strcmp(elem["sel_1wire"], "none")==0) { this->enable_1wire=false;} else {this->enable_1wire=true;}}
+          if (elem.containsKey("sel_3wege"))        { if (strcmp(elem["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
+          if (elem.containsKey("sel_update"))       { if (strcmp(elem["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}}
+          if (elem.containsKey("autoupdate_url"))   { this->autoupdate_url = elem["autoupdate_url"].as<String>(); }                   
+          if (elem.containsKey("autoupdate_stage")) { if (elem["autoupdate_stage"] == "PROD") { this->autoupdate_stage = (stage_t)PROD; }
+                                                      if (elem["autoupdate_stage"] == "PRE")  { this->autoupdate_stage = (stage_t)PRE; }
+                                                      if (elem["autoupdate_stage"] == "DEV")  { this->autoupdate_stage = (stage_t)DEV; }             
+                                                    }
+          if (elem.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(elem["i2coled"], NULL, 16);} // hex convert to dec    
+          if (elem.containsKey("oled_type"))        { this->oled_type = elem["oled_type"].as<int>();} 
+          if (elem.containsKey("ventil3wege_port")) { this->ventil3wege_port = elem["ventil3wege_port"].as<int>();}
         }
-
-        if (json.containsKey("mqttroot"))         { this->mqtt_root = json["mqttroot"].as<String>();} else {this->mqtt_root = "PumpControl";}
-        if (json.containsKey("mqttserver"))       { this->mqtt_server = json["mqttserver"].as<String>();} else {this->mqtt_server = "test.mosquitto.org";}
-        if (json.containsKey("mqttport"))         { this->mqtt_port = json["mqttport"].as<int>();} else {this->mqtt_port = 1883;}
-        if (json.containsKey("mqttuser"))         { this->mqtt_username = json["mqttuser"].as<String>();} else {this->mqtt_username = "";}
-        if (json.containsKey("mqttpass"))         { this->mqtt_password = json["mqttpass"].as<String>();} else {this->mqtt_password = "";}
-        if (json.containsKey("mqttbasepath"))     { this->mqtt_basepath = json["mqttbasepath"].as<String>();} else {this->mqtt_basepath = "home/";}
-        if (json.containsKey("sel_UseRandomClientID")){ if (strcmp(json["sel_UseRandomClientID"], "none")==0) { this->mqtt_UseRandomClientID=false;} else {this->mqtt_UseRandomClientID=true;}} else {this->mqtt_UseRandomClientID = true;}
-        if (json.containsKey("keepalive"))        { if (json["keepalive"].as<int>() == 0) { this->keepalive = 0;} else { this->keepalive = _max(json["keepalive"].as<int>(), 10);}} else {this->keepalive = 0; }
-        if (json.containsKey("debuglevel"))       { this->debuglevel = _max(json["debuglevel"].as<int>(), 0);} else {this->debuglevel = 0; }
-        if (json.containsKey("pinsda"))           { this->pin_sda = (json["pinsda"].as<int>()) - 200;} else {this->pin_sda = 5;}
-        if (json.containsKey("pinscl"))           { this->pin_scl = (json["pinscl"].as<int>()) - 200;} else {this->pin_scl = 4;}
-        if (json.containsKey("pin1wire"))         { this->pin_1wire = (json["pin1wire"].as<int>()) - 200;} else {this->pin_1wire = 0;}
-        if (json.containsKey("sel_oled"))         { if (strcmp(json["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}} else {this->enable_oled = false;}
-        if (json.containsKey("sel_1wire"))        { if (strcmp(json["sel_1wire"], "none")==0) { this->enable_1wire=false;} else {this->enable_1wire=true;}} else {this->enable_1wire = false;}
-        if (json.containsKey("sel_3wege"))        { if (strcmp(json["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}} else {this->enable_3wege = false;}
-        if (json.containsKey("sel_update"))       { if (strcmp(json["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}} else {this->enable_autoupdate = false;}
-        if (json.containsKey("autoupdate_url"))   { this->autoupdate_url = json["autoupdate_url"].as<String>(); }                   
-        if (json.containsKey("autoupdate_stage")) { if (json["autoupdate_stage"] == "PROD") { this->autoupdate_stage = (stage_t)PROD; }
-                                                    if (json["autoupdate_stage"] == "PRE")  { this->autoupdate_stage = (stage_t)PRE; }
-                                                    if (json["autoupdate_stage"] == "DEV")  { this->autoupdate_stage = (stage_t)DEV; }             
-                                                  }
-        if (json.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(json["i2coled"], NULL, 16);} // hex convert to dec    
-        if (json.containsKey("oled_type"))        { this->oled_type = json["oled_type"].as<int>();} else {this->oled_type = 0;}; 
-        if (json.containsKey("ventil3wege_port")) { this->ventil3wege_port = json["ventil3wege_port"].as<int>();}
-      } else {
-        Serial.printf("Cannot parse the BaseConfig.json: %s\n", error.c_str());
-        loadDefaultConfig = true;
-      }
+      } while (stream.findUntil(",","]"));
     } else {
-      Serial.println("cannot open existing BaseConfig.json config File, load default BaseConfig");
-      loadDefaultConfig = true;
+      Serial.println("cannot open existing BaseConfig.json config File, load default BaseConfig"); // -> constructor
     }
   } else {
     Serial.println("BaseConfig.json config File not exists, load default BaseConfig");
-    loadDefaultConfig = true;
-  }
-
-  if (loadDefaultConfig) {
-    this->mqtt_server = "test.mosquitto.org";
-    this->mqtt_port  = 1883;
-    this->mqtt_root = "PumpControl";
-    this->mqtt_basepath = "home/";
-    this->mqtt_UseRandomClientID = true;
-    this->keepalive = 0;
-    this->debuglevel = 0;
-    this->pin_sda = 5;
-    this->pin_scl = 4;
-    this->pin_1wire = 0;
-    this->enable_oled = false;
-    this->oled_type = 0;
-    this->enable_1wire = false;
-    this->i2caddress_oled = 60; //0x3C;
-    this->enable_3wege = false;
-    this->ventil3wege_port = 0;
-    this->max_parallel = 0;
-    this->enable_autoupdate = false;
-    this->autoupdate_stage = (stage_t)PROD;
-
-    loadDefaultConfig = false; //set back
   }
 
   if (!this->autoupdate_url || this->autoupdate_url.length() < 10 ) {
@@ -394,7 +385,7 @@ void BaseConfig::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> proces
 
 
   WEB("</form>\n\n<br />\n");
-  WEB("<form id='jsonform' action='StoreBaseConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  WEB("<form id='jsonform' action='StoreBaseConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \".*\")'>\n");
   WEB("  <input type='text' id='json' name='json' />\n");
   WEB("  <input type='submit' value='Speichern' />\n");
   WEB("</form>\n\n");

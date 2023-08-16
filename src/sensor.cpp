@@ -1,6 +1,23 @@
 #include "sensor.h"
 
-sensor::sensor() : Type(NONE), measureDistMin(0), measureDistMax(0), measurecycle(10), level(0), raw(0) {
+sensor::sensor() : 
+  Type(NONE), 
+  measureDistMin(0), 
+  measureDistMax(0), 
+  measurecycle(10), 
+  level(0), 
+  raw(0),
+  threshold_min(26),
+  threshold_max(30) {
+  
+  #ifdef ESP8266
+    uint8_t pinAnalogDefault = 0;
+  #elif ESP32
+    uint8_t pinAnalogDefault = 36; // ADC1_CH0 (GPIO 36) 
+  #endif
+  
+  this->pinAnalog = pinAnalogDefault;
+  
   LoadJsonConfig(); 
 }
 
@@ -179,65 +196,54 @@ void sensor::StoreJsonConfig(String* json) {
 }
 
 void sensor::LoadJsonConfig() {
-  bool loadDefaultConfig = false;
-
-  #ifdef ESP8266
-    uint8_t pinAnalogDefault = 0;
-  #elif ESP32
-    uint8_t pinAnalogDefault = 36; // ADC1_CH0 (GPIO 36) 
-  #endif
-  
   mqtt->ClearSubscriptions(MyMQTT::SENSOR);
   
   if (LittleFS.exists("/SensorConfig.json")) {
     //file exists, reading and loading
-    Serial.println("reading config file");
+    Serial.println(F("reading SensorConfig.json file"));
     File configFile = LittleFS.open("/SensorConfig.json", "r");
     if (configFile) {
-      Serial.println("opened config file");
+      if (Config->GetDebugLevel() >=3) Serial.println(F("SensorConfig.json is now open"));
+      ReadBufferingStream stream{configFile, 64};
+      stream.find("\"data\":[");
+      do {
 
-      DynamicJsonDocument json(512);
-      DeserializationError error = deserializeJson(json, configFile);
-      
-      if (!error) {
-        if (Config->GetDebugLevel() >= 3) {
-          serializeJsonPretty(json, Serial); 
-          Serial.println();
+        DynamicJsonDocument elem(512);
+        DeserializationError error = deserializeJson(elem, stream); 
+        if (error) {
+          if (Config->GetDebugLevel() >=1) {
+            Serial.printf("Failed to parse SensorConfig.json data: %s, load default config\n", error.c_str()); 
+          } 
+        } else {
+          // Print the result
+          if (Config->GetDebugLevel() >=5) {Serial.println(F("parsing partial JSON of SensorConfig.json ok")); }
+          if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
+          
+          if (elem.containsKey("measurecycle"))         { this->measurecycle = _max(elem["measurecycle"].as<int>(), 10);}
+          if (elem.containsKey("measureDistMin"))       { this->measureDistMin = elem["measureDistMin"].as<int>();}
+          if (elem.containsKey("measureDistMax"))       { this->measureDistMax = elem["measureDistMax"].as<int>();}
+          if (elem.containsKey("pinhcsr04trigger"))     { this->pinTrigger = elem["pinhcsr04trigger"].as<int>() - 200;}
+          if (elem.containsKey("pinhcsr04echo"))        { this->pinEcho = elem["pinhcsr04echo"].as<int>() - 200;}
+          if (elem.containsKey("pinanalog"))            { this->pinAnalog = elem["pinanalog"].as<int>() - 200;}
+          if (elem.containsKey("treshold_min"))         { this->threshold_min = elem["treshold_min"].as<int>();}
+          if (elem.containsKey("treshold_max"))         { this->threshold_max = elem["treshold_max"].as<int>();}
+          if (elem.containsKey("ads1115_i2c"))          { this->ads1115_i2c = strtoul(elem["ads1115_i2c"].as<String>().c_str(), NULL, 16);} // hex convert to dec 
+          if (elem.containsKey("ads1115_port"))         { this->ads1115_port = elem["ads1115_port"].as<int>();}
+          if (elem.containsKey("externalSensor"))       { this->externalSensor = elem["externalSensor"].as<String>();}
+          
+          if(strcmp(elem["selection"].as<String>().c_str(),"analog")==0)        
+            { init_analog(this->pinAnalog); }
+            else if(strcmp(elem["selection"].as<String>().c_str(),"hcsr04")==0)   { init_hcsr04(this->pinTrigger, this->pinEcho); }
+            else if(strcmp(elem["selection"].as<String>().c_str(),"extern")==0)   { init_extern(this->externalSensor); }
+            else if(strcmp(elem["selection"].as<String>().c_str(),"ads1115")==0)  { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
+            else if(strcmp(elem["selection"].as<String>().c_str(),"none")==0)     { this->Type=NONE; Serial.println(F("No LevelSensor requested")); } 
         }
-        
-        if (json.containsKey("measurecycle"))         { this->measurecycle = _max(json["measurecycle"].as<int>(), 10);}
-        if (json.containsKey("measureDistMin"))       { this->measureDistMin = json["measureDistMin"].as<int>();}
-        if (json.containsKey("measureDistMax"))       { this->measureDistMax = json["measureDistMax"].as<int>();}
-        if (json.containsKey("pinhcsr04trigger"))     { this->pinTrigger = json["pinhcsr04trigger"].as<int>() - 200;}
-        if (json.containsKey("pinhcsr04echo"))        { this->pinEcho = json["pinhcsr04echo"].as<int>() - 200;}
-        if (json.containsKey("pinanalog"))              {this->pinAnalog = json["pinanalog"].as<int>() - 200;} else {this->pinAnalog = pinAnalogDefault; }
-        if (json.containsKey("treshold_min"))         { this->threshold_min = json["treshold_min"].as<int>();}
-        if (json.containsKey("treshold_max"))         { this->threshold_max = json["treshold_max"].as<int>();}
-        if (json.containsKey("ads1115_i2c"))          { this->ads1115_i2c = strtoul(json["ads1115_i2c"], NULL, 16);} // hex convert to dec 
-        if (json.containsKey("ads1115_port"))          { this->ads1115_port = json["ads1115_port"].as<int>();}
-        if (json.containsKey("externalSensor"))       { this->externalSensor = json["externalSensor"].as<String>();}
-        if(strcmp(json["selection"],"analog")==0)        { init_analog(this->pinAnalog); }
-          else if(strcmp(json["selection"],"hcsr04")==0) { init_hcsr04(this->pinTrigger, this->pinEcho); }
-          else if(strcmp(json["selection"],"extern")==0) { init_extern(this->externalSensor); }
-          else if(strcmp(json["selection"],"ads1115")==0) { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
-          else if(strcmp(json["selection"],"none")==0)   { this->Type=NONE; Serial.println("No LevelSensor requested"); }  
-      } else {
-        Serial.println("failed to load json config, load default config");
-        loadDefaultConfig = true;
-      }
+      } while (stream.findUntil(",","]"));
+    } else {
+      Serial.println("cannot open existing SensorConfig.json config File, load default SensorConfig"); // -> constructor
     }
   } else {
-    Serial.println("SensorConfig.json config File not exists, load default config");
-    loadDefaultConfig = true;
-  }
-
-  if (loadDefaultConfig) {
-    // do something
-    this->threshold_min = 26;
-    this->threshold_max = 30;
-    this->pinAnalog = pinAnalogDefault; 
-
-    loadDefaultConfig = false; //set back
+    Serial.println("SensorConfig.json config File not exists, load default SensorConfig");
   }
 }
 
@@ -362,7 +368,7 @@ void sensor::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedR
   WEB("</tbody>\n");
   WEB("</table>\n");
   WEB("</form>\n\n<br />\n");
-  WEB("<form id='jsonform' action='StoreSensorConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\")'>\n");
+  WEB("<form id='jsonform' action='StoreSensorConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \".*\")'>\n");
   WEB("  <input type='text' id='json' name='json' />\n");
   WEB("  <input type='submit' value='Speichern' />\n");
   WEB("</form>\n\n");
