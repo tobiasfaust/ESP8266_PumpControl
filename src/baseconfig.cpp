@@ -1,5 +1,5 @@
 #include "baseconfig.h"
-
+ 
 BaseConfig::BaseConfig(): 
   mqtt_server ("test.mosquitto.org"),
   mqtt_port(1883),
