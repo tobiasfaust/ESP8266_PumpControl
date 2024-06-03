@@ -11,14 +11,13 @@
 
 #include "CommonLibs.h" 
 #include <ArduinoJson.h>
-#include "uptime.h"
+#include "uptime.h" // https://github.com/YiannisBourkelis/Uptime-Library/
+#include "uptime_formatter.h"
 #include "html_update.h"
 #include "_Release.h"
+#include "handleFiles.h"
 
 #include "BaseConfig.h"
-#include "JavaScript.h"
-#include "JsAjax.h"
-#include "CSS.h"
 #include "sensor.h"
 #include "valveStructure.h"
 #include "valveRelation.h"
@@ -39,18 +38,20 @@ extern valveRelation* ValveRel;
 
 class MyWebServer {
 
-  AsyncWebServer* server;
-  DNSServer* dns;
-
-  enum page_t {ROOT, BASECONFIG, SENSOR, VENTILE, ONEWIRE, RELATIONS};
-  
   public:
     MyWebServer(AsyncWebServer *server, DNSServer* dns);
 
     void      loop();
 
   private:
+
+    AsyncWebServer* server;
+    DNSServer* dns;
+
     bool      DoReboot;
+    unsigned long RequestRebootTime;
+
+    handleFiles* fsfiles;
     
     void      handle_update_page(AsyncWebServerRequest *request);
     void      handle_update_progress(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);    
@@ -59,27 +60,13 @@ class MyWebServer {
     void      handleReboot(AsyncWebServerRequest *request);
     void      handleReset(AsyncWebServerRequest *request);
     void      handleWiFiReset(AsyncWebServerRequest *request);
-    void      handleCSS(AsyncWebServerRequest *request);
-    void      handleJS(AsyncWebServerRequest *request);
-    void      handleJsAjax(AsyncWebServerRequest *request);
-    void      handleJSParam(AsyncWebServerRequest *request);
+    void      handleRequestFiles(AsyncWebServerRequest *request);
     void      handleRoot(AsyncWebServerRequest *request);
+    void      handleJSParam(AsyncWebServerRequest *request);
     
-    void      handleBaseConfig(AsyncWebServerRequest *request);
-    void      handleVentilConfig(AsyncWebServerRequest *request);
-    void      handle1WireConfig(AsyncWebServerRequest *request);
-    void      handleSensorConfig(AsyncWebServerRequest *request);
-    void      handleRelations(AsyncWebServerRequest *request);
     void      handleAjax(AsyncWebServerRequest *request);
-    void      ReceiveJSONConfiguration(AsyncWebServerRequest *request, page_t page);
-    void      getPageHeader(AsyncResponseStream *response, page_t pageactive);
-    void      getPageFooter(AsyncResponseStream *response);
-    
-    void    getPageHeader(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive);
-    void    getPageFooter(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
-    void    getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
-
-    void      getPage_Status(AsyncResponseStream *response);
+    void      GetInitDataStatus(AsyncResponseStream *response);
+    void      GetInitDataNavi(AsyncResponseStream *response);
   
 };
 

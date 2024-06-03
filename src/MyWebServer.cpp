@@ -1,31 +1,29 @@
 #include "MyWebServer.h" 
 
 MyWebServer::MyWebServer(AsyncWebServer *server, DNSServer* dns): server(server), dns(dns), DoReboot(false) {
+  
+  fsfiles = new handleFiles(server);
+
   server->begin();
 
   server->onNotFound(std::bind(&MyWebServer::handleNotFound, this, std::placeholders::_1));
   server->on("/", HTTP_GET, std::bind(&MyWebServer::handleRoot, this, std::placeholders::_1));
-  server->on("/BaseConfig", HTTP_GET, std::bind(&MyWebServer::handleBaseConfig, this, std::placeholders::_1));
-  server->on("/SensorConfig", HTTP_GET, std::bind(&MyWebServer::handleSensorConfig, this, std::placeholders::_1));
-  server->on("/VentilConfig", HTTP_GET, std::bind(&MyWebServer::handleVentilConfig, this, std::placeholders::_1));
-  server->on("/1WireConfig", HTTP_GET, std::bind(&MyWebServer::handle1WireConfig, this, std::placeholders::_1));
-  server->on("/Relations", HTTP_GET, std::bind(&MyWebServer::handleRelations, this, std::placeholders::_1));
-  
-  server->on("/style.css", HTTP_GET, std::bind(&MyWebServer::handleCSS, this, std::placeholders::_1));
-  server->on("/javascript.js", HTTP_GET, std::bind(&MyWebServer::handleJS, this, std::placeholders::_1));
-  server->on("/jsajax.js", HTTP_GET, std::bind(&MyWebServer::handleJsAjax, this, std::placeholders::_1));
-  server->on("/parameter.js", HTTP_GET, std::bind(&MyWebServer::handleJSParam, this, std::placeholders::_1));
-  
-  server->on("/StoreBaseConfig", HTTP_POST, std::bind(&MyWebServer::ReceiveJSONConfiguration, this, std::placeholders::_1, BASECONFIG));
-  server->on("/StoreSensorConfig", HTTP_POST, std::bind(&MyWebServer::ReceiveJSONConfiguration, this, std::placeholders::_1, SENSOR ));
-  server->on("/StoreVentilConfig", HTTP_POST, std::bind(&MyWebServer::ReceiveJSONConfiguration, this, std::placeholders::_1, VENTILE));
-  server->on("/StoreRelations", HTTP_POST, std::bind(&MyWebServer::ReceiveJSONConfiguration, this, std::placeholders::_1, RELATIONS));
   server->on("/reboot", HTTP_GET, std::bind(&MyWebServer::handleReboot, this, std::placeholders::_1));
   server->on("/reset", HTTP_GET, std::bind(&MyWebServer::handleReset, this, std::placeholders::_1));
   server->on("/wifireset", HTTP_GET, std::bind(&MyWebServer::handleWiFiReset, this, std::placeholders::_1));
 
-  
+  server->on("/parameter.js", HTTP_GET, std::bind(&MyWebServer::handleJSParam, this, std::placeholders::_1));
   server->on("/ajax", HTTP_POST, std::bind(&MyWebServer::handleAjax, this, std::placeholders::_1));
+  server->on("/update",                 HTTP_GET, std::bind(&MyWebServer::handle_update_page, this, std::placeholders::_1));
+  server->on("/update",                 HTTP_POST, std::bind(&MyWebServer::handle_update_response, this, std::placeholders::_1),
+                                                   std::bind(&MyWebServer::handle_update_progress, this, std::placeholders::_1, 
+                                                          std::placeholders::_2,
+                                                          std::placeholders::_3,
+                                                          std::placeholders::_4,
+                                                          std::placeholders::_5,
+                                                          std::placeholders::_6));
+
+  server->on("^/(.+).(css|js|html|json)$", HTTP_GET, std::bind(&MyWebServer::handleRequestFiles, this, std::placeholders::_1));
   
   Serial.println(F("WebServer started..."));
 }
@@ -43,12 +41,22 @@ void MyWebServer::handle_update_response(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handle_update_progress(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+  
   if(!index){
       Serial.printf("Update Start: %s\n", filename.c_str());
       //Update.runAsync(true);
+
+      /*
+      if (filename == "filesystem") {
+        if(!Update.begin(LittleFS.totalBytes(), U_SPIFFS)) {
+          Update.printError(Serial);
+        }
+      } else {
+      */
       if(!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)){
-        Update.printError(Serial);
+          Update.printError(Serial);
       }
+      //}
   }
   if(!Update.hasError()){
     if(Update.write(data, len) != len){
@@ -79,63 +87,63 @@ void MyWebServer::handleNotFound(AsyncWebServerRequest *request) {
 }
 
 void MyWebServer::handleRoot(AsyncWebServerRequest *request) {
-  // https://github.com/me-no-dev/ESPAsyncWebServer/issues/1185
-  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
- 
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-    size_t len = 0;
-    size_t currentRow = 0;
-    maxLen = maxLen >> 1; // prevent memory issues
-
-    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, ROOT);
-    this->getPageStatus(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
-    
-    return len;
-	});
-
-  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  response->addHeader("Pragma", "no-cache");
-  response->addHeader("Expires", "-1");
-	request->send(response);
+  request->redirect("/web/index.html");
 }
 
-void MyWebServer::handleCSS(AsyncWebServerRequest *request) {
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", STYLE_CSS);
-  response->addHeader("Server","ESP Async Web Server");
-  request->send(response); 
-}
+void MyWebServer::handleRequestFiles(AsyncWebServerRequest *request) {
+  if (Config->GetDebugLevel() >=3) {
+    Serial.printf("Request file %s", ("/" + request->pathArg(0) + "." + request->pathArg(1)).c_str()); Serial.println();
+  }  
+  
+  File f = LittleFS.open("/" + request->pathArg(0) + "." + request->pathArg(1), "r");
+  
+  if (!f) {
+    if (Config->GetDebugLevel() >=0) {Serial.printf("failed to open requested file: %s.%s", request->pathArg(0).c_str(), request->pathArg(1).c_str());}
+    request->send(404, "text/plain", "404: Not found"); 
+    return;
+  }
 
-void MyWebServer::handleJS(AsyncWebServerRequest *request) {
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", JAVASCRIPT);
-  response->addHeader("Server","ESP Async Web Server");
-  request->send(response); 
-}
+  f.close();
 
-void MyWebServer::handleJsAjax(AsyncWebServerRequest *request) {
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", JSAJAX);
-  response->addHeader("Server","ESP Async Web Server");
-  request->send(response); 
-}
+  if (request->pathArg(1) == "css") {
+    request->send(LittleFS, "/" + request->pathArg(0) + "." + request->pathArg(1), "text/css");
+  } else if (request->pathArg(1) == "js") {
+    request->send(LittleFS, "/" + request->pathArg(0) + "." + request->pathArg(1), "text/javascript");
+  } else if (request->pathArg(1) == "html") {
+    request->send(LittleFS, "/" + request->pathArg(0) + "." + request->pathArg(1), "text/html");
+  } else if (request->pathArg(1) == "json") {
+    request->send(LittleFS, "/" + request->pathArg(0) + "." + request->pathArg(1), "text/json");
+  } else {
+    request->send(LittleFS, "/" + request->pathArg(0) + "." + request->pathArg(1), "text/plain");
+  }
 
-void MyWebServer::handleJSParam(AsyncWebServerRequest *request) {
-  AsyncResponseStream *response = request->beginResponseStream("text/javascript");
-  response->addHeader("Server","ESP Async Web Server");
-
-  VStruct->getWebJsParameter(response);
-  request->send(response);
 }
 
 void MyWebServer::handleReboot(AsyncWebServerRequest *request) {
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", HTML_UPDATERESPONSE);
-  response->addHeader("Connection", "close");
+  response->addHeader("Server","ESP Async Web Server");
   request->send(response);
-  
+
   this->DoReboot = true;
 }
 
 void MyWebServer::handleReset(AsyncWebServerRequest *request) {
-  LittleFS.format();
+  if (Config->GetDebugLevel() >= 3) { Serial.println("deletion of all config files was requested ...."); }
+  //LittleFS.format(); // Werkszustand -> nur die config dateien loeschen, die register dateien muessen erhalten bleiben
+  File root = LittleFS.open("/", "r");
+  File file = root.openNextFile();
+  while(file){
+    String path("/"); path.concat(file.name());
+    if (path.indexOf(".json") == -1) {Serial.println("Continue"); file = root.openNextFile(); continue;}
+    file.close();
+    bool rm = LittleFS.remove(path);
+    if (Config->GetDebugLevel() >= 3) {
+      Serial.printf("deletion of configuration file '%s' %s\n", file.name(), (rm?"was successful":"has failed"));;
+    }
+    file = root.openNextFile();
+  }
+  root.close();
+
   this->handleReboot(request);
 }
 
@@ -149,126 +157,12 @@ void MyWebServer::handleWiFiReset(AsyncWebServerRequest *request) {
   this->handleReboot(request);
 }
 
+void MyWebServer::handleJSParam(AsyncWebServerRequest *request) {
+  AsyncResponseStream *response = request->beginResponseStream("text/javascript");
+  response->addHeader("Server","ESP Async Web Server");
 
-void MyWebServer::handleBaseConfig(AsyncWebServerRequest *request) {
-  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-    size_t len = 0;
-    size_t currentRow = 0;
-    maxLen = maxLen >> 1; // prevent memory issues
-
-    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, BASECONFIG);
-    Config->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
-    
-    return len;
-	});
-
-  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  response->addHeader("Pragma", "no-cache");
-  response->addHeader("Expires", "-1");
-	request->send(response);
-}
-
-void MyWebServer::handleVentilConfig(AsyncWebServerRequest *request) {
-  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-    size_t len = 0;
-    size_t currentRow = 0;
-    maxLen = maxLen >> 1; // prevent memory issues
-
-    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, VENTILE);
-    VStruct->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
-    
-    return len;
-	});
-  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  response->addHeader("Pragma", "no-cache");
-  response->addHeader("Expires", "-1");
-	request->send(response);
-}
-
-void MyWebServer::handle1WireConfig(AsyncWebServerRequest *request) {
-  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-    size_t len = 0;
-    size_t currentRow = 0;
-    maxLen = maxLen >> 1; // prevent memory issues
-
-    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, ONEWIRE);
-    VStruct->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
-    
-    return len;
-	});
-  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  response->addHeader("Pragma", "no-cache");
-  response->addHeader("Expires", "-1");
-	request->send(response);
-}
-
-void MyWebServer::handleSensorConfig(AsyncWebServerRequest *request) {
-  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-    size_t len = 0;
-    size_t currentRow = 0;
-    maxLen = maxLen >> 1; // prevent memory issues
-
-    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, SENSOR);
-    LevelSensor->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
-    
-    return len;
-	});
-  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  response->addHeader("Pragma", "no-cache");
-  response->addHeader("Expires", "-1");
-	request->send(response);
-}
-
-void MyWebServer::handleRelations(AsyncWebServerRequest *request) {
-  std::shared_ptr<uint16_t> processedRows = std::make_shared<uint16_t>(0);
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [this, processedRows](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-    size_t len = 0;
-    size_t currentRow = 0;
-    maxLen = maxLen >> 1; // prevent memory issues
-
-    this->getPageHeader(buffer, processedRows, currentRow, len, maxLen, RELATIONS);
-    ValveRel->GetWebContent(buffer, processedRows, currentRow, len, maxLen);
-    this->getPageFooter(buffer, processedRows, currentRow, len, maxLen);
-    
-    return len;
-	});
-  response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  response->addHeader("Pragma", "no-cache");
-  response->addHeader("Expires", "-1");
-	request->send(response);
-}
-
-
-void MyWebServer::ReceiveJSONConfiguration(AsyncWebServerRequest *request, page_t page) {
-  String json = "{}";
-
-  if(request->hasArg("json")) {
-    json = request->arg("json");
-  }
-
-  String targetPage = (char*)0;
-  targetPage.reserve(20);
-  targetPage = "/";
-
-  if (Config->GetDebugLevel() >= 3) {
-    Serial.print(F("json empfangen: "));
-    Serial.println(FPSTR(json.c_str()));  
-  }
-
-  if (page==BASECONFIG)       { Config->StoreJsonConfig(&json);   targetPage = "/BaseConfig"; }
-  if (page==VENTILE)          { VStruct->StoreJsonConfig(&json);  targetPage = "/VentilConfig"; }
-  if (page==SENSOR)           { LevelSensor->StoreJsonConfig(&json); targetPage = "/SensorConfig"; }
-  if (page==RELATIONS)        { ValveRel->StoreJsonConfig(&json); targetPage = "/Relations"; }
-
-  request->redirect(targetPage);
+  VStruct->getWebJsParameter(response);
+  request->send(response);
 }
 
 void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
@@ -276,7 +170,7 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
   memset(buffer, 0, sizeof(buffer));
   String ret = (char*)0;
   bool RaiseError = false;
-  String action, newState; 
+  String action, subaction, newState; 
   String json = "{}";
   uint8_t port = 0;
 
@@ -287,259 +181,227 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
     json = request->arg("json");
   }
 
-  DynamicJsonDocument jsonGet(512);
+  JsonDocument jsonGet; 
   DeserializationError error = deserializeJson(jsonGet, json.c_str());
 
-  DynamicJsonDocument jsonReturn(256);
+  JsonDocument jsonReturn;
+  jsonReturn["response"].to<JsonObject>();
 
   if (Config->GetDebugLevel() >=4) { Serial.print("Ajax Json Empfangen: "); }
   if (!error) {
     if (Config->GetDebugLevel() >=4) { serializeJsonPretty(jsonGet, Serial); Serial.println(); }
 
-    if (jsonGet.containsKey("action"))   {action = jsonGet["action"].as<String>();}
+    if (jsonGet.containsKey("action"))   {action    = jsonGet["action"].as<String>();}
+    if (jsonGet.containsKey("subaction")){subaction = jsonGet["subaction"].as<String>();}
     if (jsonGet.containsKey("newState")) { newState = jsonGet["newState"].as<String>(); }
     if (jsonGet.containsKey("port"))     { port = jsonGet["port"].as<int>(); }
   
-  } else { RaiseError = true; }
+  } else { 
+    snprintf(buffer, sizeof(buffer), "Ajax Json Command not parseable: %s -> %s", json.c_str(), error.c_str());
+    RaiseError = true; 
+  }
 
   if (RaiseError) {
-    jsonReturn["error"] = buffer;
+    jsonReturn["response"]["status"] = 0;
+    jsonReturn["response"]["text"] = buffer;
     serializeJson(jsonReturn, ret);
     response->print(ret);
 
     if (Config->GetDebugLevel() >=2) {
-      snprintf(buffer, sizeof(buffer), "Ajax Json Command not parseable: %s -> %s", json.c_str(), error.c_str());
       Serial.println(FPSTR(buffer));
     }
-    
-  } else if (action && strcmp(action.c_str(), "SetValve")==0) {
-      if (newState && port && port > 0 && !VStruct->GetEnabled(port)) { jsonReturn["accepted"] = 0; jsonReturn["error"] = "Requested Port not enabled. Please enable first!";}
-      else if (newState && port && port > 0 && strcmp(newState.c_str(),"On")==0)  { VStruct->SetOn(port); jsonReturn["accepted"] = 1;}
-      else if (newState && port && port > 0 && strcmp(newState.c_str(),"Off")==0) { VStruct->SetOff(port); jsonReturn["accepted"] = 1;}
-      else { RaiseError = true; }
 
-      if (port && port > 0) {jsonReturn["NewState"] = (VStruct->GetState(port)?"On":"Off");}
-  } else if (action && strcmp(action.c_str(), "EnableValve")==0) {
+    return;
+    
+  } else if(action && action == "GetInitData")  {
+    if (subaction && subaction == "status") {
+      this->GetInitDataStatus(response);
+    } else if (subaction && subaction == "navi") {
+      this->GetInitDataNavi(response);
+    } else if (subaction && subaction == "baseconfig") {
+      Config->GetInitData(response);
+    } else if (subaction && subaction == "valveconfig") {
+      VStruct->GetInitData(response);
+    } else if (subaction && subaction == "1wireconfig") {
+      VStruct->GetInitData1Wire(response);
+    }else if (subaction && subaction == "sensorconfig") {
+      LevelSensor->GetInitData(response);
+    } else if (subaction && subaction == "relations") {
+      ValveRel->GetInitData(response);
+    }
+  
+  } else if(action && action == "ReloadConfig")  {
+    if (subaction && subaction == "baseconfig") {
+      Config->LoadJsonConfig();
+    } else if (subaction && subaction == "valveconfig") {
+      VStruct->LoadJsonConfig();
+    } else if (subaction && subaction == "sensor") {
+      LevelSensor->LoadJsonConfig();
+    } else if (subaction && subaction == "relations") {
+      ValveRel->LoadJsonConfig();
+    }
+  
+    jsonReturn["response"]["status"] = 1;
+    jsonReturn["response"]["text"] = "new config reloaded sucessfully";
+    serializeJson(jsonReturn, ret); 
+    response->print(ret);
+  
+  } else if(action && action == "handlefiles") {
+    fsfiles->HandleAjaxRequest(jsonGet, response);
+
+  } else if (action && action == "SetValve") {
+      if (newState && port && port > 0 && !VStruct->GetEnabled(port)) { 
+        jsonReturn["response"]["status"] = 0; 
+        jsonReturn["response"]["text"] = "Requested Port not enabled. Please enable first!";
+        serializeJson(jsonReturn, ret);
+        response->print(ret);
+      }
+      else if (newState && port && port > 0 )  { 
+        if (newState == "On") {
+          VStruct->SetOn(port); 
+        }
+        if (newState == "Off") { 
+          VStruct->SetOff(port); 
+        }
+
+        jsonReturn["response"]["status"] = 1;
+        jsonReturn["response"]["text"] =(VStruct->GetState(port)?"Valve is now: ON":"Valve is now: OFF");
+        jsonReturn["data"][subaction] = (VStruct->GetState(port)?"Set Off":"Set On"); // subaction = button.id
+        serializeJson(jsonReturn, ret);
+        response->print(ret);
+      }
+
+  
+  } else if (action && newState && action == "EnableValve") {
       if (port && port > 0 && newState) {
         if (strcmp(newState.c_str(),"true")==0) VStruct->SetEnable(port, true);
         if (strcmp(newState.c_str(),"false")==0) VStruct->SetEnable(port, false);
-        jsonReturn["NewState"] = (VStruct->GetEnabled(port)?"true":"false");
-        jsonReturn["accepted"] = 1;
+        jsonReturn["response"]["status"] = 1;
+        jsonReturn["response"]["text"] = (VStruct->GetEnabled(port)?"valve now enabled":"valve now disabled");
+        serializeJson(jsonReturn, ret);
+        response->print(ret);
       }
-  } else if (action && newState && strcmp(action.c_str(), "InstallRelease")==0) {
-      Config->InstallRelease(atoi(newState.c_str()));  
-      jsonReturn["accepted"] = 1;  
-  } else if (action && strcmp(action.c_str(), "RefreshReleases")==0) {
-      Config->RefreshReleases();  
-      jsonReturn["accepted"] = 1;  
-
+  
 #ifdef USE_I2C
-  } else if (action && strcmp(action.c_str(), "RefreshI2C")==0) {
+  } else if (action && action == "RefreshI2C") {
       I2Cdetect->i2cScan();  
-      jsonReturn["NewState"] = I2Cdetect->i2cGetAddresses();
-      jsonReturn["accepted"] = 1;  
+      
+      jsonReturn["data"].to<JsonObject>();
+      jsonReturn["data"]["showI2C"] = I2Cdetect->i2cGetAddresses();
+      jsonReturn["response"]["status"] = 1;
+      jsonReturn["response"]["text"] = "successful";
+      serializeJson(jsonReturn, ret);
+      response->print(ret);
 #endif
 
-  } else if (action && strcmp(action.c_str(), "Refresh1Wire")==0) {
-      uint8_t ret = VStruct->Refresh1WireDevices();  
-      snprintf(buffer, sizeof(buffer), "%d (%d)", ret, ret * 8);
-      jsonReturn["NewState"] = buffer;
-      jsonReturn["accepted"] = 1;  
+#ifdef USE_ONEWIRE
+  } else if (action && action == "Refresh1Wire") {
+      uint8_t ow = VStruct->Refresh1WireDevices();  
+      snprintf(buffer, sizeof(buffer), "%d (%d)", ow, ow * 8);
+      
+      jsonReturn["data"].to<JsonObject>();
+      jsonReturn["data"]["show1Wire"] = buffer;
+      jsonReturn["response"]["status"] = 1;
+      jsonReturn["response"]["text"] = "successful";
+      serializeJson(jsonReturn, ret);
+      response->print(ret);
+  #endif
+
   } else {
+    snprintf(buffer, sizeof(buffer), "Ajax Command unknown: %s - %s", action.c_str(), subaction.c_str());
+    jsonReturn["response"]["status"] = 0;
+    jsonReturn["response"]["text"] = buffer;
+    serializeJson(jsonReturn, ret);
+    response->print(ret);
+
     if (Config->GetDebugLevel() >=1) {
-      snprintf(buffer, sizeof(buffer), "Ajax Command unknown: %s", action.c_str());
       Serial.println(buffer);
     }
   }
   
-  serializeJson(jsonReturn, ret);
-  response->print(ret);
-  
   if (Config->GetDebugLevel() >=4) { Serial.print("Ajax Json Antwort: "); Serial.println(ret); }
-  
   
   request->send(response);
 }
 
-void MyWebServer::getPageHeader(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen, page_t pageactive) {
-  WEB("<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'/>\n");
-  WEB("<meta charset='utf-8'>\n");
-  WEB("<link rel='stylesheet' type='text/css' href='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/style.css'>\n");
-  WEB("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/javascript.js'></script>\n");
-  WEB("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/jsajax.js'></script>\n");
-  WEB("<script language='javascript' type='text/javascript' src='https://cdn.jsdelivr.net/gh/tobiasfaust/" GIT_REPO "@" GIT_BRANCH "/web/" ESPGPIO "'></script>\n");
-  WEB("<script language='javascript' type='text/javascript' src='/parameter.js'></script>\n");
-  WEB("<title>Bewässerungssteuerung</title></head>\n");
-  WEB("<body>\n");
-  WEB("<table>\n");
-  WEB("  <tr>\n");
-  WEB("   <td colspan='4'>\n");
-  WEB("     <h2>Konfiguration</h2>\n");
-  WEB("   </td>\n");
+void MyWebServer::GetInitDataNavi(AsyncResponseStream *response){
+  String ret;
+  JsonDocument json;
+  json["data"].to<JsonObject>();
+  json["data"]["hostname"] = Config->GetMqttRoot();
+  json["data"]["releasename"] = Config->GetReleaseName();
+  json["data"]["releasedate"] = __DATE__;
+  json["data"]["releasetime"] = __TIME__;
 
-  WEB("   <td colspan='4' style='color:#CCCCCC;'>\n");
-  WEB("      <i>(%s)</i>\n", Config->GetMqttRoot().c_str());
-  WEB("   </td>\n");
+  #ifdef USE_ONEWIRE
+    if (VStruct->Get1WireCountDevices()==0) { 
+      json["data"]["td_1wire_0"]["className"] = "hide";
+      json["data"]["td_1wire_1"]["className"] = "hide";
+    }
+  #else
+    json["data"]["td_1wire_0"]["className"] = "hide";
+    json["data"]["td_1wire_1"]["className"] = "hide";
+  #endif
 
-  WEB("   <td colspan='5'>\n");
-  WEB("     <b>Release: </b><span style='color:orange;'>%s</span><br>of %s %s\n", Config->GetReleaseName().c_str(), __DATE__, __TIME__);
-  WEB("   </td>\n");
-  WEB(" </tr>\n");
-
-  WEB(" <tr>\n");
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB("   <td class='navi %s' style='width: 100px'><a href='/'>Status</a></td>\n", (pageactive==ROOT)?"navi_active":"");
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB("   <td class='navi %s' style='width: 100px'><a href='/BaseConfig'>Basis Config</a></td>\n", (pageactive==BASECONFIG)?"navi_active":"");
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB("   <td class='navi %s' style='width: 100px'><a href='/SensorConfig'>Sensor Config</a></td>\n", (pageactive==SENSOR)?"navi_active":"");
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB("   <td class='navi %s' style='width: 100px'><a href='/VentilConfig'>Ventil Config</a></td>\n", (pageactive==VENTILE)?"navi_active":"");
-  
-  if (Config->Enabled1Wire()) {
-      WEB("   <td class='navi' style='width: 50px'></td>\n");
-      WEB("   <td class='navi %s' style='width: 100px'><a href='/1WireConfig'>OneWire</a></td>\n", (pageactive==ONEWIRE)?"navi_active":"");
-  }
-  
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB("   <td class='navi %s' style='width: 100px'><a href='/Relations'>Relations</a></td>\n", (pageactive==RELATIONS)?"navi_active":"");
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB("   <td class='navi' style='width: 100px'><a href='https://github.com/tobiasfaust/ESP8266_PumpControl/wiki' target='_blank'>Wiki</a></td>\n");
-  WEB("   <td class='navi' style='width: 50px'></td>\n");
-  WEB(" </tr>\n");
-  WEB(" <tr>\n");
-  WEB("   <td colspan='13'>\n");
-  WEB("   <p />\n");
+  json["response"].to<JsonObject>();
+  json["response"]["status"] = 1;
+  json["response"]["text"] = "successful";
+  serializeJson(json, ret);
+  response->print(ret);
 }
 
-void MyWebServer::getPageFooter(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  WEB("   </td>\n");
-  WEB(" </tr>\n");
-  WEB("</table>\n");
-  WEB("<div id='ErrorText' class='errortext'></div>\n");
-  WEB("</body>\n");
-  WEB("</html>\n");
-}
-
-void MyWebServer::getPageStatus(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  uint8_t count = 0;
-  uptime::calculateUptime();
+void MyWebServer::GetInitDataStatus(AsyncResponseStream *response) {
+  String ret;
+  JsonDocument json;
   
-  WEB("<table class='editorDemoTable'>\n");
-  WEB("<thead>\n");
-  WEB("  <tr>\n");
-  WEB("    <td style='width: 250px;'>Name</td>\n");
-  WEB("    <td style='width: 200px;'>Wert</td>\n");
-  WEB("  </tr>\n");
-  WEB("</thead>\n");
-  WEB("<tbody>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>IP-Adresse:</td>\n");
-  WEB("  <td>%s</td>\n", WiFi.localIP().toString().c_str());
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>WiFi Name:</td>\n");
-  WEB("  <td>%s</td>\n", WiFi.SSID().c_str());
-  WEB("</tr>\n");
-
-#ifdef USE_I2C
-  WEB("<tr>\n");
-  WEB("  <td>i2c Bus:\n");
-    //https://fdossena.com/?p=html5cool/buttons/i.frag
-  WEB("  <a href='#' onclick=\"RefreshI2C('showI2C')\" class='ButtonRefresh'>&#8634;</a>\n");
-  WEB("  </td>\n");
-  WEB("  <td><div id='showI2C'>\n");
-  WEB("%s \n", I2Cdetect->i2cGetAddresses().c_str());
-  WEB("  </div></td>\n");
-  WEB("</tr>\n");
-#endif
-#ifdef USE_ONEWIRE
-  if (Config->Enabled1Wire()) {
-    WEB("<tr>\n");
-    WEB("  <td>gefundene 1Wire Controller (Devices):\n");
-    WEB("    <a href='#' onclick=\"Refresh1Wire('show1Wire')\" class='ButtonRefresh'>&#8634;</a>\n");
-    WEB("  </td>\n");
-    WEB("  <td><div id='show1Wire'>");
-    WEB("%d (%d)", VStruct->Get1WireCountDevices(), VStruct->Get1WireCountDevices()*8);
-    WEB("  </div></td>\n");
-    WEB("</tr>\n");
-  }
-#endif
-
-  WEB("<tr>\n");
-  WEB("  <td>MAC:</td>\n");
-  WEB("  <td>%s</td>\n", WiFi.macAddress().c_str());
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>WiFi RSSI:</td>\n");
-  WEB("  <td>%d</td>\n", WiFi.RSSI());
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>MQTT Status:</td>\n");
-  WEB("  <td>%s</td>\n", (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected"));
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>Uptime:</td>\n");
-  WEB("  <td>%lu Days, %lu Hours, %lu Minutes</td>\n", uptime::getDays(), uptime::getHours(), uptime::getMinutes()); //uptime_formatter::getUptime().c_str()); //UpTime->getFormatUptime());
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>Free Heap Memory:</td>\n");
-  WEB("  <td>%d Bytes (%d%% Fragmentation)</td>\n", ESP.getFreeHeap(), Config->getFragmentation()); //https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/system/heap_debug.html
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>aktuell geöffnete Ventile</td>\n");
-  WEB("  <td>\n");
-
-  count = VStruct->CountActiveThreads();
-  if (count > 0) {
-    WEB("  Es sind %d Ventile offen\n", count);
-  } else { 
-    WEB("  alle Ventile geschlossen\n"); 
-  }
-  WEB("  </td>\n");
-  WEB("</tr>\n");
-
-  if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) {  
-    WEB("<tr>\n");
-    WEB("  <td>Sensor RAW Value:</td>\n");
-    WEB("  <td>%d</td>\n", LevelSensor->GetRaw());
-    WEB("</tr>\n");
-  }
-  if (LevelSensor->GetType() != NONE) {  
-    WEB("<tr>\n");
-    WEB("  <td>Füllstand in %:</td>\n");
-    WEB("  <td>%d %%</td>\n", LevelSensor->GetLvl());
-    WEB("</tr>\n");
-  }
-
-  WEB("<tr>\n");
-  WEB("  <td>Firmware Update</td>\n");
-  WEB("  <td><form action='update'><input class='button' type='submit' value='Update' /></form></td>\n");
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>Device Reboot</td>\n");
-  WEB("  <td><form action='reboot'><input class='button' type='submit' value='Reboot' /></form></td>\n");
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>Werkszustand herstellen (ohne WiFi)</td>\n");
-  WEB("  <td><form action='reset'><input class='button' type='submit' value='Reset' /></form></td>\n");
-  WEB("</tr>\n");
-
-  WEB("<tr>\n");
-  WEB("  <td>WiFi Zugangsdaten entfernen</td>\n");
-  WEB("  <td><form action='wifireset'><input class='button' type='submit' value='WifiReset' /></form></td>\n");
-  WEB("</tr>\n");
+  json["data"].to<JsonObject>();
+  json["data"]["ipaddress"] = mqtt->GetIPAddress().toString();
+  json["data"]["wifiname"] = (Config->GetUseETH()?"LAN":WiFi.SSID());
+  json["data"]["macaddress"] = WiFi.macAddress();
+  json["data"]["mqtt_status"] = (mqtt->GetConnectStatusMqtt()?"Connected":"Not Connected");
+  json["data"]["uptime"] = uptime_formatter::getUptime();
+  json["data"]["freeheapmem"] = ESP.getFreeHeap();
+  json["data"]["ValvesCount"] = VStruct->CountActiveThreads();
   
-  WEB("</tbody>\n");
-  WEB("</table>\n");   
+  #ifdef USE_I2C
+    json["data"]["showI2C"] = I2Cdetect->i2cGetAddresses();
+  #else
+    json["data"]["tr_i2c"]["className"] = "hide";
+  #endif
+
+  #ifdef USE_ONEWIRE
+    if (Config->Enabled1Wire()) {
+      json["data"]["show1Wire"] = VStruct->Get1WireCountDevices()*8;
+    } else { 
+      json["data"]["tr_1wire"]["className"] = "hide";
+    }
+  #else
+    json["data"]["tr_1wire"]["className"] = "hide";
+  #endif
+
+  if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) { 
+    json["data"]["SensorRawValue"] = LevelSensor->GetRaw();
+  } else {
+    json["data"]["tr_sensRaw"]["className"] = "hide";
+  }
+
+  if (LevelSensor->GetType() != NONE) {
+    json["data"]["SensorLevel"] = LevelSensor->GetLvl();
+  } else {
+    json["data"]["tr_sensLvl"]["className"] = "hide";
+  }
+
+  #ifdef ESP32
+    json["data"]["rssi"] = (Config->GetUseETH()?ETH.linkSpeed():WiFi.RSSI()), (Config->GetUseETH()?"Mbps":"");
+  #else
+    json["data"]["rssi"] = WiFi.RSSI();
+  #endif
+
+  json["response"].to<JsonObject>();
+  json["response"]["status"] = 1;
+  json["response"]["text"] = "successful";
+
+  serializeJson(json, ret);
+  response->print(ret);
 }
 

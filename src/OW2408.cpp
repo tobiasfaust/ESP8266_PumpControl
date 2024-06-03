@@ -83,34 +83,27 @@ bool ow2408::isValidPort(uint8_t port)  {
   return true; 
 }
 
-void ow2408::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  WEB("<table id='maintable' class='editorDemoTable'>\n");
-  WEB("<thead>\n");
-  WEB("  <tr>\n");
-  WEB("    <td style='width: 25px;'>Nr</td>\n");
-  WEB("    <td style='width: 75px;'>Typ</td>\n");
-  WEB("    <td style='width:150px;'>ID</td>\n");
-  WEB("    <td style='width:  80px;'>Port</td>\n");
-  WEB("  </tr>\n");
-  WEB("</thead>\n");
-  WEB("<tbody>\n");
 
+void ow2408::GetInitData(AsyncResponseStream *response) {
+  String ret;
+  JsonDocument json;
+  
+  json["data"].to<JsonObject>();
+  JsonArray row = json["data"]["row"].to<JsonArray>();
+  
   for(uint8_t i=0; i<this->device_count; i++) {
-    WEB("<tr>\n");
-    WEB("  <td>%d</td>\n", i+1);
-    WEB("  <td>DS2408</td>\n");
-    WEB("  <td>%s</td>\n", this->print_device(i).c_str());
-    
-    WEB("  <td><table>\n");
-    for(uint8_t j=0; j<8; j++) {
-      WEB("    <tr><td>Port %d -> %d</td></tr>\n", j, 140+(i*8)+j);
-    }
-    WEB("  </table></td>\n");
+    row[i]["device"] = this->print_device(i);
 
-    WEB("</tr>\n");
+    JsonArray ports = row[i]["ports"].to<JsonArray>();
+    for(uint8_t j=0; j<8; j++) {
+      ports[j]["port"] = j + " -> " + 140+(i*8)+j;
+    }
   }
 
-  WEB("</tbody>\n");
-  WEB("</table>\n");
-}
+  json["response"].to<JsonObject>();
+  json["response"]["status"] = 1;
+  json["response"]["text"] = "successful";
 
+  serializeJson(json, ret);
+  response->print(ret);
+}

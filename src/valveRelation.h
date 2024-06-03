@@ -4,7 +4,7 @@
 #include "CommonLibs.h"
 #include <vector>
 #include <ArduinoJson.h>
-#include "mqtt.h"
+#include "MyMqtt.h"
 
 class valveRelation {
 
@@ -29,9 +29,8 @@ class valveRelation {
     void      DelSubscriber(String TriggerTopic);
     uint8_t   CountActiveSubscribers(uint8_t ActorPort);
     
-    void      StoreJsonConfig(String* json); 
+    void      GetInitData(AsyncResponseStream* response);
     void      LoadJsonConfig();
-    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     
   private:
     std::vector<relation_t>* _relationen  = NULL;

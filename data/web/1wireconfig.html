@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <meta charset='utf-8'>
+    <link rel='stylesheet' type='text/css' href='/web/Style.css'>
+    <script language='javascript' type='text/javascript' src='/web/Javascript.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/1wireconfig.js'></script>
+    <title>Pumpcontrol</title>
+  </head>
+  <body>
+
+    <table id='maintable' class='editorDemoTable'>
+    <thead>
+      <tr>
+        <td style='width: 25px;'>Nr</td>
+        <td style='width: 75px;'>Typ</td>
+        <td style='width:150px;'>ID</td>
+        <td style='width:  80px;'>Port</td>
+      </tr>
+    </thead>
+    <tbody>
+
+    <template id="row">
+      <tr>
+        <td></td>
+        <td>DS2408</td>
+        <td id="device"></td>      
+        <td>
+          <table>
+            <template id="ports">
+              <tr>
+                <td id="port"></td>
+            </template>
+          </table>
+        </td>
+
+      </tr>
+    </template>
+
+    </tbody>
+    </table>
+  </body>
+</html>

@@ -2,7 +2,7 @@
 #include "CommonLibs.h"
 #include "BaseConfig.h"
 #include "valveStructure.h"
-#include "mqtt.h"
+#include "MyMqtt.h"
 #include "MyWebServer.h"
 #include "sensor.h"
 
@@ -17,7 +17,6 @@
 
 AsyncWebServer server(80);
 DNSServer dns;
-
 
 BaseConfig* Config = NULL;
 valveRelation* ValveRel = NULL;
@@ -38,14 +37,16 @@ MyWebServer* mywebserver = NULL;
 
 void myMQTTCallBack(char* topic, byte* payload, unsigned int length) {
   String msg;
-  if (Config->GetDebugLevel() >= 4) { Serial.printf("Message arrived [%s]\n", topic); }
-
+  
   for (u_int16_t i = 0; i < length; i++) {
     msg.concat((char)payload[i]);
   }
-  Serial.print("Message: "); Serial.println(msg.c_str());
+  
+  if (Config->GetDebugLevel() >= 4) { 
+    Serial.printf("Message arrived [%s]\nMessage: %s\n", topic, msg.c_str()); 
+  }
 
-  if (LevelSensor->GetExternalSensor() == topic && atoi(msg.c_str()) > 0) {
+  if (LevelSensor->GetExternalSensor() && (strcmp(LevelSensor->GetExternalSensor().c_str(), topic)==0)) {
     LevelSensor->SetLvl(atoi(msg.c_str()));
   }
   else if (strstr(topic, "/raw") ||  strstr(topic, "/level") ||  strstr(topic, "/mem") ||  strstr(topic, "/rssi")) {
@@ -111,7 +112,7 @@ void setup() {
     LevelSensor->SetOled(oled);
   #endif
 
-  Serial.println("Valve Relations");
+  Serial.println("Starting Valve Relations");
   ValveRel = new valveRelation();
 
   Serial.println("Starting Valve Structure");
@@ -121,10 +122,11 @@ void setup() {
   mywebserver = new MyWebServer(&server, &dns);
 
   //VStruct->OnForTimer("Valve1", 10); // Test
+
+  Serial.println("Setup finished");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   VStruct->loop();
   mqtt->loop();
   LevelSensor->loop();

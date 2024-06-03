@@ -7,8 +7,7 @@
 #include "BaseConfig.h"
 #include "valveRelation.h"
 #include "valve.h"
-#include "mqtt.h"
-#include "JavaScript.h"
+#include "MyMqtt.h"
 
 extern BaseConfig* Config;
 extern valveRelation* ValveRel;
@@ -33,10 +32,10 @@ class valveStructure {
     void      SetEnable(uint8_t Port, bool state);
     uint8_t   CountActiveThreads();
     
-    void      StoreJsonConfig(String* json);
+    void      GetInitData(AsyncResponseStream* response);
+    void      GetInitData1Wire(AsyncResponseStream* response);
+
     void      LoadJsonConfig();
-    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
-    void      GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     void      getWebJsParameter(AsyncResponseStream *response);
     void      ReceiveMQTT(String topic, int value);
     uint8_t   Get1WireCountDevices();
@@ -47,7 +46,8 @@ class valveStructure {
     valve*    GetValveItem(uint8_t Port);
     valve*    GetValveItem(String SubTopic);
     void      handleDeps(String topic, int value); //prueft die Relationen
-    
+    String    GetJsonKeyMatch(JsonDocument* doc, String key);
+
     valveHardware* ValveHW = NULL;
     std::vector<valve>* Valves = NULL;
     

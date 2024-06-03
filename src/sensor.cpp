@@ -7,6 +7,10 @@ sensor::sensor() :
   measurecycle(10), 
   level(0), 
   raw(0),
+  pinTrigger(5),
+  pinEcho(6),
+  ads1115_i2c(48),
+  ads1115_port(0),
   threshold_min(26),
   threshold_max(30) {
   
@@ -37,7 +41,7 @@ void sensor::init_hcsr04(uint8_t pinTrigger, uint8_t pinEcho) {
 }
 
 void sensor::init_extern(String externalSensor) {
-  setSensorType(EXTERN);
+  this->setSensorType(EXTERN);
   this->measurecycle = 10;
   mqtt->Subscribe(externalSensor, MyMQTT::SENSOR);
 }
@@ -53,6 +57,9 @@ void sensor::setSensorType(sensorType_t t) {
 }
 
 void sensor::SetLvl(uint8_t lvl) {
+  if (Config->GetDebugLevel() >= 4) {
+    Serial.printf("Sensor: Set Level from extern: %d\n", lvl);
+  }
   this->level = lvl;
   #ifdef USE_OLED
     if(this->oled) this->oled->SetLevel(this->level);
@@ -185,50 +192,35 @@ void sensor::loop() {
     }
   #endif
   
-     if (this->Type != NONE && Config->GetDebugLevel() >=4) {
+     if (this->Type != NONE && this->Type != EXTERN && Config->GetDebugLevel() >=4) {
       Serial.printf("measured sensor raw value: %d \n", this->raw);
      }
   }
 }
 
-void sensor::StoreJsonConfig(String* json) {
-  File configFile = LittleFS.open("/SensorConfig.json", "w");
-  if (!configFile) {
-    if (Config->GetDebugLevel() >=0) {Serial.println("failed to open SensorConfig.json file for writing");}
-  } else {  
-    
-    if (!configFile.print(*json)) {
-        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing SensorConfig.json to file"));}
-    }
-
-    configFile.close();
-  
-    LoadJsonConfig();
-  }
-}
-
 void sensor::LoadJsonConfig() {
   mqtt->ClearSubscriptions(MyMQTT::SENSOR);
-  
-  if (LittleFS.exists("/SensorConfig.json")) {
+  String selection = "";
+
+  if (LittleFS.exists("/sensorconfig.json")) {
     //file exists, reading and loading
-    Serial.println(F("reading SensorConfig.json file"));
-    File configFile = LittleFS.open("/SensorConfig.json", "r");
+    Serial.println(F("reading sensorconfig.json file"));
+    File configFile = LittleFS.open("/sensorconfig.json", "r");
     if (configFile) {
-      if (Config->GetDebugLevel() >=3) Serial.println(F("SensorConfig.json is now open"));
+      if (Config->GetDebugLevel() >=3) Serial.println(F("sensorconfig.json is now open"));
       ReadBufferingStream stream{configFile, 64};
       stream.find("\"data\":[");
       do {
 
-        DynamicJsonDocument elem(512);
+        JsonDocument elem;
         DeserializationError error = deserializeJson(elem, stream); 
         if (error) {
           if (Config->GetDebugLevel() >=1) {
-            Serial.printf("Failed to parse SensorConfig.json data: %s, load default config\n", error.c_str()); 
+            Serial.printf("Failed to parse sensorconfig.json data: %s, load default config\n", error.c_str()); 
           } 
         } else {
           // Print the result
-          if (Config->GetDebugLevel() >=5) {Serial.println(F("parsing partial JSON of SensorConfig.json ok")); }
+          if (Config->GetDebugLevel() >=5) {Serial.println(F("parsing partial JSON of sensorconfig.json ok")); }
           if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
           
           if (elem.containsKey("measurecycle"))         { this->measurecycle = _max(elem["measurecycle"].as<int>(), 10);}
@@ -242,153 +234,66 @@ void sensor::LoadJsonConfig() {
           if (elem.containsKey("ads1115_i2c"))          { this->ads1115_i2c = strtoul(elem["ads1115_i2c"].as<String>().c_str(), NULL, 16);} // hex convert to dec 
           if (elem.containsKey("ads1115_port"))         { this->ads1115_port = elem["ads1115_port"].as<int>();}
           if (elem.containsKey("externalSensor"))       { this->externalSensor = elem["externalSensor"].as<String>();}
-          
-          if(strcmp(elem["selection"].as<String>().c_str(),"analog")==0)        
-            { init_analog(this->pinAnalog); }
-            else if(strcmp(elem["selection"].as<String>().c_str(),"hcsr04")==0)   { init_hcsr04(this->pinTrigger, this->pinEcho); }
-            else if(strcmp(elem["selection"].as<String>().c_str(),"extern")==0)   { init_extern(this->externalSensor); }
-            else if(strcmp(elem["selection"].as<String>().c_str(),"none")==0)     { this->Type=NONE; Serial.println(F("No LevelSensor requested")); } 
-            
-          #ifdef USE_ADS1115  
-            else if(strcmp(elem["selection"].as<String>().c_str(),"ads1115")==0)  { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
-          #endif
+          if (elem.containsKey("selection"))            { selection = elem["selection"].as<String>(); }
         }
       } while (stream.findUntil(",","]"));
+
+      if (selection == "analog")        { init_analog(this->pinAnalog); }
+      else if (selection == "hcsr04")   { init_hcsr04(this->pinTrigger, this->pinEcho); }
+      else if (selection == "extern")   { init_extern(this->externalSensor); }
+      else if (selection == "none")     { this->Type=NONE; Serial.println(F("No LevelSensor requested")); } 
+            
+      #ifdef USE_ADS1115  
+        else if(selection == "ads1115") { init_ads1115(this->ads1115_i2c, this->ads1115_port); }
+      #endif
+
     } else {
-      Serial.println("cannot open existing SensorConfig.json config File, load default SensorConfig"); // -> constructor
+      Serial.println("cannot open existing sensorconfig.json config File, load default SensorConfig"); // -> constructor
     }
   } else {
-    Serial.println("SensorConfig.json config File not exists, load default SensorConfig");
+    Serial.println("sensorconfig.json config File not exists, load default SensorConfig");
   }
 }
 
-void sensor::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  WEB("<form id='DataForm'>\n");
-  WEB("<table id='maintable' class='editorDemoTable'>\n");
-  WEB("<thead>\n");
-  WEB("  <tr>\n");
-  WEB("    <td style='width: 250px;'>Name</td>\n");
-  WEB("    <td style='width: 200px;'>Wert</td>\n");
-  WEB("  </tr>\n");
-  WEB("</thead>\n");
-  WEB("<tbody>\n");
+void sensor::GetInitData(AsyncResponseStream *response) {
+  String ret;
+  JsonDocument json;
 
-  WEB("<tr>\n");
-  WEB("  <td colspan='2'>\n");
+  json["data"].to<JsonObject>();
+  json["data"]["sel0"] = ((this->Type==NONE)?1:0);
+  json["data"]["sel1"] = ((this->Type==HCSR04)?1:0);
+  json["data"]["sel2"] = ((this->Type==ONBOARD_ANALOG)?1:0);
+
+#ifdef USE_ADS1115
+  std::ostringstream ads1115_i2c_hex;
+  ads1115_i2c_hex << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)this->ads1115_i2c;
   
-  WEB("    <div class='inline'>\n");
-  WEB("    <input type='radio' id='sel0' name='selection' value='none' %s ", (this->Type==NONE)?"checked":"");
-  WEB("onclick=\"radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])\"/>\n");
-  WEB("    <label for='sel0'>keine Füllstandsmessung</label></div>\n");
-  WEB("    \n");
-  
-  WEB("    <div class='inline'>\n");
-  WEB("    <input type='radio' id='sel1' name='selection' value='hcsr04' %s ", (this->Type==HCSR04)?"checked":"");
-  WEB(" onclick=\"radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_0','analog_1','analog_2','extern_1','ads1115_0','ads1115_1'])\"/>\n");
-  WEB("    <label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label></div>\n");
-  WEB("    \n");
-  
-  WEB("    <div class='inline'>\n");
-  WEB("    <input type='radio' id='sel2' name='selection' value='analog' %s ", (this->Type==ONBOARD_ANALOG)?"checked":"");
-  WEB("onclick=\"radioselection(['all_1','all_2','all_3','analog_0','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])\"/>\n");
-  WEB("    <label for='sel2'>Füllstandsmessung mit Analogsignal am ESP</label></div>\n");
-  WEB("    \n");
-  
-  #ifdef USE_ADS1115
-    WEB("    <div class='inline'>\n");
-    WEB("    <input type='radio' id='sel3' name='selection' value='ads1115' %s ", (this->Type==ADS1115)?"checked":"");
-    WEB("onclick=\"radioselection(['all_1','all_2','all_3','analog_1','analog_2','ads1115_0','ads1115_1'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','analog_0'])\"/>\n");
-    WEB("    <label for='sel3'>Füllstandsmessung mit Analogsignal am ADS1115 </label></div>\n");
-    WEB("    \n");
-  #endif
+  json["data"]["sel3"] = ((this->Type==ADS1115)?1:0);
+  json["data"]["ads1115_i2c"] = ads1115_i2c_hex.str(); 
+  json["data"]["ads1115_port"] = this->ads1115_port;
+#else 
+  json["data"]["sel_ADS1115"]["className"] = "hide";
+  json["data"]["ads1115_0"]["className"] = "hide";
+  json["data"]["ads1115_1"]["className"] = "hide";
+#endif
 
-  WEB("    <div class='inline'>\n");
-  WEB("    <input type='radio' id='sel4' name='selection' value='extern' %s ", (this->Type==EXTERN)?"checked":"");
-  WEB("onclick=\"radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_0','analog_1','analog_2','ads1115_0','ads1115_1'])\"/>\n");
-  WEB("    <label for='sel4'>Füllstandsmessung mit externem Signal per MQTT</label></div>\n");
-  
-  WEB("  </td>\n");
-  WEB("</tr>\n");
+  json["data"]["sel4"] = ((this->Type==EXTERN)?1:0);
+  json["data"]["measurecycle"] = this->measurecycle;
+  json["data"]["measureDistMin"] = this->measureDistMin;
+  json["data"]["measureDistMax"] = this->measureDistMax;
+  json["data"]["pinhcsr04trigger"] = this->pinTrigger + 200;
+  json["data"]["pinhcsr04echo"] = this->pinEcho + 200;
+  json["data"]["pinanalog"] = this->pinAnalog + 200;
+  json["data"]["a_measureDistMin"] = this->measureDistMin;
+  json["data"]["a_measureDistMax"] = this->measureDistMax;
+  json["data"]["externalSensor"] = this->externalSensor;
+  json["data"]["treshold_min"] = this->threshold_min;
+  json["data"]["treshold_max"] = this->threshold_max;
 
-  WEB("<tr class='%s' id='all_1'>\n", (this->Type==NONE||this->Type==EXTERN?"hide":""));
-  WEB("<td>Messintervall</td>\n");
-  WEB("<td><input min='0' max='254' name='measurecycle' type='number' value='%d'/></td>\n", this->measurecycle);
-  WEB("</tr>\n");
+  json["response"].to<JsonObject>();
+  json["response"]["status"] = 1;
+  json["response"]["text"] = "successful";
 
-  WEB("<tr class='%s' id='hcsr04_1'>\n", (this->Type==HCSR04?"":"hide"));
-  WEB("<td>Abstand Sensor min (in cm)</td>\n");
-  WEB("<td><input min='0' max='254' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='hcsr04_2'>\n", (this->Type==HCSR04?"":"hide"));
-  WEB("<td>Abstand Sensor max (in cm)</td>\n");
-  WEB("<td><input min='0' max='254' name='measureDistMax' type='number' value='%d'/></td>\n", this->measureDistMax);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='hcsr04_3'>\n", (this->Type==HCSR04?"":"hide"));
-  WEB("<td>Pin HC-SR04 Trigger</td>\n");
-  WEB("<td><input min='0' max='15' id='GpioPin_1' name='pinhcsr04trigger' type='number' value='%d'/></td>\n", this->pinTrigger + 200);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='hcsr04_4'>\n", (this->Type==HCSR04?"":"hide"));
-  WEB("<td>Pin HC-SR04 Echo</td>\n");
-  WEB("<td><input min='0' max='15' id='GpioPin_2' name='pinhcsr04echo' type='number' value='%d'/></td>\n", this->pinEcho + 200);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='analog_0'>\n", (this->Type==ONBOARD_ANALOG?"":"hide"));
-  WEB("<td>GPIO an welchem das Signal anliegt</td>\n");
-  WEB("<td><input min='0' size='15' id='AnalogPin_1' name='pinanalog' type='number' value='%d'/></td>\n", this->pinAnalog + 200);
-  WEB("</tr>\n");
-
-  #ifdef USE_ADS1115
-    WEB("<tr class='%s' id='ads1115_0'>\n", (this->Type==ADS1115?"":"hide"));
-    WEB("<td>i2c Adresse des ADS1115</td>\n");
-    WEB("<td><input maxlength='2'  name='ads1115_i2c' type='text' value='%02x'/></td>\n", this->ads1115_i2c);
-    WEB("</tr>\n");
-    
-    WEB("<tr class='%s' id='ads1115_1'>\n", (this->Type==ADS1115?"":"hide"));
-    WEB("<td>Portnummer am ADS1115 bei dem das Signal anliegt</td>\n");
-    WEB("<td><input min='0' max='4' size='15'  name='ads1115_port' type='number' value='%d'/></td>\n", this->ads1115_port);
-    WEB("</tr>\n");
-  #endif
-  
-  #ifdef ESP32
-    uint16_t maxAnalogRaw = 4096;
-  #elif ESP8266
-    uint16_t maxAnalogRaw = 1024;
-  #endif
-
-  WEB("<tr class='%s' id='analog_1'>\n", (this->Type==ONBOARD_ANALOG || this->Type==ADS1115?"":"hide"));
-  WEB("<td>Kalibrierung: 0% entspricht RAW Wert</td>\n");
-  WEB("<td><input min='0' size='5' name='measureDistMin' type='number' value='%d'/></td>\n", this->measureDistMin);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='analog_2'>\n", (this->Type==ONBOARD_ANALOG || this->Type==ADS1115?"":"hide"));
-  WEB("<td>Kalibrierung: 100% entspricht RAW Wert</td>\n");
-  WEB("<td><input min='0' max='%d' name='measureDistMax' type='number' value='%d'/></td>\n", maxAnalogRaw, this->measureDistMax);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='extern_1'>\n", (this->Type==EXTERN?"":"hide"));
-  WEB("<td>MQTT-Topic des externen Sensors (Füllstand in %)</td>\n");
-  WEB("<td><input size='30' name='externalSensor' type='text' value='%s'/></td>\n", this->externalSensor.c_str());
-  WEB("</tr>\n");
-  
-  WEB("<tr class='%s' id='all_2'>\n", (this->Type==NONE?"hide":""));
-  WEB("<td >Sensor Treshold Min für 3WegeVentil</td>\n");
-  WEB("<td><input min='0' max='254' name='treshold_min' type='number' value='%d'/></td>\n", this->threshold_min);
-  WEB("</tr>\n");
-
-  WEB("<tr class='%s' id='all_3'>\n", (this->Type==NONE?"hide":""));
-  WEB("<td>Sensor Treshold Max für 3WegeVentil</td>\n");
-  WEB("<td><input min='0' max='254' name='treshold_max' type='number' value='%d'/></td>\n", this->threshold_max);
-  WEB("</tr>\n");
-  WEB("<tr>\n");
-
-  WEB("</tbody>\n");
-  WEB("</table>\n");
-  WEB("</form>\n\n<br />\n");
-  WEB("<form id='jsonform' action='StoreSensorConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \".*\")'>\n");
-  WEB("  <input type='text' id='json' name='json' />\n");
-  WEB("  <input type='submit' value='Speichern' />\n");
-  WEB("</form>\n\n");
+  serializeJson(json, ret);
+  response->print(ret);
 }

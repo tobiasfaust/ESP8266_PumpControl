@@ -1,23 +1,16 @@
 #ifndef BASECONFIG_H
 #define BASECONFIG_H
 
-//#if defined(ESP8266) || defined(ESP32)
-//  #define min(x,y) _min(x,y)
-//#endif
-
 #include "CommonLibs.h"
 #include "ArduinoJson.h"
 #include "updater.h"
-
-#define WEB(...) Config->handleOneHtmlRow(currentRow++, processedRows, len, maxLen, buffer, __VA_ARGS__)
+#include <iomanip>  // needed by setw / setfill
 
 class BaseConfig {
 
   public:
     BaseConfig();
-    void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
     void      loop();
 
     const uint8_t&  GetPinSDA()      const {return pin_sda;}
@@ -40,19 +33,12 @@ class BaseConfig {
     const uint16_t& GetKeepAlive()   const {return keepalive;}
     const uint8_t&  GetDebugLevel()   const {return debuglevel;}
     String          GetReleaseName();
-    void            InstallRelease(uint32_t ReleaseNumber);
-    void            RefreshReleases();
+    const bool&     GetUseETH()        const { return useETH; }
+    void            GetInitData(AsyncResponseStream* response);
+    const String&   GetLANBoard()      const {return LANBoard;}
 
     size_t          getFragmentation();
-    
-    void handleOneHtmlRow(const size_t& curRow, 
-       std::shared_ptr<uint16_t> processedRows, 
-       size_t& len, 
-       const size_t& maxLen, 
-       uint8_t* buffer, 
-       const char* str, 
-       ...);
-    
+     
   private:
     String    mqtt_server;
     String    mqtt_username;
@@ -61,22 +47,24 @@ class BaseConfig {
     String    mqtt_root;
     String    mqtt_basepath;
     bool      mqtt_UseRandomClientID;
+    uint16_t  keepalive;
+    uint8_t   debuglevel;
     uint8_t   pin_sda;
     uint8_t   pin_scl;
     uint8_t   pin_1wire;
     bool      enable_oled;
-    bool      enable_1wire;
-    bool      enable_autoupdate;
-    String    autoupdate_url;
-    stage_t   autoupdate_stage;
-    uint8_t   i2caddress_oled;
     uint8_t   oled_type;
+    bool      enable_1wire;
+    uint8_t   i2caddress_oled;
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;
-    uint16_t  keepalive;
-    uint8_t   debuglevel;
-
+    bool      enable_autoupdate;
+    stage_t   autoupdate_stage;
+    String    autoupdate_url;
+    bool      useETH;  // otherwise use WIFI
+    String    LANBoard;
+    
     updater*  ESPUpdate;
 };
 

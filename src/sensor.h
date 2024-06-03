@@ -3,7 +3,7 @@
 
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
-#include "mqtt.h"
+#include "MyMqtt.h"
 #include "valveStructure.h"
 #include "BaseConfig.h"
 
@@ -35,9 +35,8 @@ class sensor {
     void      setSensorType(sensorType_t t);
     void      loop();
     void      SetLvl(uint8_t lvl);
-    void      StoreJsonConfig(String* json); 
     void      LoadJsonConfig();
-    void      GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
+    void      GetInitData(AsyncResponseStream* response);    
     
     const uint16_t& GetRaw() const {return raw;}
     const uint8_t&  GetLvl() const {return level; }

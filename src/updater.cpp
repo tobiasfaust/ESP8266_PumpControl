@@ -1,7 +1,6 @@
 #include "updater.h"
 
 updater::updater(): DoUpdate(true), automode(false), updateError(false), interval(3600), debuglevel(3) {
-  this->releases = new std::vector<release_t>;
   this->WifiClient = new WiFiClient;
   httpUpdate = new WM_httpUpdate;
   
@@ -57,68 +56,29 @@ String updater::GetReleaseName() {
   return (this->currentRelease.version + " - " + this->currentRelease.subversion + " (" + this->Stage2String(this->currentRelease.stage)+ ")");
 }
 
-std::vector<release_t>* updater::GetReleases() {
-  return this->releases;
-}
-
-void updater::RefreshReleases() {
-  this->downloadJson();  
-}
-
-release_t updater::getLatestRelease() {
-  release_t newRelease = this->currentRelease;
-  for (uint8_t i=0; i < this->releases->size(); i++) {
-    // je nach stage
-    if ( (this->stage == (stage_t)PROD and this->releases->at(i).stage == (stage_t)PROD) ||
-         (this->stage == (stage_t)PRE and (this->releases->at(i).stage == (stage_t)PROD || this->releases->at(i).stage == (stage_t)PRE)) ||
-         (this->stage == (stage_t)DEV)
-       ) {
-      if (max(this->currentRelease.number, this->releases->at(i).number) > this->currentRelease.number)  { 
-        newRelease = this->releases->at(i); 
-      }
-    }
-  }
-  return newRelease;
-}
-
+/* saving memory for ESP8266 */
 void updater::Update() {
+#ifdef ESP32  
   this->downloadJson();
   // check auf neues Release wenn AutoModus und kein Fehlercode gesetzt
   if (this->automode) {
-    release_t r = this->getLatestRelease();
+    release_t r = this->latestRelease;
     if (r.number > this->currentRelease.number) {
-      this->InstallRelease(r.number);
+      this->InstallLatestRelease();
     }
   } else { Serial.println("No AutoMode"); }
+#endif
 }
-
-/*
-String* updater::getURLHostName(String* url) {
-  uint8_t start = url->indexOf("//")+2;
-  uint8_t end   = url->indexOf("/", start);
-  String hostname = url->substring(start, end);
-  //Serial.print("Hostname: "); Serial.println(this->json_host.c_str()); 
-  //Serial.print("URL: "); Serial.println(this->json_url.c_str()); 
-  return &hostname;
-}
-
-String* updater::getURLPath(String* url) {
-  uint8_t start = url->indexOf("//")+2;
-  uint8_t end   = url->indexOf("/", start);
-  String PathName = url->substring(end);
-  return &PathName;
-}
-*/
 
 void updater::downloadJson() {
+  Serial.println(F("Start download Release information"));
   HTTPClient http;
   if (http.begin(*(this->WifiClient), this->json_url)) { 
     int httpCode = http.GET();
     if (httpCode > 0) {
       //Serial.printf("[HTTP] GET... code: %d\n", httpCode);
       if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-        String payload = http.getString(); 
-        this->parseJson(&payload);
+        this->parseJson(http.getStream());
       }
     } else {
       Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
@@ -129,20 +89,13 @@ void updater::downloadJson() {
   }
 }
 
-void updater::parseJson(String* json) {  
-  this->releases->clear();
+//void updater::parseJson(String* json) {  
+void updater::parseJson(WiFiClient stream) {
   
-  #ifdef ESP8266 
-    String arch = "ESP8266";
-  #elif ESP32
-    String arch = "ESP32";
-  #endif
-
-  StringStream stream{*json};
   stream.find("[");
 
   do {
-    DynamicJsonDocument elem(1024);
+    JsonDocument elem;
     DeserializationError error = deserializeJson(elem, stream); 
 
     if (!error) {
@@ -153,20 +106,23 @@ void updater::parseJson(String* json) {
         Serial.println();
       }
     
-      release_t r;
-      if (elem.containsKey("name"))           { r.name    = elem["name"].as<String>();}
-      if (elem.containsKey("version"))        { r.version = elem["version"].as<String>();}
-      if (elem.containsKey("number"))         { r.number  = elem["number"].as<uint32_t>();}
-      if (elem.containsKey("subversion"))     { r.subversion  = elem["subversion"].as<uint32_t>();}
-      if (elem.containsKey("stage"))          { r.stage   = this->String2Stage(elem["stage"].as<String>());}
-      if (elem.containsKey("download-url"))   { r.downloadURL = elem["download-url"].as<String>();}    
-      
-      if (elem.containsKey("arch") && elem["arch"] == arch) {
-          this->releases->push_back(r);
-      }
-        
-      if (this->GetDebugLevel() >=3) {
-        this->printRelease(&r); 
+      if (elem.containsKey("arch") && elem["arch"].as<String>() == MY_ARCH &&
+          elem.containsKey("stage") && this->stage == this->String2Stage(elem["stage"].as<String>()) &&
+          elem.containsKey("number")) {
+          
+        if (_max(this->latestRelease.number, elem["number"].as<uint32_t>()) > this->latestRelease.number)  { 
+          
+          release_t r;
+          if (elem.containsKey("name"))           { r.name    = elem["name"].as<String>();}
+          if (elem.containsKey("version"))        { r.version = elem["version"].as<String>();}
+          if (elem.containsKey("number"))         { r.number  = elem["number"].as<uint32_t>();}
+          if (elem.containsKey("subversion"))     { r.subversion  = elem["subversion"].as<uint32_t>();}
+          if (elem.containsKey("stage"))          { r.stage   = this->String2Stage(elem["stage"].as<String>());}
+          if (elem.containsKey("download-url"))   { r.downloadURL = elem["download-url"].as<String>();}    
+            
+          this->latestRelease = r; 
+
+        }
       }
 
     } else {
@@ -175,12 +131,17 @@ void updater::parseJson(String* json) {
       }
     }
 
-  } while (stream.findUntil(",","]"));  
+  } while (stream.findUntil(",","]")); 
+
+  if (this->GetDebugLevel() >=3) {
+    Serial.println("latest release is:");
+    this->printRelease(&this->latestRelease); 
+  } 
 }
 
 void updater::StoreJsonConfig(release_t* r) {
 
-  DynamicJsonDocument json(512); // TODO Use computed size??
+  JsonDocument json; // TODO Use computed size??
 
   json["name"]          = r->name.c_str();
   json["version"]       = r->version.c_str();
@@ -207,7 +168,7 @@ void updater::LoadJsonConfig() {
     if (configFile) {
       Serial.println("opened ESPUpdate.json file");
       
-      DynamicJsonDocument json(512); // TODO Use computed size??
+      JsonDocument json; // TODO Use computed size??
       DeserializationError error = deserializeJson(json, configFile);
       
       if (!error) {
@@ -247,20 +208,14 @@ void updater::LoadJsonConfig() {
   }
 }
 
-void updater::InstallRelease(uint32_t ReleaseNumber) {
+void updater::InstallLatestRelease() {
   release_t oldRelease = this->currentRelease; // save in case of installation failure
-  
-  for (uint8_t i=0; i < this->releases->size(); i++) {
-    if (this->releases->at(i).number == ReleaseNumber) {
-      this->currentRelease = this->releases->at(i);
-      break; 
-    }
-  }
+  this->currentRelease = this->latestRelease;
+
   this->StoreJsonConfig(&this->currentRelease);
 
   Serial.printf("Install Release: %s (Number: %d)\n", this->currentRelease.name.c_str(), this->currentRelease.number);
   Serial.printf("Install Binary: %s \n", this->currentRelease.downloadURL.c_str());
-  //httpUpdate->setLedPin(LED_BUILTIN, LOW);
   
   t_httpUpdate_return ret = httpUpdate->update(*(this->WifiClient), this->currentRelease.downloadURL);
   switch (ret) {

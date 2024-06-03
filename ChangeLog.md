@@ -1,17 +1,18 @@
 Release 3.0.0:
+  - +++++++ NO SUPPORT FOR ESP8266 anymore +++++++
   - change to Async Webserver
   - change ArduinoJson version 5.x to 6.x
   - change platform from Arduino-IDE to PlatformIO
   - reduce memory usage for handling json configs
   - derive custom mqtt handling from parent mqtt class
-  - change SPIFFS to LitteFS
-  - ESP8266: remove Support as default for
-      - ADS1115
-      - PCF8574
-      - TB6612 
-      - ONEWIRE
-      - OLED
-    to save memory, posibble to enable via platformio.ini in section of ESP8266
+  - extract html-code into separate html-files, so everyone can customize his own instance
+  - interact with Web-frontend by json
+  - enable update filesystem at updatepage
+  - saving configs by global upload function, no extra saveconfigfile functions anymore
+  - data partition is now larger
+  - change deprecated SPIFFS to LittleFS
+  - move all webfiles (css,js) to FS
+  - create new Webpage to maintain the FS-files, editing json registers on-the-fly is now possible
 
 Release 2.5.3:
   - Bug: Oled Typ selectionbox in GUI will now list correct

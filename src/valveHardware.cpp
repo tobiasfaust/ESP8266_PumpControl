@@ -76,17 +76,17 @@ valveHardware::valveHardware(uint8_t sda, uint8_t scl)
     else  return 0;
   }
 
-  void valveHardware::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
+  void valveHardware::GetInitData1Wire(AsyncResponseStream* response) {
   HWdev_t* t = getI2CDevice(0x01);
   ow2408* MyDS2408 = static_cast<ow2408*>(t->Device);
-  MyDS2408->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen);
+  MyDS2408->GetInitData(response);
 }
 #else
   void valveHardware::add1WireDevice(uint8_t pin_1wire) {};
   bool valveHardware::Get1WireActive() { return false;}
   uint8_t valveHardware::Get1WireCountDevices() { return 0;}
   uint8_t valveHardware::Refresh1WireDevices() { return 0; }
-  void valveHardware::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {};
+  void valveHardware::GetInitData1Wire(AsyncResponseStream* response) {};
 #endif
 
 void valveHardware::addI2CDevice(uint8_t i2cAddress) {

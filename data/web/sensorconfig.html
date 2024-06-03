@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <meta charset='utf-8'>
+    <link rel='stylesheet' type='text/css' href='/web/Style.css'>
+    <script language='javascript' type='text/javascript' src='/web/esp/gpio.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/Javascript.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/sensorconfig.js'></script>
+    <title>Pumpcontrol</title>
+  </head>
+  <body>
+
+  <form id='DataForm'>
+  <table id='maintable' class='editorDemoTable'>
+  <thead>
+    <tr>
+      <td style='width: 250px;'>Name</td>
+      <td style='width: 200px;'>Wert</td>
+    </tr>
+  </thead>
+  <tbody>
+
+  <tr>
+    <td colspan='2'>
+      <div class='inline'>
+        <input type='radio' id='sel0' name='selection' value='none' onclick="radioselection([''],['all_1','all_2','all_3','analog_0','analog_1','analog_2','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])"/>
+        <label for='sel0'>keine Füllstandsmessung</label>
+      </div>
+      
+      <div class='inline'>
+        <input type='radio' id='sel1' name='selection' value='hcsr04' onclick="radioselection(['all_1','all_2','all_3','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4'],['analog_0','analog_1','analog_2','extern_1','ads1115_0','ads1115_1'])"/>
+        <label for='sel1'>Füllstandsmessung mit Ultraschallsensor HCSR04</label>
+      </div>
+  
+      <div class='inline'>
+        <input type='radio' id='sel2' name='selection' value='analog' onclick="radioselection(['all_1','all_2','all_3','analog_0','analog_1','analog_2'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','ads1115_0','ads1115_1'])"/>
+        <label for='sel2'>Füllstandsmessung mit Analogsignal am ESP</label>
+      </div>
+      
+        <div id="sel_ADS1115" class='inline'>
+          <input type='radio' id='sel3' name='selection' value='ads1115' onclick="radioselection(['all_1','all_2','all_3','analog_1','analog_2','ads1115_0','ads1115_1'],['hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','extern_1','analog_0'])"/>
+          <label for='sel3'>Füllstandsmessung mit Analogsignal am ADS1115 </label>
+        </div>
+        
+
+      <div class='inline'>
+        <input type='radio' id='sel4' name='selection' value='extern' onclick="radioselection(['all_2','all_3','extern_1'],['all_1','hcsr04_1','hcsr04_2','hcsr04_3','hcsr04_4','analog_0','analog_1','analog_2','ads1115_0','ads1115_1'])"/>
+        <label for='sel4'>Füllstandsmessung mit externem Signal per MQTT</label>
+      </div>
+  
+    </td>
+  </tr>
+
+  <tr id='all_1'>
+    <td>Messintervall</td>
+    <td>
+      <input id="measurecycle" min='0' max='254' name='measurecycle' type='number' />
+    </td>
+  </tr>
+
+  <tr id='hcsr04_1'>
+    <td>Abstand Sensor min (in cm)</td>
+    <td>
+      <input id="measureDistMin" min='0' max='254' name='measureDistMin' type='number'/>
+    </td>
+  </tr>
+
+  <tr id='hcsr04_2'>
+    <td>Abstand Sensor max (in cm)</td>
+    <td>
+      <input min='0' max='254' name='measureDistMax' type='number'/>
+      </td>
+  </tr>
+
+  <tr id='hcsr04_3'>
+    <td>Pin HC-SR04 Trigger</td>
+    <td>
+      <input min='0' max='15' id='GpioPin_1' name='pinhcsr04trigger' type='number'/>
+    </td>
+  </tr>
+
+  <tr id='hcsr04_4'>
+    <td>Pin HC-SR04 Echo</td>
+    <td>
+      <input min='0' max='15' id='GpioPin_2' name='pinhcsr04echo' type='number' />
+    </td>
+  </tr>
+
+  <tr id='analog_0'>
+    <td>GPIO an welchem das Signal anliegt</td>
+    <td>
+      <input min='0' size='15' id='AnalogPin_1' name='pinanalog' type='number' />
+      </td>
+  </tr>
+
+  <tr id='ads1115_0'>
+    <td>i2c Adresse des ADS1115</td>
+      <td>
+        <input id="ads1115_i2c" maxlength='2' name='ads1115_i2c' type='text'/>
+      </td>
+    </tr>
+    
+    <tr id='ads1115_1'>
+      <td>Portnummer am ADS1115 bei dem das Signal anliegt</td>
+      <td>
+        <input id="ads1115_port" min='0' max='4' size='15'  name='ads1115_port' type='number'/>
+        </td>
+    </tr>
+
+  <tr id='analog_1'>
+    <td>Kalibrierung: 0% entspricht RAW Wert</td>
+    <td>
+      <input id="a_measureDistMin" min='0' size='5' name='measureDistMin' type='number'/>
+    </td>
+  </tr>
+
+  <tr id='analog_2'>
+    <td>Kalibrierung: 100% entspricht RAW Wert</td>
+    <td>
+      <input id="a_measureDistMax" min='0' name='measureDistMax' type='number'/>
+    </td>
+  </tr>
+
+  <tr id='extern_1'>
+    <td>MQTT-Topic des externen Sensors (Füllstand in %)</td>
+    <td>
+      <input id="externalSensor" size='30' name='externalSensor' type='text'/>
+    </td>
+  </tr>
+  
+  <tr id='all_2'>
+    <td >Sensor Treshold Min für 3WegeVentil</td>
+    <td>
+      <input id="treshold_min" min='0' max='254' name='treshold_min' type='number'/>
+    </td>
+  </tr>
+
+  <tr id='all_3'>
+    <td>Sensor Treshold Max für 3WegeVentil</td>
+    <td>
+      <input id="treshold_max" min='0' max='254' name='treshold_max' type='number'/>
+    </td>
+  <tr>
+
+  </tbody>
+  </table>
+  </form>
+
+  <br/>
+  <input type='submit' onclick="onSubmit('DataForm', '.*')" value='Speichern' />
+  <span id='response'></span>
+</body>
+</html>

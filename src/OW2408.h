@@ -4,7 +4,7 @@
 #include "CommonLibs.h"
 #include "BaseConfig.h"
 #include "DS2408.h"     // https://github.com/queezythegreat/arduino-ds2408
-                                     // https://github.com/PaulStoffregen/OneWire
+                        // https://github.com/PaulStoffregen/OneWire
 
 extern BaseConfig* Config;
 
@@ -17,11 +17,10 @@ class ow2408 {
     bool        setOff(uint8_t port);
     bool        setPort(uint8_t port, bool state);
     bool        isValidPort(uint8_t port);
-    uint8_t    findDevices();
+    uint8_t     findDevices();
     const uint8_t& GetCountDevices() const {return device_count;}
-  
-    void        GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
-
+    void        GetInitData(AsyncResponseStream *response);
+    
   private:
     DS2408* ow;
     Devices devices;

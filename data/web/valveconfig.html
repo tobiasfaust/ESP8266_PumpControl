@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <meta charset='utf-8'>
+    <link rel='stylesheet' type='text/css' href='/web/Style.css'>
+    <script language='javascript' type='text/javascript' src='/web/esp/gpio.js'></script>
+    <script language='javascript' type='text/javascript' src='/parameter.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/Javascript.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/valvefunctions.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/valveconfig.js'></script>
+    <title>Pumpcontrol</title>
+  </head>
+  <body>
+    <p>
+      <input type='button' value='&#10010; add new Port' onclick='addrow("maintable")'>
+    </p>
+    <form id='DataForm'>
+    <table id='maintable' class='editorDemoTable'>
+    <thead>
+    <tr>
+    <td style='width: 25px;'>Nr</td>
+    <td style='width: 25px;'>Active</td>
+    <td style='width: 250px;'>MQTT SubTopic</td>
+    <td style='width: 210 px;'>Port</td>
+    <td style='width: 80px;'>Type</td>
+    <td style='width: 80px;'>Reverse</td>
+    <td style='width: 80px;'>AutoOff</td>
+    <td style='width: 25px;'>Delete</td>
+    <td style='width: 25px;'>Action</td>
+    </tr>
+    </thead>
+    <tbody>
+  
+      <template id="rows">
+      <tr>
+        <td></td>
+        <td>
+          <input type='checkbox' name='active' onclick='ChangeEnabled(this)' id='active'>
+        </td>
+        <td><input id="mqtttopic" size='30' name='mqtttopic' type='text'/></td>
+  
+        <td id='tdport'>
+          <div id="typ_b">
+            <div id='PortA'>
+              <div class='inline'>
+                <input id='AllePorts_PortA' name='port_a' type='number' min='0' max='220'/>
+                <label>for</label>
+                <input id='imp_a' name='imp_0' type='number' min='10' max='999'/>
+                <label>ms</label>
+              </div>
+              </div>
+              <div id='PortB'>
+                <div class='inline'>
+                  <input id='AllePorts_PortB' name='port_b' type='number' min='0' max='220'/>
+                  <label>for</label>
+                  <input id='imp_b' name='imp_b' type='number' min='10' max='999'/>
+                  <label>ms</label>
+                  </div>
+            </div>
+          </div>
+  
+          <div id="typ_n">
+            <div id='Port'>
+              <input id='AllePorts' name='port_a' type='number' min='0' max='220'/>
+            </div>
+          </div> 
+        </td>
+  
+        <td>
+          <div class='inline'>
+            <input type='radio' id='SelType_n' name='type' value='n' onclick='ChangeType(this)' />
+            <label for='SelType_n'>normal</label>
+          </div>
+          <div class='inline'>
+            <input type='radio' id='SelType_b' name='type' value='b' onclick='ChangeType(this)' />
+            <label for='SelType_b'>bistabil</label>
+          </div>
+        </td>
+  
+        <td>
+          <input type='checkbox' name='reverse' id='reverse'/>
+        </td>
+  
+        <td>
+            <input id='autooff' name='autooff' type='number' min='0' max='65000'/>
+        </td>
+      
+        <td><input type='button' value='&#10008;' onclick='delrow(this)'/></td>
+  
+        <td>
+          <input type='button' id='action' onclick='ChangeValve(this)'/>
+        </td>
+  
+      </tr>
+  
+      </template>
+  
+    </tbody>
+    </table>
+    </form> 
+    <br/>
+    <input type='submit' onclick="onSubmit('DataForm', 'active.*')" value='Speichern' />
+    <span id='response'></span>
+  </body>
+</html>

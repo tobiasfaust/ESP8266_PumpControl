@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <meta charset='utf-8'>
+    <link rel='stylesheet' type='text/css' href='/web/Style.css'>
+    <script language='javascript' type='text/javascript' src='/web/esp/gpio.js'></script>
+    <script language='javascript' type='text/javascript' src='/parameter.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/Javascript.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/valvefunctions.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/relations.js'></script>
+    <title>Pumpcontrol</title>
+  </head>
+  <body>
+    
+
+  <p>
+  <input type='button' value='&#10010; add new Port' onclick='addrow("maintable")'></p>
+  <form id='DataForm'>
+    <table id='maintable' class='editorDemoTable'>
+      <thead>
+        <tr>
+          <td style='width: 25px;'>Nr</td>
+          <td style='width: 25px;'>Active</td>
+          <td style='width: 250px;'>Trigger Topic</td>
+          <td style='width: 250px;'>Port</td>
+          <td style='width: 25px;'>Enable if Bypass</td>
+          <td style='width: 25px;'>Delete</td>
+
+        </tr>
+      </thead>
+    <tbody>
+      <template id="rows">
+        <tr>
+          <td></td>
+          <td>
+            <input id="active" type='checkbox' name='active'>
+          </td>
+
+          <td><input id='mqtttopic' name='mqtttopic' type='text' size='30'/></td>
+          <td><input id='ConfiguredPort' name='port' type='number' min='10' max='999'/></td>
+        
+          <td>
+            <input type='checkbox' name='EnableByBypass' id='EnableByBypass'>
+          </td>
+            
+          <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>
+        </tr>
+      </template>
+    </tbody>
+    </table>
+  </form><br />
+    
+    <br/>
+    <input type='submit' onclick="onSubmit('DataForm', 'active.*')" value='Speichern' />
+    <span id='response'></span>
+  </body>
+</html>

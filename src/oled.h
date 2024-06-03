@@ -4,6 +4,7 @@
 #include "CommonLibs.h"
 #include <Wire.h>
 #include "BaseConfig.h"
+
 #include "SSD1306Wire.h"
 #include "SH1106.h"
 

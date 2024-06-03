@@ -26,15 +26,12 @@ jobs:
     strategy:
       matrix:
         variant:
-          - firmware_ESP8266
           - firmware_ESP32
           - firmware_ESP32-S2
           - firmware_ESP32-S3
           - firmware_ESP32-C3
 
         include:
-          - variant: firmware_ESP8266
-            architecture: ESP8266
           - variant: firmware_ESP32
             architecture: ESP32
           - variant: firmware_ESP32-S2
@@ -59,7 +56,9 @@ jobs:
           pip install --upgrade pip
 
       - name: Run PlatformIO
-        run: platformio run -e ${{ matrix.variant }}
+        run: |
+          platformio run -e ${{ matrix.variant }}
+          platformio run --target buildfs -e ${{ matrix.variant }}
 
       - name: Display generated files
         run: |
@@ -81,11 +80,12 @@ jobs:
           ENV_ARCH: ${{ matrix.architecture }}
           ENV_REPOSITORYNAME: ${{ env.REPOSITORY }}
           ENV_BINARYPATH: .pio/build/${{ matrix.variant }}/
-          ENV_DESTPATH: "release"
+          ENV_RELEASEPATH: "release"
+          ENV_ARTIFACTPATH: "artifacts"
           ENV_SUBVERSION: ${{ github.run_number }}
           ENV_RELEASEFILE: include/_Release.h
         run: |
-          mkdir release 
+          mkdir -p release artifacts
           chmod +x .github/workflows/generateJSON.sh
           .github/workflows/generateJSON.sh
 
@@ -93,7 +93,7 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: "${{ matrix.variant }}.zip"
-          path: release/*.bin
+          path: artifacts/*.bin
   
       - name: Upload to AWS S3
         uses: jakejarvis/s3-sync-action@master
@@ -132,7 +132,7 @@ jobs:
       - name: set Environment Variables
         id: set_env_var
         run: |
-                 VERSION=$(sed 's/[^0-9|.]//g' _Release.h)  # zb. 2.4.2
+                 VERSION=$(sed 's/[^0-9|.]//g' src/_Release.h)  # zb. 2.4.2
                  if [ ${{ github.ref }} == 'refs/heads/master' ]; then IS_PRE='false'; else IS_PRE='true'; fi
                  if [ ${{ github.ref }} == 'refs/heads/master' ]; then POSTFIX=''    ; else POSTFIX='PRE'; fi
                  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"

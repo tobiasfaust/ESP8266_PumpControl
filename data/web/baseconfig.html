@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <meta charset='utf-8'>
+    <link rel='stylesheet' type='text/css' href='/web/Style.css'>
+    <script language='javascript' type='text/javascript' src='/web/esp/gpio.js'></script>
+    <script language='javascript' type='text/javascript' src='/parameter.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/Javascript.js'></script>
+    <script language='javascript' type='text/javascript' src='/web/baseconfig.js'></script>
+    <title>Modbus MQTT Gateway</title>
+  </head>
+  <body>
+    <form id='DataForm'>
+      <table id='maintable' class='editorDemoTable'>
+        <thead>
+          <tr>
+            <td style='width: 250px;'>Name</td>
+            <td style='width: 200px;'>Wert</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Device Name</td>
+            <td><input size='30' maxlength='40' name='mqttroot' id='mqttroot' type='text'/></td>
+          </tr>
+
+          <tr id="tr_LAN">
+            <td colspan='2'>
+            <div class='inline'>
+              <input type='radio' id='sel_wifi' name='SelectConnectivity' value='wifi' onclick="radioselection([],['SelectLAN'])"/>
+              <label for='sel_wifi'>use WIFI</label>
+            </div>
+            
+            <div class='inline'>
+              <input type='radio' id='sel_eth' name='SelectConnectivity' value='eth' onclick="radioselection(['SelectLAN'],[])"/>
+              <label for='sel_eth'>use wired ethernet</label>
+            </div>  
+            </td>
+          </tr>
+
+          <tr id='SelectLAN' class=''>
+            <td>Select LAN Board</td>
+            <td>
+              <select name='SelectLAN' size='1'> 
+                <option value = 'WT32-ETH01'>WT32-ETH01</option>
+              </select>
+            </td>
+          </tr>
+
+          <tr>
+            <td>MQTT Server IP</td>
+            <td><input size='30' name='mqttserver' id='mqttserver' type='text'/></td>
+          </tr>
+          
+          <tr>
+            <td>MQTT Server Port</td>
+            <td><input maxlength='5' name='mqttport' id='mqttport' type='text' style='width: 6em'/></td>
+          </tr>
+
+          <tr>
+            <td>MQTT Authentification: Username (optional)</td>
+            <td><input size='30' name='mqttuser' id='mqttuser' type='text'/></td>
+          </tr>
+
+          <tr>
+            <td>MQTT Authentification: Password (optional)</td>
+            <td><input size='30' name='mqttpass' id='mqttpass' type='text' /></td>
+          </tr>
+
+          <tr>
+            <td>MQTT Topic Base Path (example: home/pumpcontrol)</td>
+            <td><input size='30' maxlength='40' name='mqttbasepath' id='mqttbasepath' type='text' v/></td>
+          </tr>
+
+          <tr>
+            <td colspan='2'>
+              <div class='inline'>
+                <input type='radio' id='sel_URCID1' name='UseRandomClientID' value='none'/>
+                <label for='sel_URCID1'>benutze statische MQTT ClientID</label>
+              </div>
+              <div class='inline'>
+                <input type='radio' id='sel_URCID2' name='UseRandomClientID' value='yes'/>
+                <label for='sel_URCID2'>benutze dynamische MQTT ClientID</label>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>Senden einer KeepAlive Message via MQTT (in sek > 10, 0=disabled)</td>
+            <td><input id="keepalive" min='10' max='65000' name='keepalive' type='number'/></td>
+          </tr>
+
+          <tr>
+            <td>LogLevel (0 [off] ... 5 [max])</td>
+            <td><input min='0' max='5' name='debuglevel' id='debuglevel' type='number' style='width: 6em'/></td>
+          </tr>
+
+          <tr id="tr_sda">
+            <td>Pin i2c SDA</td>
+            <td><input min='0' max='15' id='GpioPin_0' name='pinsda' type='number'/></td>
+          </tr>
+            
+          <tr id="tr_scl">
+            <td>Pin i2c SCL</td>
+            <td><input min='0' max='15' id='GpioPin_1' name='pinscl' type='number' /></td>
+          </tr>
+          
+          <tr id="tr_owSelect">
+            <td colspan='2'>
+              <div class='inline'>
+                <input type='radio' id='sel_ow1' name='sel_1wire' value='none' %s onclick="radioselection([],['onewire_0'])"/>
+                <label for='sel_ow1'>kein OneWire</label>
+              </div>
+                
+              <div class='inline'>
+                <input type='radio' id='sel_ow2' name='sel_1wire' value='1wire' %s onclick="radioselection(['onewire_0'],[])"/>
+                <label for='sel_ow2'>OneWire Aktiv</label>
+              </div>
+              
+              </td>
+            </tr>
+            
+            <tr id='onewire_0'>
+              <td>Welcher Pin nutzt 1Wire?</td>
+              <td><input min='0' max='15' id='GpioPin_3' name='pin1wire' type='number'/></td>
+            </tr>
+          
+            <tr id="tr_oledSelect">
+              <td colspan='2'>
+                <div class='inline'>
+                  <input type='radio' id='sel_oled1' name='sel_oled' value='none' %s onclick="radioselection([],['oled_0','oled_1'])"/>
+                  <label for='sel_oled1'>kein OLED</label>
+                </div>
+            
+                <div class='inline'>
+                  <input type='radio' id='sel_oled2' name='sel_oled' value='oled' %s onclick="radioselection(['oled_0','oled_1'],[])"/>
+                  <label for='sel_oled2'>mit OLED</label>
+                </div>
+              </td>
+            </tr>
+            
+            <tr id='oled_0'>
+              <td>i2c Adresse OLED</td>
+              <td><input id="i2caddress_oled" maxlength='2' name='i2coled' type='text'/></td>
+            </tr>
+            
+            <tr id='oled_1'>
+              <td>OLED Typ</td>
+              <td>
+                <select name='oled_type' size='1' style='width: 10em'>
+                  <template id='oled_rows'>
+                    <option id='oled_row'></option>
+                  </template>
+                </select>  
+              </td>
+            </tr>
+          
+            <tr>
+              <td colspan='2'>
+                <div class='inline'>
+                  <input type='radio' id='sel_3wege_0' name='sel_3wege' value='none' %s onclick="radioselection([],['3wege_0'])"/>
+                  <label for='sel_3wege_0'>kein Trinkwasser Bypass</label>
+                </div>
+            
+                <div class='inline'>
+                  <input type='radio' id='sel_3wege_1' name='sel_3wege' value='3wege' %s onclick="radioselection(['3wege_0'],[])"/>
+                  <label for='sel_3wege_1'>mit Trinkwasser ByPass Ventil</label>
+                </div>
+              </td>
+            </tr>
+          
+            <tr id='3wege_0'>
+            <td>3WegeVentil Trinkwasser Bypass</td>
+            <td><input min='0' max='254' id='ConfiguredPort_0' name='ventil3wege_port' type='number'/></td>
+            </tr>
+          
+            <tr>
+              <td colspan='2'>
+                <div class='inline'>
+                  <input type='radio' id='sel_update_0' name='sel_update' value='auto' onclick="radioselection(['update_0'],['update_1'])"/>
+                  <label for='sel_update_0'>Automatisches Update</label>
+                </div>
+                <div class='inline'>
+                  <input type='radio' id='sel_update_1' name='sel_update' value='manu' %s onclick="radioselection(['update_1'],['update_0'])"/>
+                  <label for='sel_update_1'>Manuelles Update</label>
+                </div>
+              </td>
+            </tr>
+          
+            <tr>
+            <td>Update URL</td>
+            <td><input size='30' id="au_url" name='autoupdate_url' type='text'/></td>
+            </tr>
+          
+            <tr id='update_0'>
+              <td>Auswahl der Stage</td>
+              <td>
+                <select name='autoupdate_stage' size='1' style='width: 10em'>
+                  <template id='au_tpl'>
+                    <option id='au_tpl_opt'></option>
+                  </template>
+                </select>
+              </td>
+              
+              <tr id='update_1'>
+                <td>verfügbare Releases
+                  <a href='#' onclick='FetchReleaseInfo()' class='ButtonRefresh' title='Die JSON Liste neu laden'>&#8634;</a>
+                </td>
+                <td>
+                  <table>
+                    <tr>
+                      <td class='noborder' id='td_release'></td>
+                      <td class='noborder'>
+                        <input type='button' class='button' onclick='FetchRelease()' value='Install' />
+                      </td>
+                    </tr>
+                  </table>                   
+                </td>
+              </tr>
+          </tbody>
+        </table>
+      </form>
+    
+    <br/>
+    <input type='submit' onclick="onSubmit('DataForm', '.*')" value='Speichern' />
+    <span id='response'></span>
+  </body>
+</html>

@@ -132,47 +132,29 @@ uint8_t valveStructure::Refresh1WireDevices() {
   return this->ValveHW->Refresh1WireDevices();
 }
 
-void valveStructure::StoreJsonConfig(String* json) {
-  File configFile = LittleFS.open("/VentilConfig.json", "w");
-  if (!configFile) {
-    if (Config->GetDebugLevel() >=0) {Serial.println("failed to open VentilConfig.json file for writing");}
-  } else {  
-    
-    if (!configFile.print(*json)) {
-        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing VentilConfig.json to file"));}
-    }
-
-    configFile.close();
-  
-    LoadJsonConfig();
-  }
-}
-
+/* load json config from littlefs */
 void valveStructure::LoadJsonConfig() {
-  char buffer[100] = {0}; 
-  memset(buffer, 0, sizeof(buffer));
   bool loadDefaultConfig = false;
-  uint8_t counter = 0;
-
+  
   Valves->clear();
 
-  if (LittleFS.exists("/VentilConfig.json")) {
+  if (LittleFS.exists("/valveconfig.json")) {
     //file exists, reading and loading
-    if (Config->GetDebugLevel() >=3) Serial.println("reading VentilConfig.json file....");
-    File configFile = LittleFS.open("/VentilConfig.json", "r");
+    if (Config->GetDebugLevel() >=3) Serial.println("reading valveconfig.json file....");
+    File configFile = LittleFS.open("/valveconfig.json", "r");
     if (configFile) {
-      if (Config->GetDebugLevel() >=3) Serial.println("VentilConfig.json is now open");
+      if (Config->GetDebugLevel() >=3) Serial.println("valveconfig.json is now open");
 
       ReadBufferingStream stream{configFile, 64};
       stream.find("\"data\":[");
       do {
-        DynamicJsonDocument elem(512);
+        JsonDocument elem;
         DeserializationError error = deserializeJson(elem, stream); 
 
         if (error) {
           loadDefaultConfig = true;
           if (Config->GetDebugLevel() >=1) {
-            Serial.printf("Failed to parse VentilConfig.json data: %s, load default config\n", error.c_str()); 
+            Serial.printf("Failed to parse valveconfig.json data: %s, load default config\n", error.c_str()); 
           } 
         } else {
           // Print the result
@@ -181,155 +163,101 @@ void valveStructure::LoadJsonConfig() {
 
           valve myValve;
             
-          sprintf(buffer, "pcfport_%d_0", counter);
-          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { myValve.AddPort1(this->ValveHW, elem[buffer].as<int>()); }
-
-          sprintf(buffer, "type_%d", counter);
-          if (elem.containsKey(buffer)) {myValve.SetValveType(elem[buffer].as<String>()); }
-            
-          sprintf(buffer, "active_%d", counter);
-          if (elem[buffer] && elem[buffer] == 1) {myValve.SetActive(true);} else {myValve.SetActive(false);}
-              
-          sprintf(buffer, "mqtttopic_%d", counter);
-          if (elem.containsKey(buffer)) {myValve.subtopic = elem[buffer].as<String>();}
-  
-          sprintf(buffer, "pcfport_%d_1", counter);
-          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { myValve.AddPort2(ValveHW, elem[buffer].as<int>());}
-              
-          sprintf(buffer, "imp_%d_0", counter); //impulsbreite für Port 1
-          if (elem.containsKey(buffer)) { myValve.port1ms = _max(10, _min(elem[buffer].as<int>(), 999));}
-            
-          sprintf(buffer, "imp_%d_1", counter); //impulsbreite für Port 2
-          if (elem.containsKey(buffer)) { myValve.port2ms = _max(10, _min(elem[buffer].as<int>(), 999));}
-
-          sprintf(buffer, "reverse_%d", counter);
-          if (elem[buffer] && elem[buffer] == 1) {myValve.SetReverse(true);} else {myValve.SetReverse(false);}
-
-          sprintf(buffer, "autooff_%d", counter);
-          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { myValve.SetAutoOff(elem[buffer].as<int>()); }
+          String type = GetJsonKeyMatch(&elem, "type");
+          if (elem.containsKey("port_a") && elem["port_a"].as<int>() > 0) { myValve.AddPort1(this->ValveHW, elem["port_a"].as<int>()); }
+          if (elem.containsKey(type)) {myValve.SetValveType(elem[type].as<String>()); }
+          if (elem["active"] && elem["active"] == 1) {myValve.SetActive(true);} else {myValve.SetActive(false);}
+          if (elem.containsKey("mqtttopic")) {myValve.subtopic = elem["mqtttopic"].as<String>();}
+          if (elem.containsKey("port_b") && elem["port_b"].as<int>() > 0) { myValve.AddPort2(ValveHW, elem["port_b"].as<int>());}
+          if (elem.containsKey("imp_a")) { myValve.port1ms = _max(10, _min(elem["imp_a"].as<int>(), 999));}
+          if (elem.containsKey("imp_b")) { myValve.port2ms = _max(10, _min(elem["imp_b"].as<int>(), 999));}
+          if (elem["reverse"] && elem["reverse"] == 1) {myValve.SetReverse(true);} else {myValve.SetReverse(false);}
+          if (elem.containsKey("autooff") && elem["autooff"].as<int>() > 0) { myValve.SetAutoOff(elem["autooff"].as<int>()); }
             
           Valves->push_back(myValve);
-          counter++;
         }
 
       } while (stream.findUntil(",","]"));
     } else {
       loadDefaultConfig = true;
-      if (Config->GetDebugLevel() >=1) {Serial.println("failed to load VentilConfig.json, load default config");}
+      if (Config->GetDebugLevel() >=1) {Serial.println("failed to load valveconfig.json, load default config");}
     }
   } else {
     loadDefaultConfig = true;
-    if (Config->GetDebugLevel() >=3) {Serial.println("VentilConfig.json File not exists, load default config");}
+    if (Config->GetDebugLevel() >=3) {Serial.println("valveconfig.json File not exists, load default config");}
   }
   
   if (loadDefaultConfig) {
     if (Config->GetDebugLevel() >=3) { Serial.println("lade Ventile DefaultConfig"); }
     valve myValve;
-    myValve.init(ValveHW, 202, "Valve1");
-    Valves->push_back(myValve);
-    myValve.init(ValveHW, 203, "Valve2");
-    Valves->push_back(myValve);
+    
+    myValve.init(this->ValveHW, 203, "Valve1");
+    this->Valves->push_back(myValve);
+    
+    myValve.init(this->ValveHW, 204, "Valve2");
+    this->Valves->push_back(myValve);
   }
   if (Config->GetDebugLevel() >=3) {
     Serial.printf("%d valves are now loaded \n", Valves->size());
   }
 }
 
-void valveStructure::GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  if (Config->Enabled1Wire()) { ValveHW->GetWebContent1Wire(buffer, processedRows, currentRow, len, maxLen); }
+/**************************************
+ lookup with a pattern for a key
+ returns the first matched key 
+***************************************/
+String valveStructure::GetJsonKeyMatch(JsonDocument* doc, String key) {
+  for (JsonPair kv : doc->as<JsonObject>()) {
+    if (strstr(kv.key().c_str(), key.c_str())) { 
+      return (String)kv.key().c_str();
+    }
+  }
+  return "";
 }
 
-void valveStructure::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  WEB("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>\n");
-  WEB("<form id='DataForm'>\n");
-  WEB("<table id='maintable' class='editorDemoTable'>\n");
-  WEB("<thead>\n");
-  WEB("<tr>\n");
-  WEB("<td style='width: 25px;'>Nr</td>\n");
-  WEB("<td style='width: 25px;'>Active</td>\n");
-  WEB("<td style='width: 250px;'>MQTT SubTopic</td>\n");
-  WEB("<td style='width: 210 px;'>Port</td>\n");
-  WEB("<td style='width: 80px;'>Type</td>\n");
-  WEB("<td style='width: 80px;'>Reverse</td>\n");
-  WEB("<td style='width: 80px;'>AutoOff</td>\n");
-  WEB("<td style='width: 25px;'>Delete</td>\n");
-  WEB("<td style='width: 25px;'>Action</td>\n");
-  WEB("</tr>\n");
-  WEB("</thead>\n");
-  WEB("</tbody>\n");
-
+void valveStructure::GetInitData(AsyncResponseStream* response) {
+  String ret;
+  JsonDocument json;
+  
+  json["data"].to<JsonObject>();
+  JsonArray row = json["data"]["rows"].to<JsonArray>();
+  
   for(uint8_t i=0; i<Valves->size(); i++) {
-    WEB("<tr>\n");
-    WEB("  <td>%d</td>\n", i+1);
-    WEB("  <td>\n");
-    WEB("    <div class='onoffswitch'>\n");
-    WEB("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' onclick='ChangeEnabled(this.id)' id='myonoffswitch_%d' %s>\n", i, i, (Valves->at(i).GetEnabled()?"checked":""));
-    WEB("      <label class='onoffswitch-label' for='myonoffswitch_%d'>\n", i);
-    WEB("        <span class='onoffswitch-inner'></span>\n");
-    WEB("        <span class='onoffswitch-switch'></span>\n");
-    WEB("      </label>\n");
-    WEB("    </div>\n");
-    WEB("  </td>\n");
-    
-    WEB("  <td><input size='30' name='mqtttopic_%d' type='text' value='%s'/></td>\n", i, Valves->at(i).subtopic.c_str());
-    WEB("  <td id='tdport_%d'>\n", i);
-    
+    row[i]["active"] = (Valves->at(i).GetEnabled()?1:0);
+    row[i]["mqtttopic"] = Valves->at(i).subtopic;
+
     if (Valves->at(i).GetValveType() == "b") {
-      WEB("    <div id='PortA_%d'>\n", i);
-      WEB("    <div class='inline'>\n");
-      WEB("      <input id='AllePorts_PortA_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort1());
-      WEB("      <label>for</label>\n");
-      WEB("      <input id='imp_%d_0' name='imp_%d_0'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port1ms);
-      WEB("      <label>ms</label>\n");
-      WEB("    </div>\n");
-      
-      WEB("    <div id='PortB_%d'>\n", i);
-      WEB("      <div class='inline'>\n");
-      WEB("      <input id='AllePorts_PortB_%d' name='pcfport_%d_1' type='number' min='0' max='220' value='%d'/></div>\n",i, i, Valves->at(i).GetPort2());
-      WEB("      <label>for</label>\n");
-      WEB("      <input id='imp_%d_1' name='imp_%d_1'  value='%d' type='number' min='10' max='999'/>\n",i, i, Valves->at(i).port2ms);
-      WEB("      <label>ms</label>\n");
-      WEB("    </div>\n");
+      row[i]["typ_n"]["className"] = "hide";
     } else if (Valves->at(i).GetValveType() == "n") {
-      WEB("    <div id='Port_%d'>\n", i);
-      WEB("      <input id='AllePorts_%d' name='pcfport_%d_0' type='number' min='0' max='220' value='%d'/>\n",i, i, Valves->at(i).GetPort1());
-      WEB("    </div>\n");
-    } 
-    WEB("  </td>\n");
-    WEB("  <td>\n");
-    WEB("    <div class='inline'><input type='radio' id='type_%d_0' name='type_%d' value='n' %s onclick='chg_type(this.id)' /><label for='type_%d_0'>normal</label></div>\n",i, i, (Valves->at(i).GetValveType()=="n"?"checked":""),i);
-    WEB("    <div class='inline'><input type='radio' id='type_%d_1' name='type_%d' value='b' %s onclick='chg_type(this.id)' /><label for='type_%d_1'>bistabil</label></div>\n",i, i, (Valves->at(i).GetValveType()=="b"?"checked":""),i);
-    WEB("  </td>\n");
+      row[i]["typ_b"]["className"] = "hide";
+    }
+      
+    row[i]["AllePorts_PortA"] = Valves->at(i).GetPort1();
+    row[i]["imp_a"] = Valves->at(i).port1ms;
+    row[i]["AllePorts_PortB"] = Valves->at(i).GetPort2();
+    row[i]["imp_b"] = Valves->at(i).port2ms;
+    row[i]["AllePorts"] = Valves->at(i).GetPort1(); 
 
-    WEB("  <td>\n");
-    WEB("    <div class='onoffswitch'>\n");
-    WEB("      <input type='checkbox' name='reverse_%d' class='onoffswitch-checkbox' id='myreverseswitch_%d' %s>\n", i, i, (Valves->at(i).GetReverse()?"checked":""));
-    WEB("      <label class='onoffswitch-label' for='myreverseswitch_%d'>\n", i);
-    WEB("        <span class='onoffswitch-inner'></span>\n");
-    WEB("        <span class='onoffswitch-switch'></span>\n");
-    WEB("      </label>\n");
-    WEB("    </div>\n");
-    WEB("  </td>\n");
-
-    WEB("  <td>\n");
-    WEB("      <input id='autooff_%d' name='autooff_%d' type='number' min='0' max='65000' value='%d'/>\n",i, i, Valves->at(i).GetAutoOff());
-    WEB("  </td>\n");
-    
-    WEB("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>\n");
-
-    WEB("  <td>\n");
-    WEB("    <input type='button' id='action_%d' value='Set %s' onClick='ChangeValve(this.id)'/>\n", i, (!Valves->at(i).GetActive()?"On":"Off"));
-    WEB("  </td>\n");
-
-    WEB("</tr>\n");
+    String type_name("type_"); type_name.concat(i);
+    row[i]["SelType_n"]["checked"] = (Valves->at(i).GetValveType()=="n"?1:0);
+    row[i]["SelType_n"]["name"] = type_name; 
+    row[i]["SelType_b"]["checked"] = (Valves->at(i).GetValveType()=="b"?1:0);
+    row[i]["SelType_b"]["name"] = type_name;
+    row[i]["reverse"] = (Valves->at(i).GetReverse()?1:0);
+    row[i]["autooff"] = Valves->at(i).GetAutoOff();
+    row[i]["action"] = (Valves->at(i).GetActive()?"Set Off":"Set On");
   }
-  WEB("</tbody>\n");
-  WEB("</table>\n");
-  WEB("</form>\n\n<br />\n");
-  WEB("<form id='jsonform' action='StoreVentilConfig' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>\n");
-  WEB("  <input type='text' id='json' name='json' />\n");
-  WEB("  <input type='submit' value='Speichern' />\n");
-  WEB("</form>\n\n");
+
+  json["response"].to<JsonObject>();
+  json["response"]["status"] = 1;
+  json["response"]["text"] = "successful";
+
+  serializeJson(json, ret);
+  response->print(ret);
+}
+
+void valveStructure::GetInitData1Wire(AsyncResponseStream* response) {
+  if (Config->Enabled1Wire()) { ValveHW->GetInitData1Wire(response); }
 }
 
 void valveStructure::getWebJsParameter(AsyncResponseStream *response) {
@@ -339,7 +267,7 @@ void valveStructure::getWebJsParameter(AsyncResponseStream *response) {
   response->printf("const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, (Config->Enabled1Wire()?Config->GetPin1Wire() + 200:0));
 
   // anhand gefundener I2C Devices die verfügbaren Ports bereit stellen
-  //const pcf_found = [65,72];
+  //const availablePorts = [65,72];
   response->println("const availablePorts = [");
 #ifdef USE_I2C
   uint8_t count=0;

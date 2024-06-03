@@ -1,6 +1,6 @@
 #include "valve.h"
 
-valve::valve() : enabled(true), active(false), ValveType(NONE), autooff(0), reverse(false) {
+valve::valve() : port1ms(10), port2ms(10), enabled(true), active(false), ValveType(NONE), autooff(0), reverse(false) {
   HWdev_t t;
   t.i2cAddress = 0;
   this->myHWdev = &t;

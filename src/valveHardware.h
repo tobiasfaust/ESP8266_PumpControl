@@ -52,11 +52,11 @@ class valveHardware {
     bool      IsValidPort(uint8_t Port);
     uint8_t   GetI2CAddress(uint8_t Port);
     
-    void      GetWebContent1Wire(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen);
-    
     bool      Get1WireActive(); // ist 1wire initialisiert?
     uint8_t   Get1WireCountDevices();
     uint8_t   Refresh1WireDevices();
+    
+    void      GetInitData1Wire(AsyncResponseStream* response);
     
     const uint8_t& GetPin1wire()      const {return pin_1wire;}
     

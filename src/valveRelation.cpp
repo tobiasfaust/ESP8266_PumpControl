@@ -13,8 +13,9 @@ void valveRelation::AddRelation(bool enabled, String TriggerTopic, uint8_t Port,
   rel.ActorPort = Port;
   rel.EnableByBypass = EnableByBypass;
   _relationen->push_back(rel);
-
-  if (enabled) { mqtt->Subscribe(TriggerTopic, MyMQTT::RELATION); }
+  if (enabled) { 
+    mqtt->Subscribe(TriggerTopic, MyMQTT::RELATION); 
+  }
 }
 
 void valveRelation::GetPortDependencies(std::vector<uint8_t>* Ports, String TriggerTopic) {
@@ -73,83 +74,58 @@ uint8_t valveRelation::CountActiveSubscribers(uint8_t ActorPort) {
   return count;
 }
 
-void valveRelation::StoreJsonConfig(String* json) {
-  File configFile = LittleFS.open("/Relations.json", "w");
-  if (!configFile) {
-    if (Config->GetDebugLevel() >=0) {Serial.print(F("failed to open Relations.json file for writing"));}
-  } else {  
-
-    if (!configFile.print(*json)) {
-        if (Config->GetDebugLevel() >=0) {Serial.println(F("Failed writing Relations.json to file"));}
-    }
-    configFile.close();
-    LoadJsonConfig();
-  }
-}
-
 void valveRelation::LoadJsonConfig() {
   _relationen->clear(); // leere den Valve Vector bevor neu befüllt wird
   _subscriber->clear();
   mqtt->ClearSubscriptions(MyMQTT::RELATION);
 
   bool loadDefaultConfig = false;
-  uint8_t counter = 0;
-  char buffer[100] = {0};
-  memset(buffer, 0, sizeof(buffer));
 
-  if (LittleFS.exists("/Relations.json")) {
+
+  if (LittleFS.exists("/relations.json")) {
     //file exists, reading and loading
-    if (Config->GetDebugLevel() >=3) Serial.println("reading Relations.json file....");
-    File configFile = LittleFS.open("/Relations.json", "r");
+    if (Config->GetDebugLevel() >=3) Serial.println("reading relations.json file....");
+    File configFile = LittleFS.open("/relations.json", "r");
     if (configFile) {
-      if (Config->GetDebugLevel() >=3) Serial.println("Relations.json is now open");
+      if (Config->GetDebugLevel() >=3) Serial.println("relations.json is now open");
 
       ReadBufferingStream stream{configFile, 64};
       stream.find("\"data\":[");
       do {
-        DynamicJsonDocument elem(512);
+        JsonDocument elem;
         DeserializationError error = deserializeJson(elem, stream); 
 
         if (error) {
           loadDefaultConfig = true;
           if (Config->GetDebugLevel() >=1) {
-            Serial.printf("Failed to parse Relations.json data: %s, load default config\n", error.c_str()); 
+            Serial.printf("Failed to parse relations.json data: %s, load default config\n", error.c_str()); 
           } 
         } else {
           // Print the result
           if (Config->GetDebugLevel() >=4) {Serial.println("parsing JSON ok"); }
           if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, Serial);} 
-          counter++;
 
           bool enabled = false;
           bool EnableByBypass = false;
           String SubTopic = (char*)0;
           uint8_t Port = 0;
 
-          sprintf(buffer, "active_%d", counter);
-          if (elem[buffer] && elem[buffer] == 1) {enabled = true;} else {enabled = false;}
-
-          sprintf(buffer, "mqtttopic_%d", counter);
-          if (elem.containsKey(buffer)) {SubTopic = elem[buffer].as<String>();}
-
-          sprintf(buffer, "port_%d", counter);
-          if (elem.containsKey(buffer) && elem[buffer].as<int>() > 0) { Port = elem[buffer].as<int>();}
-
-          sprintf(buffer, "EnableByBypass_%d", counter);
-          if (elem[buffer] && elem[buffer] == 1) {EnableByBypass = true;} else {EnableByBypass = false;}
+          if (elem.containsKey("active") && elem["active"].as<bool>()) {enabled = elem["active"].as<bool>();} else {enabled = false;}
+          if (elem.containsKey("mqtttopic")) {SubTopic = elem["mqtttopic"].as<String>();}
+          if (elem.containsKey("port") && elem["port"].as<int>() > 0) { Port = elem["port"].as<int>();}
+          if (elem.containsKey("EnableByBypass") && elem["EnableByBypass"].as<bool>()) {EnableByBypass = elem["EnableByBypass"].as<bool>();} else {EnableByBypass = false;}
 
           this->AddRelation(enabled, SubTopic, Port, EnableByBypass);
-          counter++;
         }
 
       } while (stream.findUntil(",","]"));
     } else {
       loadDefaultConfig = true;
-      if (Config->GetDebugLevel() >=1) {Serial.println("failed to load Relations.json, load default config");}
+      if (Config->GetDebugLevel() >=1) {Serial.println("failed to load relations.json, load default config");}
     }
   } else {
     loadDefaultConfig = true;
-    if (Config->GetDebugLevel() >=3) {Serial.println("Relations.json File not exists, load default config");}
+    if (Config->GetDebugLevel() >=3) {Serial.println("relations.json File not exists, load default config");}
   }
   
   if (loadDefaultConfig) {
@@ -163,58 +139,25 @@ void valveRelation::LoadJsonConfig() {
   _relationen->shrink_to_fit();
 }
 
-void valveRelation::GetWebContent(uint8_t* buffer, std::shared_ptr<uint16_t> processedRows, size_t& currentRow, size_t& len, size_t& maxLen) {
-  WEB("<p><input type='button' value='&#10010; add new Port' onclick='addrow(\"maintable\")'></p>");
-  WEB("<form id='DataForm'>");
-  WEB("<table id='maintable' class='editorDemoTable'>");
-  WEB("<thead>");
-  WEB("<tr>");
-  WEB("<td style='width: 25px;'>Nr</td>");
-  WEB("<td style='width: 25px;'>Active</td>");
-  WEB("<td style='width: 250px;'>Trigger Topic</td>");
-  WEB("<td style='width: 250px;'>Port</td>");
-  WEB("<td style='width: 25px;'>Enable if Bypass</td>");
-  WEB("<td style='width: 25px;'>Delete</td>");
-
-  WEB("</tr>");
-  WEB("</thead>");
-  WEB("<tbody>");
+void valveRelation::GetInitData(AsyncResponseStream *response) {
+  String ret;
+  JsonDocument json;
+  
+  json["data"].to<JsonObject>();
+  JsonArray row = json["data"]["rows"].to<JsonArray>();
 
   for (uint8_t i=0; i< _relationen->size(); i++) {
-    WEB("<tr>");
-    WEB("  <td>%d</td>", i+1);
-    WEB("  <td>");
-    WEB("    <div class='onoffswitch'>");
-    WEB("      <input type='checkbox' name='active_%d' class='onoffswitch-checkbox' id='myonoffswitch_%d' %s>", i, i, (_relationen->at(i).enabled?"checked":""));
-    WEB("      <label class='onoffswitch-label' for='myonoffswitch_%d'>", i);
-    WEB("        <span class='onoffswitch-inner'></span>");
-    WEB("        <span class='onoffswitch-switch'></span>");
-    WEB("      </label>");
-    WEB("    </div>");
-    WEB("  </td>");
-
-    WEB("  <td><input id='mqtttopic_%d' name='mqtttopic_%d' type='text' size='30' value='%s'/></td>", i, i, _relationen->at(i).TriggerTopic.c_str());
-    WEB("  <td><input id='ConfiguredPorts_%d' name='port_%d' type='number' min='10' max='999' value='%d'/></td>", i, i, _relationen->at(i).ActorPort);
-    
-    WEB("  <td>");
-    WEB("    <div class='onoffswitch'>");
-    WEB("      <input type='checkbox' name='EnableByBypass_%d' class='onoffswitch-checkbox' id='BypassOnOffSwitch_%d' %s>", i, i, (_relationen->at(i).EnableByBypass?"checked":""));
-    WEB("      <label class='onoffswitch-label' for='BypassOnOffSwitch_%d'>", i);
-    WEB("        <span class='onoffswitch-inner'></span>");
-    WEB("        <span class='onoffswitch-switch'></span>");
-    WEB("      </label>");
-    WEB("    </div>");
-    WEB("  </td>");
-        
-    WEB("  <td><input type='button' value='&#10008;' onclick='delrow(this)'></td>");
-    WEB("</tr>");
+    row[i]["active"] = (_relationen->at(i).enabled?1:0);
+    row[i]["mqtttopic"] = _relationen->at(i).TriggerTopic;
+    row[i]["ConfiguredPort"] = _relationen->at(i).ActorPort;
+    row[i]["EnableByBypass"] = (_relationen->at(i).EnableByBypass?1:0);
   }
 
-  WEB("</tbody>");
-  WEB("</table>");
-  WEB("</form><br />");
-  WEB("<form id='jsonform' action='StoreRelations' method='POST' onsubmit='return onSubmit(\"DataForm\", \"jsonform\", \"^myonoffswitch.*\")'>");
-  WEB("  <input type='text' id='json' name='json' />");
-  WEB("  <input type='submit' value='Speichern' />");
-  WEB("</form>");
+  json["response"].to<JsonObject>();
+  json["response"]["status"] = 1;
+  json["response"]["text"] = "successful";
+
+  serializeJson(json, ret);
+  response->print(ret);
 }
+

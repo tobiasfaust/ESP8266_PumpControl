@@ -26,14 +26,41 @@ enum stage_t {UNDEF, PROD, PRE, DEV};
 typedef struct {
     String name;
     String version;
-    uint32_t subversion;
-    uint32_t number;
+    uint32_t subversion = 0;
+    uint32_t number = 0;
     stage_t stage;
     String downloadURL;
   } release_t;
 
 class updater {
   
+  private:
+    WiFiClient*     WifiClient;
+    WM_httpUpdate*  httpUpdate;
+    
+    void        Update();
+    void        downloadJson();
+    void        parseJson(WiFiClient stream);
+    void        LoadJsonConfig();
+    void        StoreJsonConfig(release_t* r);
+    void        printRelease(release_t* r);
+    void        InstallLatestRelease();
+    release_t   GetLatestRelease()   const {return latestRelease;}
+    const uint8_t& GetDebugLevel()   const {return debuglevel;}
+
+    bool        DoUpdate = false;
+    bool        automode;
+    bool        updateError;
+    uint32_t    interval;
+    uint8_t     debuglevel;
+    String      json_url;
+    stage_t     stage;
+    release_t   currentRelease;
+    uint32_t    lastupdate;
+
+    release_t   latestRelease;
+    //std::vector<release_t>* releases = NULL;
+    
   public:
     updater();
     void        setIndexJson(String url);
@@ -44,41 +71,10 @@ class updater {
     release_t*  GetCurrentRelease();
     String      GetReleaseName();
     const uint32_t&  GetInterval()     const {return interval;}
-    std::vector<release_t>* GetReleases();
-    void        InstallRelease(uint32_t ReleaseNumber);
-    void        RefreshReleases();
     String      GetUpdateErrorString();
     stage_t     String2Stage(String s);
     String      Stage2String(stage_t s);
     void        SetDebugLevel(uint8_t value);
-
-  private:
-    //BearSSL::WiFiClientSecure* client;
-    WiFiClient*     WifiClient;
-    WM_httpUpdate*  httpUpdate;
-    
-    void        Update();
-    void        downloadJson();
-    void        parseJson(String* json);
-    //String*     getURLHostName(String* url);
-    //String*     getURLPath(String* url);
-    void        LoadJsonConfig();
-    void        StoreJsonConfig(release_t* r);
-    release_t   getLatestRelease();
-    void        printRelease(release_t* r);
-    const uint8_t& GetDebugLevel()   const {return debuglevel;}
-
-    uint8_t     debuglevel;
-    bool        DoUpdate = false;
-    bool        automode;
-    bool        updateError;
-    uint32_t    interval;
-    String      json_url;
-    stage_t     stage;
-    release_t   currentRelease;
-    uint32_t    lastupdate;
-
-    std::vector<release_t>* releases = NULL;
 };
 
 #endif
