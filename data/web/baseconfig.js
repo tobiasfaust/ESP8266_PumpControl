@@ -38,8 +38,8 @@ function FetchReleaseInfo() {
 function ProcessReleaseInfo(json) {
 	var _parent, _select, _optgroup_dev, _optgroup_pre, _optgroup_prd, _option;
   
-  _parent = document.getElementById('td_release');
-	_select = document.createElement('select');
+  _select = document.getElementById('releases');
+  _select.replaceChildren();
   
   _optgroup_dev = document.createElement('optgroup');
   _optgroup_pre = document.createElement('optgroup');
@@ -65,8 +65,6 @@ function ProcessReleaseInfo(json) {
   _select.add( _optgroup_prd );
   _select.add( _optgroup_pre );
   _select.add( _optgroup_dev ); 
-  
-  _parent.appendChild( _select)
 }
 
 function FetchRelease() {
