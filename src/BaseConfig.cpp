@@ -1,4 +1,4 @@
-#include "BaseConfig.h"
+#include "baseconfig.h"
 
 BaseConfig::BaseConfig(): 
   mqtt_server ("test.mosquitto.org"),

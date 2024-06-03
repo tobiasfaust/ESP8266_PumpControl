@@ -4,7 +4,7 @@
 
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
-#include "BaseConfig.h"
+#include "baseconfig.h"
 #include "valveRelation.h"
 #include "valve.h"
 #include "MyMqtt.h"

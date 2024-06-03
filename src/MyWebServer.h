@@ -17,7 +17,7 @@
 #include "_Release.h"
 #include "handleFiles.h"
 
-#include "BaseConfig.h"
+#include "baseconfig.h"
 #include "sensor.h"
 #include "valveStructure.h"
 #include "valveRelation.h"

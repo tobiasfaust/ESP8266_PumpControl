@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 #include "MyMqtt.h"
 #include "valveStructure.h"
-#include "BaseConfig.h"
+#include "baseconfig.h"
 
 #ifdef USE_ADS1115
   #include <ADS1115_WE.h> 

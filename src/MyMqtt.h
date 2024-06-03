@@ -6,7 +6,7 @@
 #include <ESPAsyncWiFiManager.h>    // https://github.com/alanswx/ESPAsyncWiFiManager
 #include <vector>
 #include <mqtt.h>
-#include "BaseConfig.h"
+#include "baseconfig.h"
 
 #ifdef USE_OLED
   #include "oled.h"

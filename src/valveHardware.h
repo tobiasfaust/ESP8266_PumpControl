@@ -2,7 +2,7 @@
 #define VALVEHARDWARE_H
   
 #include "CommonLibs.h"
-#include "BaseConfig.h"
+#include "baseconfig.h"
 #include <vector>
 #include <Wire.h>
 
