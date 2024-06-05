@@ -74,6 +74,7 @@ class updater {
     String      GetUpdateErrorString();
     stage_t     String2Stage(String s);
     String      Stage2String(stage_t s);
+    stage_t     Branch2Stage();
     void        SetDebugLevel(uint8_t value);
 };
 

@@ -219,11 +219,18 @@ function CreateSelectionListFromInputField(querySelector, jsonLists, blacklist) 
     for ( k = 0; k < jsonLists.length; k += 1 ) {  
       for ( i = 0; i < jsonLists[k].length; i += 1 ) {
           _option = document.createElement( 'option' );
-          _option.value = jsonLists[k][i].port; 
-          _option.text  = jsonLists[k][i].name;
-          if(objects[j].value == jsonLists[k][i].port) { _option.selected = true;}
-          if(blacklist && blacklist.indexOf(jsonLists[k][i].port)>=0) {
-          	_option.disabled = true;
+          var p,v;
+          if (jsonLists[k][i] instanceof Object) {
+          	p = jsonLists[k][i].port;
+            v = jsonLists[k][i].name;
+          } else {
+          	p = v = jsonLists[k][i];
+          }
+          _option.value = p; 
+          _option.text  = v;
+          if(objects[j].value == p) { _option.selected = true;}
+          if(blacklist && blacklist.indexOf(p)>=0) {
+            _option.disabled = true;
           }
           _select.add( _option ); 
       }

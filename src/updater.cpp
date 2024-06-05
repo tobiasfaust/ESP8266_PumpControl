@@ -43,6 +43,13 @@ String updater::Stage2String(stage_t s) {
   return "UNDEF";
 }
 
+stage_t updater::Branch2Stage() {
+  if (GIT_BRANCH == "master") return (stage_t)PROD;
+  if (GIT_BRANCH == "prelive") return (stage_t)PRE;
+  if (GIT_BRANCH == "development") return (stage_t)DEV;
+  return (stage_t)UNDEF;
+}
+
 String updater::GetUpdateErrorString() {
   return httpUpdate->getLastErrorString() + "(" + httpUpdate->getLastError() + ")";
 }
@@ -201,8 +208,9 @@ void updater::LoadJsonConfig() {
     r.version = Release;
     r.subversion = 0;
     r.number = 0;
-    r.stage = (stage_t)PROD;
+    r.stage = Branch2Stage();
     r.downloadURL = "";
+
     this->currentRelease = r;
     loadDefaultConfig = false; //set back
   }
