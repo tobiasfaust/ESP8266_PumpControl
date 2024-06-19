@@ -235,7 +235,7 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
       Config->LoadJsonConfig();
     } else if (subaction && subaction == "valveconfig") {
       VStruct->LoadJsonConfig();
-    } else if (subaction && subaction == "sensor") {
+    } else if (subaction && subaction == "sensorconfig") {
       LevelSensor->LoadJsonConfig();
     } else if (subaction && subaction == "relations") {
       ValveRel->LoadJsonConfig();

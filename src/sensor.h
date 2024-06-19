@@ -3,12 +3,23 @@
 
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
+#include <vector>
 #include "MyMqtt.h"
 #include "valveStructure.h"
 #include "baseconfig.h"
 
 #ifdef USE_ADS1115
   #include <ADS1115_WE.h> 
+
+  typedef struct {
+    ADS1115_WE device;
+    uint8_t i2cAddress;
+    String topic_chan1;
+    String topic_chan2;
+    String topic_chan3;
+    String topic_chan4;
+  } adsdev_t;
+
 #endif
 
 #ifdef USE_OLED
@@ -29,7 +40,7 @@ class sensor {
     void      init_analog(uint8_t pinAnalog) ;
     
     #ifdef USE_ADS1115
-      void      init_ads1115(uint8_t i2c, uint8_t port);
+      void      init_ads1115(uint8_t i2c, uint8_t port, String topic="");
     #endif
 
     void      setSensorType(sensorType_t t);
@@ -54,12 +65,16 @@ class sensor {
     void      loop_hcsr04();
     
     #ifdef USE_ADS1115
-      uint16_t  readADS1115Channel(ADS1115_MUX channel);
-      void      loop_ads1115();
+      std::vector<adsdev_t>* ads1115_devices  = NULL;
+      adsdev_t* getAdsDevice(uint8_t i2c);
+      ADS1115_MUX getAdsChannel(uint8_t port);
+
+      uint16_t  readADS1115Channel(adsdev_t* device, ADS1115_MUX channel);
+      void      loop_ads1115_sensor();
+      void      loop_ads1115_moisture();
     #endif
 
     sensorType_t   Type;
-    void* Device;
     
     uint16_t  measureDistMin;
     uint16_t  measureDistMax;
@@ -75,8 +90,10 @@ class sensor {
     uint8_t   threshold_min;
     uint8_t   threshold_max;
     String    externalSensor;
+    bool      moistureEnabled;
     
-    unsigned long previousMillis = 0;
+    unsigned long previousMillis_sensor = 0;
+    unsigned long previousMillis_moisture = 0;
 
     #ifdef USE_OLED
       OLED*    oled;

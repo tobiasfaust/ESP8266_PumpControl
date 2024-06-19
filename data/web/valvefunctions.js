@@ -2,12 +2,19 @@
 copy first row of table and add it as clone 
 *******************************/
 function addrow(tableID) { 
-  _table = document.getElementById(tableID);
-  _table.rows[1].style.display = '';
-  new_row = _table.rows[1].cloneNode(true);
+  var _table = document.getElementById(tableID);
+  var firstrow;
+  for( i=0; i< _table.rows.length; i++) { 
+    if (GetParentObject(_table.rows[i], "THEAD")) continue;
+    firstrow = i;
+  }
+  
+  _table.rows[firstrow].style.display = '';
+  var new_row = _table.rows[firstrow].cloneNode(true);
   _table.appendChild(new_row);
   validate_identifiers(tableID);
 }
+
 
 /*******************************
 delete a row in table
@@ -15,27 +22,37 @@ delete a row in table
 function delrow(object) { 
   var table = GetParentObject(object, 'TABLE');
   var rowIndex = GetParentObject(object, 'TR').rowIndex;
-  if (table.rows.length > 2) {
+  var rowFirst=0;
+  for( i=0; i< table.rows.length; i++) { 
+    if (GetParentObject(table.rows[i], "THEAD")) continue;
+    rowFirst = i; break;
+  }
+  if (table.rows.length > rowFirst+1) {
     // erste Zeile ist das Template + Header, darf nicht entfernt werden
     table.deleteRow(rowIndex)
     validate_identifiers(table.id);
   }
 }
 
+
 /*******************************
 recalculate all id´s, name´s
 *******************************/
 function validate_identifiers(tableID) {
   table = document.getElementById(tableID); 
-  for( i=1; i< table.rows.length; i++) { 
+  var counter=1;
+  for( i=0; i< table.rows.length; i++) { 
     row = table.rows[i];
-    row.cells[0].innerHTML = i; 
+    if (GetParentObject(row, "THEAD")) continue;
+    
+    row.cells[0].innerHTML = counter;
     objects = row.querySelectorAll('label, input, select, div, td');
     for( j=0; j< objects.length; j++) {
-      if (objects[j].name) {objects[j].name = objects[j].name.replace(/(\d+)/, i-1);}
-      if (objects[j].id) {objects[j].id = objects[j].id.replace(/(\d+)/, i-1);}
-      if (objects[j].htmlFor) {objects[j].htmlFor = objects[j].htmlFor.replace(/(\d+)/, i-1);}
+      if (objects[j].name) {objects[j].name = objects[j].name.replace(/(\d+)/, counter-1);}
+      if (objects[j].id) {objects[j].id = objects[j].id.replace(/(\d+)/, counter-1);}
+      if (objects[j].htmlFor) {objects[j].htmlFor = objects[j].htmlFor.replace(/(\d+)/, counter-1);}
     }
+    counter++;
   }
 }
 
