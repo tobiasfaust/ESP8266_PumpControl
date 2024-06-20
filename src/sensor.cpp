@@ -190,7 +190,13 @@ void sensor::loop_hcsr04() {
         if (chan == 3 && this->ads1115_devices->at(i).topic_chan4.length()==0) continue;
 
         raw = readADS1115Channel(&this->ads1115_devices->at(i), this->getAdsChannel(chan));
-        level = map(raw, 0, 3300, 0, 100); // 0-3.3V -> 0-100%
+        /* map voltage to a moisture-level
+        *  0-3.3V -> 0-100%
+        *  moisture sensor gets 100% = dry, but we want a moisture: 100% = wet  
+        */
+        level = 100 - map(raw, 0, 3300, 0, 100); // 0-3.3V -> 0-100%
+        if (Config->GetDebugLevel() >=4) Serial.printf("read moisture of ADS1115 (0x%02x) channel %d: raw: %d, calculated level: %d\n", this->ads1115_devices->at(i).i2cAddress, chan, raw, level);
+
         String topic = "";
         switch (chan) {
           case 0:
@@ -234,7 +240,7 @@ void sensor::loop_hcsr04() {
     device->device.setCompareChannels(channel);
     device->device.startSingleMeasurement();
     while(device->device.isBusy()){}
-    raw = device->device.getResultWithRange(-4096,4096); 
+    raw = device->device.getResultWithRange(-4096,4096, 3300); 
     return (uint16_t) abs(raw);
   }
 #endif
@@ -242,7 +248,7 @@ void sensor::loop_hcsr04() {
 void sensor::loop() {
   /*start measuring soil moisture, every 60sec */
 #ifdef USE_ADS1115
-  if (millis() - this->previousMillis_moisture > 60*1000) {
+  if (millis() - this->previousMillis_moisture > 5*1000) {
     this->previousMillis_moisture = millis();
     loop_ads1115_moisture();
   }
