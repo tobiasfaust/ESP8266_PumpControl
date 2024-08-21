@@ -19,11 +19,9 @@
 #include "baseconfig.h"
 #include "sensor.h"
 #include "valveStructure.h"
-#include "valveRelation.h"
 
 extern sensor* LevelSensor;
 extern valveStructure* VStruct;
-extern valveRelation* ValveRel;
 
 #ifdef USE_I2C
   extern i2cdetect* I2Cdetect;

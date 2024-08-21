@@ -107,36 +107,6 @@
             <td><input min='0' max='15' id='GpioPin_1' name='pinscl' type='number' /></td>
           </tr>
           
-            <tr id="tr_oledSelect">
-              <td colspan='2'>
-                <div class='inline'>
-                  <input type='radio' id='sel_oled1' name='sel_oled' value='none' onclick="radioselection([],['oled_0','oled_1'])"/>
-                  <label for='sel_oled1'>kein OLED</label>
-                </div>
-            
-                <div class='inline'>
-                  <input type='radio' id='sel_oled2' name='sel_oled' value='oled' onclick="radioselection(['oled_0','oled_1'],[])"/>
-                  <label for='sel_oled2'>mit OLED</label>
-                </div>
-              </td>
-            </tr>
-            
-            <tr id='oled_0'>
-              <td>i2c Adresse OLED</td>
-              <td><input id="i2caddress_oled" maxlength='2' name='i2coled' type='text'/></td>
-            </tr>
-            
-            <tr id='oled_1'>
-              <td>OLED Typ</td>
-              <td>
-                <select name='oled_type' size='1' style='width: 10em'>
-                  <template id='oled_rows'>
-                    <option id='oled_row'></option>
-                  </template>
-                </select>  
-              </td>
-            </tr>
-          
             <tr>
               <td colspan='2'>
                 <div class='inline'>

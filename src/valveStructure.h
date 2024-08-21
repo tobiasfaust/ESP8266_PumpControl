@@ -5,12 +5,10 @@
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
 #include "baseconfig.h"
-#include "valveRelation.h"
 #include "valve.h"
-#include "MyMqtt.h"
+#include "mqtt.h"
 
 extern BaseConfig* Config;
-extern valveRelation* ValveRel;
 
 #ifdef USE_I2C
   #include <i2cdetect.h>
@@ -40,7 +38,6 @@ class valveStructure {
   private:
     valve*    GetValveItem(uint8_t Port);
     valve*    GetValveItem(String SubTopic);
-    void      handleDeps(String topic, int value); //prueft die Relationen
     String    GetJsonKeyMatch(JsonDocument* doc, String key);
 
     valveHardware* ValveHW = NULL;

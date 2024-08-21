@@ -42,14 +42,8 @@ void sensor::init_hcsr04(uint8_t pinTrigger, uint8_t pinEcho) {
 void sensor::init_extern(String externalSensor) {
   this->setSensorType(EXTERN);
   this->measurecycle = 10;
-  mqtt->Subscribe(externalSensor, MyMQTT::SENSOR);
+  mqtt->Subscribe(externalSensor);
 }
-
-#ifdef USE_OLED
-void sensor::SetOled(OLED* oled) {
-  this->oled = oled;
-}
-#endif
 
 void sensor::setSensorType(sensorType_t t) {
   this->Type = t;
@@ -60,9 +54,6 @@ void sensor::SetLvl(uint8_t lvl) {
     dbg.printf("Sensor: Set Level from extern: %d\n", lvl);
   }
   this->level = lvl;
-  #ifdef USE_OLED
-    if(this->oled) this->oled->SetLevel(this->level);
-  #endif
 }
 
 void sensor::loop_analog() {
@@ -121,12 +112,6 @@ void sensor::loop() {
       if (this->raw > 0 )   { mqtt->Publish_Int((const char*)"raw", (int)this->raw, false); }
       if (this->level > 0 ) { mqtt->Publish_Int((const char*)"level", (int)this->level, false); }
     }
-    
-  #ifdef USE_OLED
-    if (this->Type != NONE && this->Type != EXTERN) {
-      if(this->oled) this->oled->SetLevel(this->level);
-    }
-  #endif
   
      if (this->Type != NONE && this->Type != EXTERN && Config->GetDebugLevel() >=4) {
       dbg.printf("measured sensor raw value: %d \n", this->raw);
@@ -135,7 +120,7 @@ void sensor::loop() {
 }
 
 void sensor::LoadJsonConfig() {
-  mqtt->ClearSubscriptions(MyMQTT::SENSOR);
+  mqtt->ClearSubscriptions();
 
   String selection = "";
 
@@ -159,7 +144,7 @@ void sensor::LoadJsonConfig() {
           // Print the result
           if (Config->GetDebugLevel() >=5) {dbg.println(F("parsing partial JSON of sensorconfig.json ok")); }
           if (Config->GetDebugLevel() >=5) {serializeJsonPretty(elem, dbg);} 
-          
+        
           if (elem.containsKey("measurecycle"))         { this->measurecycle = _max(elem["measurecycle"].as<int>(), 10);}
           if (elem.containsKey("measureDistMin"))       { this->measureDistMin = elem["measureDistMin"].as<int>();}
           if (elem.containsKey("measureDistMax"))       { this->measureDistMax = elem["measureDistMax"].as<int>();}

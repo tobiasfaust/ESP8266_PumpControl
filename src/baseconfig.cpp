@@ -8,9 +8,6 @@ BaseConfig::BaseConfig():
   mqtt_UseRandomClientID(true),
   keepalive(0),
   debuglevel(3),
-  enable_oled(false),
-  oled_type(0),
-  i2caddress_oled(60), //0x3C;
   enable_3wege(false),
   ventil3wege_port(0),
   max_parallel(0),
@@ -65,7 +62,6 @@ void BaseConfig::LoadJsonConfig() {
           if (elem.containsKey("debuglevel"))       { this->debuglevel = _max(elem["debuglevel"].as<int>(), 0);}
           if (elem.containsKey("pinsda"))           { this->pin_sda = (elem["pinsda"].as<int>()) - 200;}
           if (elem.containsKey("pinscl"))           { this->pin_scl = (elem["pinscl"].as<int>()) - 200;}
-          if (elem.containsKey("sel_oled"))         { if (strcmp(elem["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
           if (elem.containsKey("sel_3wege"))        { if (strcmp(elem["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
           if (elem.containsKey("sel_update"))       { if (strcmp(elem["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}}
           if (elem.containsKey("autoupdate_url"))   { this->autoupdate_url = elem["autoupdate_url"].as<String>(); }                   
@@ -73,8 +69,6 @@ void BaseConfig::LoadJsonConfig() {
                                                       if (elem["autoupdate_stage"] == "PRE")  { this->autoupdate_stage = (stage_t)PRE; }
                                                       if (elem["autoupdate_stage"] == "DEV")  { this->autoupdate_stage = (stage_t)DEV; }             
                                                     }
-          if (elem.containsKey("i2coled"))          { this->i2caddress_oled = strtoul(elem["i2coled"], NULL, 16);} // hex convert to dec    
-          if (elem.containsKey("oled_type"))        { this->oled_type = elem["oled_type"].as<int>();} 
           if (elem.containsKey("ventil3wege_port")) { this->ventil3wege_port = elem["ventil3wege_port"].as<int>();}
         }
       } while (stream.findUntil(",","]"));
@@ -119,9 +113,6 @@ void BaseConfig::GetInitData(AsyncResponseStream *response) {
   String ret;
   JsonDocument json;
   
-  std::ostringstream i2caddress_oled_hex;
-  i2caddress_oled_hex << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)this->i2caddress_oled;
-
   json["data"].to<JsonObject>();
   json["data"]["arch"] = ARCH;
   json["data"]["mqttroot"]    = this->mqtt_root;
@@ -149,27 +140,6 @@ void BaseConfig::GetInitData(AsyncResponseStream *response) {
   #else 
     json["data"]["tr_sda"]["className"] = "hide";
     json["data"]["tr_scl"]["className"] = "hide";
-  #endif
-
-  #ifdef USE_OLED
-    json["data"]["sel_oled1"] = ((this->enable_oled)?0:1);
-    json["data"]["sel_oled2"] = ((this->enable_oled)?1:0);
-    json["data"]["i2caddress_oled"] = i2caddress_oled_hex.str();
-
-    json["data"]["oled_rows"].to<JsonArray>();
-    json["data"]["oled_rows"][0]["oled_row"].to<JsonObject>();
-    json["data"]["oled_rows"][0]["oled_row"]["value"] = 0;
-    json["data"]["oled_rows"][0]["oled_row"]["selected"] = (this->oled_type==0?"selected":"");
-    json["data"]["oled_rows"][0]["oled_row"]["text"] = "OLED SSD1306";
-
-    json["data"]["oled_rows"][1]["oled_row"].to<JsonObject>();
-    json["data"]["oled_rows"][1]["oled_row"]["value"] = 1;
-    json["data"]["oled_rows"][1]["oled_row"]["selected"] = (this->oled_type==1?"selected":"");
-    json["data"]["oled_rows"][1]["oled_row"]["text"] = "OLED SH1106";
-  #else
-    json["data"]["tr_oledSelect"]["className"] = "hide";
-    json["data"]["oled_0"]["className"] = "hide";
-    json["data"]["oled_1"]["className"] = "hide";
   #endif
 
   json["data"]["sel_3wege_0"] = ((this->enable_3wege)?0:1);

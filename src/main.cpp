@@ -1,15 +1,10 @@
 #include <vector>
 #include "CommonLibs.h"
 #include "baseconfig.h"
-#include "valveStructure.h"
-#include "MyMqtt.h"
+#include "mqtt.h"
 #include "MyWebServer.h"
 #include "sensor.h"
 
-#ifdef USE_OLED
-  #include "oled.h"
-  OLED* oled = NULL;
-#endif
 
 #ifdef USE_I2C
   i2cdetect* I2Cdetect = NULL;
@@ -19,9 +14,8 @@ AsyncWebServer server(80);
 DNSServer dns;
 
 BaseConfig* Config = NULL;
-valveRelation* ValveRel = NULL;
 valveStructure* VStruct = NULL;
-MyMQTT* mqtt = NULL;
+MQTT* mqtt = NULL;
 sensor* LevelSensor = NULL;
 MyWebServer* mywebserver = NULL;
 
@@ -80,14 +74,8 @@ void setup() {
     Wire.begin(Config->GetPinSDA(), Config->GetPinSCL());
   #endif
 
-  #ifdef USE_OLED
-    oled = new OLED();    
-    if (Config->EnabledOled() ) oled->init(Config->GetPinSDA(), Config->GetPinSCL(), Config->GetI2cOLED());
-    oled->Enable(Config->EnabledOled());
-  #endif
-
   dbg.println("Starting Wifi and MQTT");
-  mqtt = new MyMQTT(&server, &dns, 
+  mqtt = new MQTT(&server, &dns, 
                     Config->GetMqttServer().c_str(), 
                     Config->GetMqttPort(), 
                     Config->GetMqttBasePath().c_str(), 
@@ -96,10 +84,6 @@ void setup() {
                     (char*)"password"
                   );
   
-  #ifdef USE_OLED
-    mqtt->SetOled(oled);
-  #endif
-
   mqtt->setCallback(myMQTTCallBack);
 
   #ifdef USE_I2C
@@ -109,13 +93,7 @@ void setup() {
   
   dbg.println("Starting Sensor");
   LevelSensor = new sensor();
-  #ifdef USE_OLED
-    LevelSensor->SetOled(oled);
-  #endif
-
-  dbg.println("Starting Valve Relations");
-  ValveRel = new valveRelation();
-
+  
   dbg.println("Starting Valve Structure");
   VStruct = new valveStructure(Config->GetPinSDA(), Config->GetPinSCL());
 
@@ -133,8 +111,4 @@ void loop() {
   LevelSensor->loop();
   mywebserver->loop();
   Config->loop();
-
-  #ifdef USE_OLED
-    oled->loop();  
-  #endif
 }

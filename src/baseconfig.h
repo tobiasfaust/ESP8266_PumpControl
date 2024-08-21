@@ -15,9 +15,6 @@ class BaseConfig {
 
     const uint8_t&  GetPinSDA()      const {return pin_sda;}
     const uint8_t&  GetPinSCL()      const {return pin_scl;}
-    const uint8_t&  GetI2cOLED()     const {return i2caddress_oled;}
-    const bool&     EnabledOled()    const {return enable_oled;}
-    const uint8_t&  GetOledType()   const {return oled_type;}
     const String&   GetMqttServer()  const {return mqtt_server;}
     const uint16_t& GetMqttPort()   const {return mqtt_port;}
     const String&   GetMqttUsername()const {return mqtt_username;}
@@ -49,9 +46,6 @@ class BaseConfig {
     uint8_t   debuglevel;
     uint8_t   pin_sda;
     uint8_t   pin_scl;
-    bool      enable_oled;
-    uint8_t   oled_type;
-    uint8_t   i2caddress_oled;
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;

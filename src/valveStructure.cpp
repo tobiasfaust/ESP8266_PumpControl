@@ -68,30 +68,7 @@ void valveStructure::ReceiveMQTT(String topic, int value) {
   if (topic.startsWith(mqtt->getTopic("", false)) && topic.endsWith("on-for-timer")) { this->OnForTimer(SubTopic, value); }
   if (topic.startsWith(mqtt->getTopic("", false)) && topic.endsWith("setstate") && value==1) { this->SetOn(SubTopic); }
   if (topic.startsWith(mqtt->getTopic("", false)) && topic.endsWith("setstate") && value==0) { this->SetOff(SubTopic); }
-  if (topic.startsWith(mqtt->getTopic("", false)) && topic.endsWith("state") && value==0) { this->SetOff(SubTopic); }
-  if (topic.endsWith("state")) { this->handleDeps(topic, value); } 
-}
-
-void valveStructure::handleDeps(String topic, int value) {
-  // topic: PumpControlDev/Valve1/state
-  // Check auf Ventile, die auf Relationen ansprechen sollen
-  String BaseTopic(topic); // das komplette topic ohne Kommando, zb. "PumpControlDev/Valve1"
-  BaseTopic = BaseTopic.substring(0, BaseTopic.lastIndexOf("/"));
-  
-  std::vector<uint8_t> Ports;
-  ValveRel->GetPortDependencies(&Ports, BaseTopic);
-  for (uint8_t i=0; i<Ports.size(); i++) {
-    if (value == 1 && topic.endsWith("state")) {
-      if (!ValveRel->CheckEnabledByBypass(Ports.at(i), BaseTopic) || !Config->Enabled3Wege() || 
-         (ValveRel->CheckEnabledByBypass(Ports.at(i), BaseTopic) && Config->Enabled3Wege() && this->GetState(Config->Get3WegePort()))) { 
-        this->SetOn(Ports.at(i));
-        ValveRel->AddSubscriber(Ports.at(i), BaseTopic);
-      }
-    } else if (value == 0 && topic.endsWith("state")) {
-      ValveRel->DelSubscriber(BaseTopic);
-      if(ValveRel->CountActiveSubscribers(Ports.at(i)) == 0) { this->SetOff(Ports.at(i)); }
-    }
-  }
+  if (topic.startsWith(mqtt->getTopic("", false)) && topic.endsWith("state") && value==0) { this->SetOff(SubTopic); } 
 }
 
 valve* valveStructure::GetValveItem(uint8_t Port) {
@@ -254,19 +231,8 @@ void valveStructure::getWebJsParameter(AsyncResponseStream *response) {
 #ifdef USE_I2C
   uint8_t count=0;
   for (uint8_t p=1; p<=254; p++) {
-    if (ValveHW->IsValidPort(p) && (I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p)) || ValveHW->GetI2CAddress(p) == 0x01) && (!Config->EnabledOled() || Config->GetI2cOLED()!=ValveHW->GetI2CAddress(p))) {
-      // i2cDetect muss den ic2Port finden oder es ist 0x01 OneWire 
-      //ohne die OLED i2c Adresse
-      response->printf("%s%d", (count>0?",":"") , p);
-      count++;
-    }
-  }
-#elif defined(USE_ONEWIRE)
-  uint8_t count=0;
-  for (uint8_t p=1; p<=254; p++) {
-    if (ValveHW->IsValidPort(p) && ValveHW->GetI2CAddress(p) == 0x01 && (!Config->EnabledOled() || Config->GetI2cOLED()!=ValveHW->GetI2CAddress(p))) {
-      // i2cDetect muss den ic2Port finden oder es ist 0x01 OneWire 
-      //ohne die OLED i2c Adresse
+    if (ValveHW->IsValidPort(p) && (I2Cdetect->i2cIsPresent(ValveHW->GetI2CAddress(p))) ) {
+      // i2cDetect muss den ic2Port finden 
       response->printf("%s%d", (count>0?",":"") , p);
       count++;
     }

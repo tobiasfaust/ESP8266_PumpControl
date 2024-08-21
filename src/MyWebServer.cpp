@@ -212,9 +212,7 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
       VStruct->GetInitData(response);
     }else if (subaction && subaction == "sensorconfig") {
       LevelSensor->GetInitData(response);
-    } else if (subaction && subaction == "relations") {
-      ValveRel->GetInitData(response);
-    }
+    } 
   
   } else if(action && action == "ReloadConfig")  {
     if (subaction && subaction == "baseconfig") {
@@ -223,9 +221,7 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
       VStruct->LoadJsonConfig();
     } else if (subaction && subaction == "sensorconfig") {
       LevelSensor->LoadJsonConfig();
-    } else if (subaction && subaction == "relations") {
-      ValveRel->LoadJsonConfig();
-    }
+    } 
   
     jsonReturn["response"]["status"] = 1;
     jsonReturn["response"]["text"] = "new config reloaded sucessfully";

@@ -94,6 +94,6 @@ class MQTT: PubSubClient {
     eth_shield_t*     GetEthShield(String ShieldName);
 };
 
-//extern MQTT* mqtt;
+extern MQTT* mqtt;
 
 #endif

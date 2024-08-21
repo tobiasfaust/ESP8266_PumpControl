@@ -15,8 +15,7 @@ Release 3.0.0:
   - create new Webpage to maintain the FS-files, editing json registers on-the-fly is now possible
   - add ADS1115 moisture functionality
   - add page loader
-  - Remove 1Wire 
-  - Remove ADS1115 Support
+  - Remove 1Wire, ADS1115, Oled, Relation Support
 
 Release 2.5.3:
   - Bug: Oled Typ selectionbox in GUI will now list correct

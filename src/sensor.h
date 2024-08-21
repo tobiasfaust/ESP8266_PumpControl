@@ -4,13 +4,9 @@
 #include "CommonLibs.h"
 #include <ArduinoJson.h>
 #include <vector>
-#include "MyMqtt.h"
-#include "valveStructure.h"
+#include "mqtt.h"
 #include "baseconfig.h"
-
-#ifdef USE_OLED
-  #include "oled.h"
-#endif
+#include "valveStructure.h"
 
 extern valveStructure* VStruct;
 extern BaseConfig* Config;
@@ -37,10 +33,6 @@ class sensor {
     const uint8_t& GetThresholdMin()const {return threshold_min;}
     const uint8_t& GetThresholdMax()const {return threshold_max;}
     const String&  GetExternalSensor() const {return externalSensor;}
- 
-    #ifdef USE_OLED
-      void      SetOled(OLED* oled);
-    #endif
 
   private:
     void      loop_analog();
@@ -65,10 +57,6 @@ class sensor {
     unsigned long previousMillis_sensor = 0;
     unsigned long previousMillis_moisture = 0;
 
-    #ifdef USE_OLED
-      OLED*    oled;
-    #endif
-    
 };
 
 #endif
