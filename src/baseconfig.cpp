@@ -8,10 +8,8 @@ BaseConfig::BaseConfig():
   mqtt_UseRandomClientID(true),
   keepalive(0),
   debuglevel(3),
-  pin_1wire(0),
   enable_oled(false),
   oled_type(0),
-  enable_1wire(false),
   i2caddress_oled(60), //0x3C;
   enable_3wege(false),
   ventil3wege_port(0),
@@ -67,9 +65,7 @@ void BaseConfig::LoadJsonConfig() {
           if (elem.containsKey("debuglevel"))       { this->debuglevel = _max(elem["debuglevel"].as<int>(), 0);}
           if (elem.containsKey("pinsda"))           { this->pin_sda = (elem["pinsda"].as<int>()) - 200;}
           if (elem.containsKey("pinscl"))           { this->pin_scl = (elem["pinscl"].as<int>()) - 200;}
-          if (elem.containsKey("pin1wire"))         { this->pin_1wire = (elem["pin1wire"].as<int>()) - 200;}
           if (elem.containsKey("sel_oled"))         { if (strcmp(elem["sel_oled"], "none")==0) { this->enable_oled=false;} else {this->enable_oled=true;}}
-          if (elem.containsKey("sel_1wire"))        { if (strcmp(elem["sel_1wire"], "none")==0) { this->enable_1wire=false;} else {this->enable_1wire=true;}}
           if (elem.containsKey("sel_3wege"))        { if (strcmp(elem["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
           if (elem.containsKey("sel_update"))       { if (strcmp(elem["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}}
           if (elem.containsKey("autoupdate_url"))   { this->autoupdate_url = elem["autoupdate_url"].as<String>(); }                   
@@ -153,15 +149,6 @@ void BaseConfig::GetInitData(AsyncResponseStream *response) {
   #else 
     json["data"]["tr_sda"]["className"] = "hide";
     json["data"]["tr_scl"]["className"] = "hide";
-  #endif
-
-  #ifdef USE_ONEWIRE
-    json["data"]["sel_ow1"] = ((this->enable_1wire)?0:1);
-    json["data"]["sel_ow2"] = ((this->enable_1wire)?1:0);
-    json["data"]["GpioPin_3"] = this->pin_1wire + 200;
-  #else
-    json["data"]["tr_owSelect"]["className"] = "hide";
-    json["data"]["onewire_0"]["className"] = "hide";
   #endif
 
   #ifdef USE_OLED

@@ -14,13 +14,9 @@
   #include "TB6612.h"
 #endif
 
-#ifdef USE_ONEWIRE
-  #include "OW2408.h"
-#endif
-
 extern BaseConfig* Config;
 
-enum HWType_t {ONBOARD, PCF, TB6612, OW2408};
+enum HWType_t {ONBOARD, PCF, TB6612};
 
 typedef struct {
     void* Device;
@@ -46,19 +42,10 @@ class valveHardware {
     bool      RegisterPort(HWdev_t*& dev, uint8_t Port);
     bool      RegisterPort(HWdev_t*& dev, uint8_t Port, bool reverse);
 
-    void      add1WireDevice(uint8_t pin_1wire);
     void      SetPort(HWdev_t* dev, uint8_t Port, bool state, bool reverse);
     void      SetPort(HWdev_t* dev, uint8_t Port1, uint8_t Port2, bool state, bool reverse, uint16_t duration);
     bool      IsValidPort(uint8_t Port);
     uint8_t   GetI2CAddress(uint8_t Port);
-    
-    bool      Get1WireActive(); // ist 1wire initialisiert?
-    uint8_t   Get1WireCountDevices();
-    uint8_t   Refresh1WireDevices();
-    
-    void      GetInitData1Wire(AsyncResponseStream* response);
-    
-    const uint8_t& GetPin1wire()      const {return pin_1wire;}
     
   private:
     
@@ -70,8 +57,6 @@ class valveHardware {
 
     uint8_t pin_sda = SDA;
     uint8_t pin_scl = SCL;
-    uint8_t pin_1wire = 0;
-    //bool     1wireInitDone;
     
     void    setHWType(HWdev_t* dev);
     void    ConnectHWdevice(HWdev_t* dev);

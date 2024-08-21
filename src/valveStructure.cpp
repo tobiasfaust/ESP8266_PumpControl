@@ -3,7 +3,6 @@
 valveStructure::valveStructure(uint8_t sda, uint8_t scl) :
   pin_sda(sda), pin_scl(scl) {
   this->ValveHW = new valveHardware(sda, scl);
-  if (Config->Enabled1Wire()) { this->ValveHW->add1WireDevice(Config->GetPin1Wire());}
   
   this->Valves = std::make_shared<std::vector<valve>>(); 
   
@@ -58,11 +57,6 @@ void valveStructure::SetEnable(uint8_t Port, bool state) {
 void valveStructure::loop() {
   for (uint8_t i=0; i<Valves->size(); i++) {
     Valves->at(i).loop();
-  }
-
-  if (Config->Enabled1Wire() && /*this->ValveHW->Get1WireActive() &&*/ Config->GetPin1Wire() != this->ValveHW->GetPin1wire()) {
-    dbg.println("Der 1Wire hat sich geändert, initiiere den 1Wire Bus neu.....");
-    ValveHW->add1WireDevice(Config->GetPin1Wire());
   }
 }
 
@@ -120,14 +114,6 @@ uint8_t valveStructure::CountActiveThreads() {
     if (Valves->at(i).GetActive() && (Valves->at(i).GetPort1() != Config->Get3WegePort() || !Config->Enabled3Wege() )) {count++;}
   }
   return count;
-}
-
-uint8_t valveStructure::Get1WireCountDevices() {
-  return this->ValveHW->Get1WireCountDevices();
-}
-
-uint8_t valveStructure::Refresh1WireDevices() {
-  return this->ValveHW->Refresh1WireDevices();
 }
 
 /* load json config from littlefs */
@@ -256,15 +242,11 @@ void valveStructure::GetInitData(AsyncResponseStream* response) {
   response->print(ret);
 }
 
-void valveStructure::GetInitData1Wire(AsyncResponseStream* response) {
-  if (Config->Enabled1Wire()) { ValveHW->GetInitData1Wire(response); }
-}
-
 void valveStructure::getWebJsParameter(AsyncResponseStream *response) {
   
   // bereits belegte Ports, können nicht ausgewählt werden (zb.i2c-ports)
   // const gpio_disabled = Array(0,4);
-  response->printf("const gpio_disabled = [%d,%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200, (Config->Enabled1Wire()?Config->GetPin1Wire() + 200:0));
+  response->printf("const gpio_disabled = [%d,%d];\n", Config->GetPinSDA() + 200, Config->GetPinSCL() + 200);
 
   // anhand gefundener I2C Devices die verfügbaren Ports bereit stellen
   //const availablePorts = [65,72];

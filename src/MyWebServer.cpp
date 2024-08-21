@@ -210,8 +210,6 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
       Config->GetInitData(response);
     } else if (subaction && subaction == "valveconfig") {
       VStruct->GetInitData(response);
-    } else if (subaction && subaction == "1wireconfig") {
-      VStruct->GetInitData1Wire(response);
     }else if (subaction && subaction == "sensorconfig") {
       LevelSensor->GetInitData(response);
     } else if (subaction && subaction == "relations") {
@@ -282,19 +280,6 @@ void MyWebServer::handleAjax(AsyncWebServerRequest *request) {
       response->print(ret);
 #endif
 
-#ifdef USE_ONEWIRE
-  } else if (action && action == "Refresh1Wire") {
-      uint8_t ow = VStruct->Refresh1WireDevices();  
-      snprintf(buffer, sizeof(buffer), "%d (%d)", ow, ow * 8);
-      
-      jsonReturn["data"].to<JsonObject>();
-      jsonReturn["data"]["show1Wire"] = buffer;
-      jsonReturn["response"]["status"] = 1;
-      jsonReturn["response"]["text"] = "successful";
-      serializeJson(jsonReturn, ret);
-      response->print(ret);
-  #endif
-
   } else {
     snprintf(buffer, sizeof(buffer), "Ajax Command unknown: %s - %s", action.c_str(), subaction.c_str());
     jsonReturn["response"]["status"] = 0;
@@ -321,16 +306,6 @@ void MyWebServer::GetInitDataNavi(AsyncResponseStream *response){
   json["data"]["releasedate"] = __DATE__;
   json["data"]["releasetime"] = __TIME__;
 
-  #ifdef USE_ONEWIRE
-    if (VStruct->Get1WireCountDevices()==0) { 
-      json["data"]["td_1wire_0"]["className"] = "hide"; 
-      json["data"]["1wireconfig"]["className"] = "hide";
-    }
-  #else
-    json["data"]["td_1wire_0"]["className"] = "hide";
-    json["data"]["1wireconfig"]["className"] = "hide";
-  #endif
-
   json["response"].to<JsonObject>();
   json["response"]["status"] = 1;
   json["response"]["text"] = "successful";
@@ -355,16 +330,6 @@ void MyWebServer::GetInitDataStatus(AsyncResponseStream *response) {
     json["data"]["showI2C"] = I2Cdetect->i2cGetAddresses();
   #else
     json["data"]["tr_i2c"]["className"] = "hide";
-  #endif
-
-  #ifdef USE_ONEWIRE
-    if (Config->Enabled1Wire()) {
-      json["data"]["show1Wire"] = VStruct->Get1WireCountDevices()*8;
-    } else { 
-      json["data"]["tr_1wire"]["className"] = "hide";
-    }
-  #else
-    json["data"]["tr_1wire"]["className"] = "hide";
   #endif
 
   if (LevelSensor->GetType() != NONE && LevelSensor->GetType() != EXTERN) { 

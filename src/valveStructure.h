@@ -31,15 +31,11 @@ class valveStructure {
     bool      GetEnabled(uint8_t Port);
     void      SetEnable(uint8_t Port, bool state);
     uint8_t   CountActiveThreads();
-    
     void      GetInitData(AsyncResponseStream* response);
-    void      GetInitData1Wire(AsyncResponseStream* response);
-
     void      LoadJsonConfig();
     void      getWebJsParameter(AsyncResponseStream *response);
     void      ReceiveMQTT(String topic, int value);
-    uint8_t   Get1WireCountDevices();
-    uint8_t   Refresh1WireDevices();
+
     
   private:
     valve*    GetValveItem(uint8_t Port);

@@ -1,5 +1,5 @@
 Release 3.0.0:
-  - +++++++ NO SUPPORT FOR ESP8266 anymore +++++++
+  - +++++++ This Repo is only for ESP8266, for ESP32 use the other Repo +++++++
   - change to Async Webserver
   - change ArduinoJson version 5.x to 6.x
   - change platform from Arduino-IDE to PlatformIO
@@ -15,7 +15,8 @@ Release 3.0.0:
   - create new Webpage to maintain the FS-files, editing json registers on-the-fly is now possible
   - add ADS1115 moisture functionality
   - add page loader
-  - add WebSerial as replacement for classic serial console
+  - Remove 1Wire 
+  - Remove ADS1115 Support
 
 Release 2.5.3:
   - Bug: Oled Typ selectionbox in GUI will now list correct
