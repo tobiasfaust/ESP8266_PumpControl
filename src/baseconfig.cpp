@@ -88,7 +88,6 @@ const String BaseConfig::GetReleaseName() {
 void BaseConfig::loop() {  
 }
 
-
 /* https://cpp4arduino.com/2018/11/06/what-is-heap-fragmentation.html*/
 size_t BaseConfig::getFragmentation() {
   return 100 - ESP_GetMaxFreeAvailableBlock() * 100 / ESP.getFreeHeap();
