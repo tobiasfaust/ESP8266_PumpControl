@@ -47,7 +47,6 @@ class BaseConfig {
     bool      enable_3wege; // wechsel Regen- /Trinkwasser
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;
-    bool      enable_autoupdate;
     String    autoupdate_url;
     bool      useETH;  // otherwise use WIFI
     String    LANBoard;

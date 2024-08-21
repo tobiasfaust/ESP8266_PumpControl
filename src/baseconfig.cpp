@@ -59,7 +59,6 @@ void BaseConfig::LoadJsonConfig() {
           if (elem.containsKey("pinsda"))           { this->pin_sda = (elem["pinsda"].as<int>()) - 200;}
           if (elem.containsKey("pinscl"))           { this->pin_scl = (elem["pinscl"].as<int>()) - 200;}
           if (elem.containsKey("sel_3wege"))        { if (strcmp(elem["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
-          if (elem.containsKey("sel_update"))       { if (strcmp(elem["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}}
           if (elem.containsKey("autoupdate_url"))   { this->autoupdate_url = elem["autoupdate_url"].as<String>(); }                   
           if (elem.containsKey("ventil3wege_port")) { this->ventil3wege_port = elem["ventil3wege_port"].as<int>();}
         }
@@ -82,7 +81,7 @@ void BaseConfig::LoadJsonConfig() {
 }
 
 const String BaseConfig::GetReleaseName() {
-  return Release;
+  return String(Release) + "(@" + GIT_BRANCH + ")"; 
 }
 
 void BaseConfig::loop() {  
