@@ -81,7 +81,7 @@ void BaseConfig::LoadJsonConfig() {
   }
 }
 
-String BaseConfig::GetReleaseName() {
+const String BaseConfig::GetReleaseName() {
   return Release;
 }
 

@@ -29,7 +29,7 @@ class BaseConfig {
     const bool&     GetUseETH()        const { return useETH; }
     void            GetInitData(AsyncResponseStream* response);
     const String&   GetLANBoard()      const {return LANBoard;}
-    String          GetReleaseName();
+    const String    GetReleaseName();
     size_t          getFragmentation();
      
   private:
