@@ -35,8 +35,9 @@ void MyWebServer::handle_update_progress(AsyncWebServerRequest *request, String 
   
   if(!index){
       dbg.printf("Update Start: %s\n", filename.c_str());
-      //Update.runAsync(true);
-
+      #ifdef ESP8266
+        Update.runAsync(true);
+      #endif
       /*
       if (filename == "filesystem") {
         if(!Update.begin(LittleFS.totalBytes(), U_SPIFFS)) {
@@ -44,7 +45,8 @@ void MyWebServer::handle_update_progress(AsyncWebServerRequest *request, String 
         }
       } else {
       */
-      if(!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)){
+      //content_len = request->contentLength()
+      if(!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000), U_FLASH){
           Update.printError(Serial);
       }
       //}
@@ -53,10 +55,13 @@ void MyWebServer::handle_update_progress(AsyncWebServerRequest *request, String 
     if(Update.write(data, len) != len){
         Update.printError(Serial);
     }
+  }  else {
+    Serial.printf("Progress: %d%%\n", (Update.progress()*100)/Update.size());
   }
+
   if(final){
     if(Update.end(true)){
-      dbg.printf("Update Success: %uB\n", index+len);
+      dbg.printf("Update Success: %u Bytes\n", index+len);
       this->DoReboot = true;//Set flag so main loop can issue restart call
     } else {
       Update.printError(Serial);
