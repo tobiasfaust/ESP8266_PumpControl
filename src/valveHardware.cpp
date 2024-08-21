@@ -62,6 +62,7 @@ HWdev_t* valveHardware::getI2CDevice(uint8_t i2cAddress) {
     }
   }
   return NULL;
+  return NULL;
 }
 
 void valveHardware::ConnectHWdevice(HWdev_t* dev) {

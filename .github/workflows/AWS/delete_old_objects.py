@@ -1,6 +1,5 @@
 import boto3
 import re
-#from pprint import pprint;
 
 s3 = boto3.client('s3')
 
@@ -19,7 +18,7 @@ def delete_old_objects(bucketname, targetpath):
             except AttributeError:
                 found = '0' # apply your error handling
     
-            o['MyNum'] = int(found)
+            o['MyNum'] = found
 
         # sortieren nach Dateidatum, fehlerhaft bei wiederherstellung aus Backup!
         #files = sorted(objs, key=get_last_modified, reverse=True) 
@@ -30,14 +29,10 @@ def delete_old_objects(bucketname, targetpath):
         # hilfstabellen
         hashtable = {}
         hashtable = {'ESP8266': {'DEV':[],'PRE':[],'PROD':[]}, 
-                     'ESP32': {'DEV':[],'PRE':[],'PROD':[]},
-                     'ESP32-S2': {'DEV':[],'PRE':[],'PROD':[]},
-                     'ESP32-S3': {'DEV':[],'PRE':[],'PROD':[]},
-                     'ESP32-C3': {'DEV':[],'PRE':[],'PROD':[]}
+                     'ESP32': {'DEV':[],'PRE':[],'PROD':[]}
                     }
         
         for key in files:
-            #pprint (key)
             key['save']=0
             
             for arch in hashtable.keys():

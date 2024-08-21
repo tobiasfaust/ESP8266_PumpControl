@@ -10,6 +10,7 @@
 
 ![ESP8266 Architecture](https://img.shields.io/badge/Architecture-ESP8266-blue)
 ![ESP32 Architecture](https://img.shields.io/badge/Architecture-ESP32-blue)
+![ESP32 Architecture](https://img.shields.io/badge/Architecture-ESP32-blue)
 ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/tobiasfaust/ESP8266_PumpControl?include_prereleases&style=plastic)
 ![GitHub All Releases](https://img.shields.io/github/downloads/tobiasfaust/ESP8266_PumpControl/total?style=plastic)
 
