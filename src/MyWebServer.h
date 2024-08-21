@@ -13,7 +13,6 @@
 #include <ArduinoJson.h>
 #include "uptime.h" // https://github.com/YiannisBourkelis/Uptime-Library/
 #include "uptime_formatter.h"
-#include "_Release.h"
 #include "handleFiles.h"
 
 #include "baseconfig.h"

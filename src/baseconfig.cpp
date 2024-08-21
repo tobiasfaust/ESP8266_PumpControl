@@ -11,8 +11,6 @@ BaseConfig::BaseConfig():
   enable_3wege(false),
   ventil3wege_port(0),
   max_parallel(0),
-  enable_autoupdate(false),
-  autoupdate_stage((stage_t)PROD),
   useETH(0)
   {
   
@@ -23,8 +21,6 @@ BaseConfig::BaseConfig():
     this->pin_sda = 21;
     this->pin_scl = 22,
   #endif
-
-  ESPUpdate = new updater;
   
   LoadJsonConfig();
 }
@@ -65,10 +61,6 @@ void BaseConfig::LoadJsonConfig() {
           if (elem.containsKey("sel_3wege"))        { if (strcmp(elem["sel_3wege"], "none")==0) { this->enable_3wege=false;} else {this->enable_3wege=true;}}
           if (elem.containsKey("sel_update"))       { if (strcmp(elem["sel_update"], "manu")==0) { this->enable_autoupdate=false;} else {this->enable_autoupdate=true;}}
           if (elem.containsKey("autoupdate_url"))   { this->autoupdate_url = elem["autoupdate_url"].as<String>(); }                   
-          if (elem.containsKey("autoupdate_stage")) { if (elem["autoupdate_stage"] == "PROD") { this->autoupdate_stage = (stage_t)PROD; }
-                                                      if (elem["autoupdate_stage"] == "PRE")  { this->autoupdate_stage = (stage_t)PRE; }
-                                                      if (elem["autoupdate_stage"] == "DEV")  { this->autoupdate_stage = (stage_t)DEV; }             
-                                                    }
           if (elem.containsKey("ventil3wege_port")) { this->ventil3wege_port = elem["ventil3wege_port"].as<int>();}
         }
       } while (stream.findUntil(",","]"));
@@ -83,24 +75,17 @@ void BaseConfig::LoadJsonConfig() {
     this->autoupdate_url = UPDATE_URL;
   }
 
-  ESPUpdate->setAutoMode(this->enable_autoupdate);
-  ESPUpdate->setIndexJson(this->autoupdate_url);
-  ESPUpdate->setStage(this->autoupdate_stage);
-  ESPUpdate->SetDebugLevel(this->debuglevel);
-
   // Data Cleaning
   if(this->mqtt_basepath.endsWith("/")) {
     this->mqtt_basepath = this->mqtt_basepath.substring(0, this->mqtt_basepath.length()-1); 
   }
 }
 
-
 String BaseConfig::GetReleaseName() {
-  return ESPUpdate->GetReleaseName();
+  return Release;
 }
 
-void BaseConfig::loop() {
-  ESPUpdate->loop();  
+void BaseConfig::loop() {  
 }
 
 
@@ -145,13 +130,6 @@ void BaseConfig::GetInitData(AsyncResponseStream *response) {
   json["data"]["sel_3wege_0"] = ((this->enable_3wege)?0:1);
   json["data"]["sel_3wege_1"] = ((this->enable_3wege)?1:0);
   json["data"]["ConfiguredPort_0"] = this->ventil3wege_port;
-  json["data"]["sel_update_0"] = ((this->enable_autoupdate)?1:0);
-  json["data"]["sel_update_1"] = ((this->enable_autoupdate)?0:1);
-
-  json["data"]["au_stage_prod"]["selected"] = (this->autoupdate_stage == (stage_t)PROD?"selected":"");
-  json["data"]["au_stage_pre"]["selected"] =  (this->autoupdate_stage == (stage_t)PRE?"selected":"");
-  json["data"]["au_stage_dev"]["selected"] =  (this->autoupdate_stage == (stage_t)DEV?"selected":"");
-  
   json["js"]["update_url"] = this->autoupdate_url;
 
   json["response"].to<JsonObject>();

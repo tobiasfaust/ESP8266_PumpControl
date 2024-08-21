@@ -3,8 +3,7 @@
 
 #include "CommonLibs.h"
 #include "ArduinoJson.h"
-#include "updater.h"
-#include <iomanip>  // needed by setw / setfill
+#include "_Release.h"
 
 class BaseConfig {
 
@@ -27,11 +26,10 @@ class BaseConfig {
     const uint8_t&  GetMaxParallel() const {return max_parallel;}
     const uint16_t& GetKeepAlive()   const {return keepalive;}
     const uint8_t&  GetDebugLevel()   const {return debuglevel;}
-    String          GetReleaseName();
     const bool&     GetUseETH()        const { return useETH; }
     void            GetInitData(AsyncResponseStream* response);
     const String&   GetLANBoard()      const {return LANBoard;}
-
+    String          GetReleaseName();
     size_t          getFragmentation();
      
   private:
@@ -50,12 +48,9 @@ class BaseConfig {
     uint8_t   ventil3wege_port; // Portnummer des Ventils
     uint8_t   max_parallel;
     bool      enable_autoupdate;
-    stage_t   autoupdate_stage;
     String    autoupdate_url;
     bool      useETH;  // otherwise use WIFI
     String    LANBoard;
-    
-    updater*  ESPUpdate;
 };
 
 extern BaseConfig* Config;

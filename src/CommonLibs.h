@@ -7,6 +7,8 @@
   #include "WProgram.h"
 #endif
 
+#pragma once
+
 #ifdef ESP8266
   extern "C" {
       #include "user_interface.h"
@@ -21,6 +23,7 @@
 #endif
 
 #include <string.h>
+#include <StreamUtils.h>
 #include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
