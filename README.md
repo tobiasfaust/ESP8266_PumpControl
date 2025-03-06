@@ -1,6 +1,6 @@
 ## Bewässerungssteuerung für ein Hauswasserwerk sowie automatisierter Umschaltung bei leerer Zisterne auf Trinkwasser für ESP8266
 
-Für eine erweiterte Funktionalität, Unterstützung für mehr Hardware incl OLED muss ein ESP32 verwendet werden. Hierzu bitte ins [ESP32_Pumpcontrol](https://github.com/tobiasfaust/ESP32_PumpControl) Repository wechseln.
+>Die Entwicklung dieser Firmware für den ESP8266 wurde eingestellt. Eine Weiterentwicklung erfolgt nur noch für den Esp32. Hierzu bitte ins [ESP32_Pumpcontrol](https://github.com/tobiasfaust/ESP32_PumpControl) Repository wechseln.
 
 <br>
 
